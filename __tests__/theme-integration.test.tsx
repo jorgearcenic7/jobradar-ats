@@ -1,4 +1,6 @@
 import { render, renderHook, screen } from '@testing-library/react-native';
+import type { ReactNode } from 'react';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from '@/app/index';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -8,6 +10,19 @@ import { navigationThemes, palettes } from '@/shared/theme';
 jest.mock('@/hooks/use-color-scheme', () => ({ useColorScheme: jest.fn() }));
 
 const mockedUseColorScheme = jest.mocked(useColorScheme);
+
+// Test harness only: in the app, Expo Router renders the safe area provider.
+function SafeArea({ children }: { children: ReactNode }) {
+  return (
+    <SafeAreaProvider
+      initialMetrics={{
+        frame: { x: 0, y: 0, width: 390, height: 844 },
+        insets: { top: 0, right: 0, bottom: 0, left: 0 },
+      }}>
+      {children}
+    </SafeAreaProvider>
+  );
+}
 
 describe.each(['light', 'dark'] as const)('%s scheme', (scheme) => {
   const palette = palettes[scheme];
@@ -23,14 +38,18 @@ describe.each(['light', 'dark'] as const)('%s scheme', (scheme) => {
   });
 
   it('renders the home screen with the palette colors', async () => {
-    await render(<HomeScreen />);
+    await render(<HomeScreen />, { wrapper: SafeArea });
 
-    expect(screen.root).toHaveStyle({ backgroundColor: palette.background });
+    // `screen.root` is the harness provider; the screen's own root is its first child.
+    expect(screen.root?.children[0]).toHaveStyle({ backgroundColor: palette.background });
     expect(screen.getByRole('header', { name: 'JobRadar ATS' })).toHaveStyle({
       color: palette.text,
     });
-    expect(screen.getByText('Aplicación en construcción.')).toHaveStyle({
-      color: palette.textSecondary,
+    const message = screen.getByText('Aplicación en construcción.');
+    expect(message).toHaveStyle({ color: palette.textSecondary });
+    expect(message.parent).toHaveStyle({
+      backgroundColor: palette.surface,
+      borderColor: palette.border,
     });
   });
 
