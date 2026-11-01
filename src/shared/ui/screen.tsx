@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -51,9 +51,11 @@ export function Screen({ children, scroll = true, style }: ScreenProps) {
   );
 
   if (process.env.EXPO_OS === 'web') {
-    // `.screen-safe-area` lives in `src/global.css`; React Native Web views don't accept class names.
+    // Only the env() insets come from `.screen-safe-area` in `src/global.css`, since React Native
+    // Web views don't accept class names. The layout stays inline so it is already right in the
+    // server HTML, before that stylesheet loads.
     return (
-      <div className="screen-safe-area" style={background}>
+      <div className="screen-safe-area" style={{ ...webContainer, ...background }}>
         {body}
       </div>
     );
@@ -61,6 +63,15 @@ export function Screen({ children, scroll = true, style }: ScreenProps) {
 
   return body;
 }
+
+const webContainer: CSSProperties = {
+  boxSizing: 'border-box',
+  display: 'flex',
+  flex: '1 1 0%',
+  flexDirection: 'column',
+  minWidth: 0,
+  minHeight: 0,
+};
 
 const styles = StyleSheet.create({
   fill: {

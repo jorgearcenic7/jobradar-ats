@@ -11,14 +11,9 @@
 /*
  * Safe areas for <Screen> on web. Expo Router reports zero insets on web, so the browser's
  * env() values apply here instead. They take effect once the viewport uses viewport-fit=cover.
+ * The container's layout is inline in `src/shared/ui/screen.tsx`, so it doesn't wait for this file.
  */
 .screen-safe-area {
-  box-sizing: border-box;
-  display: flex;
-  flex: 1 1 0%;
-  flex-direction: column;
-  min-width: 0;
-  min-height: 0;
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
     env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
 }
