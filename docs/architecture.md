@@ -10,15 +10,21 @@ Cada funcionalidad del producto (ofertas, currículums, análisis, candidaturas�
 
 ## Estructura actual
 
-Hoy el proyecto contiene únicamente la base técnica heredada de la plantilla de Expo, ya limpia de demostraciones. **Todavía no existe ningún módulo de funcionalidad.**
+Hoy el proyecto contiene la base técnica y los tokens del sistema de diseño (Fase 2a.1). **Todavía no existe ningún módulo de funcionalidad.**
 
 ```text
 src/
   app/                  # Rutas de Expo Router
-    _layout.tsx         # Stack provisional con tema claro/oscuro
+    _layout.tsx         # Stack provisional, tema de navegación e import de global.css
     index.tsx           # Pantalla de inicio provisional ("en construcción")
-  components/           # ThemedText y ThemedView (componentes con tema)
-  constants/theme.ts    # Colores, fuentes, espaciados y anchura máxima
+  shared/theme/         # Tokens del sistema de diseño (fuente única)
+    colors.ts           # Paletas semánticas claro/oscuro
+    typography.ts       # Escala tipográfica y familias de fuentes
+    layout.ts           # Espaciado, radios y medidas de pantalla
+    navigation.ts       # Temas de navegación derivados de las paletas
+    index.ts            # Punto de entrada: @/shared/theme
+  components/           # ThemedText y ThemedView (pendientes de migrar)
+  constants/theme.ts    # Adaptador temporal que reexporta desde @/shared/theme
   hooks/                # useColorScheme (nativo y web) y useTheme
   global.css            # Variables CSS de fuentes para la web
 __tests__/              # Pruebas (fuera de src/app)
@@ -26,11 +32,11 @@ jest/style-mock.js      # Sustituto de los imports de CSS en Jest
 assets/                 # Iconos y pantalla de bienvenida
 ```
 
-`components/`, `constants/` y `hooks/` son código compartido genérico de la plantilla. Su reubicación (por ejemplo, a `src/shared/`) se decidirá en la Fase 2, con el sistema de diseño.
+`components/`, `constants/` y `hooks/` son código heredado de la plantilla. Ya leen sus valores de `src/shared/theme/`, pero su migración definitiva a `src/shared/` (y la eliminación del adaptador) queda para una tarea posterior de la Fase 2.
 
 ## Estructura planificada
 
-> **Planificado.** Ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
+> **Planificado.** Salvo `src/shared/theme/`, ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
 
 ```text
 src/
@@ -86,8 +92,14 @@ Estas reglas todavía no se aplican de forma automática. Se valorará reforzarl
 | ESLint (`eslint-config-expo`) + Prettier, con `eslint-config-prettier` | ESLint para errores y Prettier para el formato, sin reglas en conflicto.                                                                        |
 | Finales de línea LF (`.gitattributes` y `.prettierrc`)                 | Evitar diferencias de CRLF/LF al desarrollar desde Windows.                                                                                     |
 | Jest 30 + `jest-expo` + React Native Testing Library 14                | Combinación indicada por la documentación de Expo SDK 58; `react-test-renderer` está obsoleto y no admite React 19.                             |
-| Tests en `__tests__/`, stub de CSS en `jest/style-mock.js`             | Expo Router reserva `src/app/` para rutas, y Jest no puede interpretar el CSS que importa `theme.ts`.                                           |
+| Tests en `__tests__/`, stub de CSS en `jest/style-mock.js`             | Expo Router reserva `src/app/` para rutas, y Jest no puede interpretar el CSS que importa el layout raíz.                                       |
 | `"types": ["jest"]` en `tsconfig.json`                                 | Hacer visibles a TypeScript los globales de Jest (`describe`, `it`, `expect`).                                                                  |
+| Tokens de diseño en `src/shared/theme/`, sin librería de estilos       | Una sola fuente de verdad sin dependencias nuevas. Ningún color hexadecimal vive fuera de `colors.ts`.                                          |
+| Paletas semánticas claro/oscuro seleccionadas con `useTheme()`         | Los componentes usan nombres de intención (`surface`, `accentText`), no colores. El esquema sale del `useColorScheme` seguro para hidratación.  |
+| Contraste verificado por tests (`__tests__/theme-contrast.test.ts`)    | Texto ≥ 4,5:1 y controles ≥ 3:1 (WCAG 2.2 AA). Los bordes decorativos están exentos, pero no pueden ser la única señal visual.                  |
+| Sin límite de escalado de texto (`maxFontSizeMultiplier`)              | Priorizar maquetas flexibles. Cualquier límite futuro deberá justificarse en el componente concreto.                                            |
+| `global.css` importado solo en `src/app/_layout.tsx`                   | Orden de carga correcto del CSS global, como indica Expo Router.                                                                                |
+| Adaptadores temporales (`constants/theme.ts`, variantes de ThemedText) | Migrar por pasos sin romper los componentes existentes; reexportan o reutilizan los tokens, sin duplicar valores.                               |
 
 ## Restricciones de producto que afectan al diseño
 
@@ -125,7 +137,8 @@ Situación a 1 de noviembre de 2026: **46 avisos (45 moderados y 1 bajo, ninguno
 - **PWA y `web.output: "server"`.** La configuración actual genera una salida con servidor. Una PWA en un alojamiento gratuito suele requerir salida estática (`"static"`). Se estudiará en la fase de la PWA.
 - **Pruebas en iOS desde Windows.** No hay simulador de iOS en Windows y la versión de Expo Go disponible en la App Store no es compatible directamente con Expo SDK 58. La estrategia actual es desarrollar con Expo Web, probar la interfaz desde Safari en el iPhone y preparar una PWA en la Fase 5b. Así no se verifica el comportamiento nativo en iOS. Instalar compilaciones de desarrollo en un iPhone propio con una cuenta gratuita de Apple requiere Xcode en un Mac, procedimiento que no se usará por ahora; TestFlight y la App Store requieren una membresía de pago, que no se contratará.
 - **Funciones experimentales.** `typedRoutes` y `reactCompiler` están marcadas como experimentales en `app.json` y pueden cambiar entre versiones del SDK.
-- **Restos de la plantilla.** `ThemedView` acepta `lightColor` y `darkColor` pero no los usa, y `BottomTabInset` (en `theme.ts`) no se usa en ningún sitio. Se revisarán en la Fase 2.
+- **Destello de tema claro en web con modo oscuro.** El servidor renderiza siempre en claro y el tema real se aplica tras la hidratación. No hay errores de hidratación, pero en la primera carga quien usa el modo oscuro ve brevemente el tema claro (comprobado: el HTML del servidor solo contiene colores claros). Comportamiento previo a la Fase 2; su corrección (por ejemplo, fondo con `prefers-color-scheme` en `src/app/+html.tsx`) está pendiente de autorización.
+- **Restos de la plantilla.** `ThemedView` acepta `lightColor` y `darkColor` pero no los usa. Se revisará al migrar los componentes a `src/shared/ui/`. (`BottomTabInset` se eliminó en la Fase 2a.1 porque nadie lo usaba.)
 - **Duplicado de `test-renderer`.** Conviven las versiones 1.3.0 (de `jest-expo`) y 1.3.1 (de React Native Testing Library). Hoy no causa fallos; vigilar si aparecen errores extraños en las pruebas.
 - **Instalación en Windows.** `npx expo install <paquetes> "--" --dev` dejó los paquetes en `dependencies` en lugar de `devDependencies`. Hay que revisar `package.json` tras cada instalación.
 - **Riesgos futuros.** La importación de PDF/DOCX y la IA local o gratuita dependerán de librerías que habrá que validar con Expo SDK 58, iOS, Android, la web y la privacidad de los datos.
