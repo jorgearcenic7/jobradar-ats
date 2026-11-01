@@ -1,56 +1,101 @@
-# Welcome to your Expo app 👋
+# JobRadar ATS
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicación móvil gratuita de ayuda para **candidatos que buscan empleo**. Su objetivo es ayudar a preparar mejor cada candidatura: comparar un currículum con los requisitos de una oferta, revisar su legibilidad y compatibilidad técnica con criterios habituales de los sistemas ATS (_Applicant Tracking Systems_) y proponer mejoras explicables.
 
-## Get started
+> **Estado actual:** la base técnica está preparada, pero **todavía no hay ninguna funcionalidad de producto implementada**. La app muestra una única pantalla provisional. Consulta [docs/roadmap.md](docs/roadmap.md).
 
-1. Install dependencies
+## Objetivos del producto
 
-   ```bash
-   npm install
-   ```
+Funcionalidades previstas (ninguna está implementada todavía):
 
-2. Start the app
+- Guardar uno o varios currículums.
+- Introducir ofertas laborales mediante texto y, más adelante, mediante enlaces.
+- Comparar un CV con los requisitos de una oferta.
+- Evaluar la legibilidad y la compatibilidad técnica del CV con criterios habituales de los ATS.
+- Detectar requisitos y habilidades presentes, ausentes o no verificables.
+- Ofrecer recomendaciones explicables y fundamentadas.
+- Editar y exportar versiones del CV adaptadas a cada oferta.
+- Guardar candidaturas y hacer su seguimiento.
 
-   ```bash
-   npx expo start
-   ```
+La herramienta se inspira en funcionalidades generales de Jobscan y alternativas similares, con una implementación independiente.
 
-In the output, you'll find options to open the app in a
+### Principios
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **No predice decisiones de ATS reales.** La puntuación propia será explicable y estará respaldada por criterios y evidencias visibles.
+- **No inventa datos.** Nunca añadirá experiencia, titulaciones ni habilidades que el usuario no tenga.
+- **Prioridad iPhone**, con compatibilidad Android y una PWA gratuita.
+- **Presupuesto de 0 €** en herramientas y servicios.
 
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## Tecnologías
 
-## Get a fresh project
+| Área              | Tecnología                                                           |
+| ----------------- | -------------------------------------------------------------------- |
+| Plataforma        | Expo SDK 58, React Native 0.88, React 19.3                           |
+| Lenguaje          | TypeScript 6 (modo `strict`)                                         |
+| Navegación        | Expo Router (rutas basadas en archivos en `src/app/`, rutas tipadas) |
+| Web               | React Native Web                                                     |
+| Calidad de código | ESLint 9 (`eslint-config-expo`) y Prettier 3                         |
+| Pruebas           | Jest 30, `jest-expo` y React Native Testing Library 14               |
+| Compilación       | React Compiler (experimental) y EAS para compilaciones en la nube    |
 
-When you're ready, run:
+## Requisitos
+
+- Node.js compatible con Expo SDK 58 (`^22.13.0`, `^24.3.0` o superior; el desarrollo usa Node 24) y npm.
+- Git.
+- Para probar en un iPhone: Safari, con el iPhone y el PC en la misma red Wi-Fi (consulta los detalles más abajo).
+
+## Instalación
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+## Ejecución
 
-### Other setup steps
+```bash
+npm run web    # servidor de desarrollo con la versión web (Expo Web)
+npm start      # servidor de desarrollo de Expo
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### Pruebas en iPhone desde Windows
 
-## Learn more
+El proyecto se desarrolla en **Windows** y con un presupuesto de 0 €. Esto condiciona cómo se prueba en iPhone:
 
-To learn more about developing your project with Expo, look at the following resources:
+- **Vía actual: Expo Web en Safari.** Ejecuta `npm run web` en el PC y abre en Safari del iPhone la dirección de red del PC (por ejemplo, `http://<IP-del-PC>:8081`), con ambos dispositivos en la misma red Wi-Fi. Puede ser necesario permitir el puerto en el firewall de Windows. Así se prueba la interfaz, no el comportamiento nativo.
+- **Vía futura: PWA instalable** en la pantalla de inicio del iPhone, prevista en la Fase 5b (ver [docs/roadmap.md](docs/roadmap.md)).
+- **Expo Go no es una opción con el SDK actual:** la versión de Expo Go disponible en la App Store no es compatible directamente con Expo SDK 58.
+- `npm run ios` intenta abrir el simulador de iOS, que **solo existe en macOS**. No funciona en Windows.
+- **Compilaciones nativas para iPhone:** Apple permite instalar apps de desarrollo en dispositivos propios con una cuenta gratuita, pero desde Xcode, que solo existe en Mac. Desde nuestro entorno Windows no usaremos ese procedimiento por ahora. TestFlight y la distribución por App Store requieren una membresía de pago de Apple Developer, que no vamos a contratar: el presupuesto sigue siendo de 0 €.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+En Android, las pruebas nativas (dispositivo físico o emulador de Android Studio) están pendientes de comprobar con el SDK 58.
 
-## Join the community
+## Scripts
 
-Join our community of developers creating universal apps.
+| Script                 | Descripción                                  |
+| ---------------------- | -------------------------------------------- |
+| `npm start`            | Inicia el servidor de desarrollo de Expo.    |
+| `npm run web`          | Inicia el servidor y abre la versión web.    |
+| `npm run android`      | Inicia el servidor y abre la app en Android. |
+| `npm run ios`          | Abre el simulador de iOS (solo macOS).       |
+| `npm test`             | Ejecuta las pruebas con Jest.                |
+| `npm run test:watch`   | Ejecuta las pruebas en modo observación.     |
+| `npm run lint`         | Analiza el código con ESLint.                |
+| `npm run typecheck`    | Comprueba los tipos con TypeScript.          |
+| `npm run format`       | Formatea el proyecto con Prettier.           |
+| `npm run format:check` | Comprueba el formato sin modificar archivos. |
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Compilación web de comprobación: `npx expo export --platform web` (genera `dist/`, ignorado por Git).
+
+## Pruebas
+
+Las pruebas viven en `__tests__/`, fuera de `src/app/`, porque Expo Router trata todos los archivos de ese directorio como rutas. Actualmente hay un test de humo de la pantalla de inicio.
+
+## Documentación
+
+- [docs/architecture.md](docs/architecture.md): arquitectura, decisiones técnicas y riesgos conocidos.
+- [docs/roadmap.md](docs/roadmap.md): fases completadas y próximas.
+- [CLAUDE.md](CLAUDE.md) y [AGENTS.md](AGENTS.md): reglas de trabajo para asistentes de IA.
+
+## Licencia
+
+La licencia propia de JobRadar ATS está **pendiente de decisión** y el repositorio es privado. El archivo `LICENSE` actual procede de la plantilla de Expo y se conserva sin cambios. Ver [docs/architecture.md](docs/architecture.md#cuestiones-pendientes-no-técnicas).
