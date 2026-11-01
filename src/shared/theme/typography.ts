@@ -27,13 +27,12 @@ export const Fonts = Platform.select({
 });
 
 /**
- * Type scale. Every step uses the system font for now; the display steps
- * (`display` to `heading`) switch to Sora once its files are added.
- * Text scales with the user's font size setting: no step caps it.
+ * Type scale. The steps in `displaySteps` are set in Sora (SemiBold 600, or Bold 700 for figures);
+ * the rest use the system font. Text scales with the user's font size setting: no step caps it.
  */
 export const typography = {
   display: { fontSize: 34, lineHeight: 40, fontWeight: 600 },
-  metric: { fontSize: 40, lineHeight: 44, fontWeight: 600 },
+  metric: { fontSize: 40, lineHeight: 44, fontWeight: 700 },
   title: { fontSize: 28, lineHeight: 34, fontWeight: 600 },
   heading: { fontSize: 20, lineHeight: 26, fontWeight: 600 },
   headline: { fontSize: 17, lineHeight: 22, fontWeight: 600 },
@@ -42,3 +41,8 @@ export const typography = {
   footnote: { fontSize: 13, lineHeight: 18, fontWeight: 400 },
   caption: { fontSize: 12, lineHeight: 16, fontWeight: 500 },
 } as const satisfies Record<string, TextStyle>;
+
+export type TypographyStep = keyof typeof typography;
+
+/** Headline and figure steps, set in Sora when it is available. */
+export const displaySteps: readonly TypographyStep[] = ['display', 'metric', 'title', 'heading'];
