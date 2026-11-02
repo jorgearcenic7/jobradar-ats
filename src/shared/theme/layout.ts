@@ -31,4 +31,6 @@ export const iconSize = {
 export const layout = {
   screenPadding: space[5],
   maxContentWidth: 800,
+  /** Minimum height and width of anything tappable (Apple HIG). */
+  minTouchTarget: 44,
 } as const;
