@@ -11,6 +11,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
   type StyleProp,
   type TextInputInstance,
   type TextInputProps,
@@ -49,13 +50,41 @@ export type TextFieldProps = KeyboardProps & {
   ref?: Ref<TextInputInstance>;
   /** Layout adjustments for the whole field (width, margins), merged last. */
   style?: StyleProp<ViewStyle>;
+  /**
+   * Lets the text span several lines. The field grows with it up to a maximum height and then
+   * scrolls inside, so long pasted texts are kept whole without taking over the screen.
+   */
+  multiline?: boolean;
+  /**
+   * Shows a counter against this number of characters. It never truncates: going over is only
+   * shown, and the caller decides whether that is an error.
+   */
+  characterLimit?: number;
 };
 
 // Hydration status never changes after mount, so there is nothing to subscribe to.
 const subscribe = () => () => {};
 
+// Multiline heights in lines of body text: room to read a few paragraphs, while the label and
+// the text being edited stay visible above the keyboard on a small iPhone.
+const MIN_LINES = 6;
+const MAX_LINES = 12;
+// The fewest lines the field shows when the screen cap below would leave it smaller.
+const FLOOR_LINES = 3;
+// iOS and Android: the most of the window height the field may take.
+const MAX_WINDOW_SHARE = 0.45;
+// Vertical padding and the 1 px border on each side.
+const INPUT_CHROME = space[3] * 2 + 2;
+
+// Groups thousands with a dot, four-digit numbers included (`Intl` in Spanish leaves 2450
+// ungrouped). Plain code also gives the same result on the server and in the browser, so the
+// counter can't break hydration.
+function formatCount(count: number) {
+  return String(count).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
 /**
- * Single-line text input with a visible label above it, and the error and guidance below it.
+ * Text input with a visible label above it, and the error, guidance and optional counter below it.
  */
 export function TextField({
   label,
@@ -66,11 +95,14 @@ export function TextField({
   disabled = false,
   ref,
   style,
+  multiline = false,
+  characterLimit,
   onFocus,
   onBlur,
   ...keyboardProps
 }: TextFieldProps) {
   const theme = useTheme();
+  const windowSize = useWindowDimensions();
   const [focused, setFocused] = useState(false);
   // The label focuses the input, so the component keeps its own reference and hands the same
   // instance to the caller.
@@ -88,6 +120,16 @@ export function TextField({
   const labelId = hasHydrated ? `${id}-label` : undefined;
   const helperId = hasHydrated ? `${id}-helper` : undefined;
   const errorId = hasHydrated ? `${id}-error` : undefined;
+  const counterId = hasHydrated ? `${id}-counter` : undefined;
+  const limitNoticeId = hasHydrated ? `${id}-limit` : undefined;
+
+  const hasCounter = characterLimit !== undefined;
+  const overLimit = hasCounter && value.length > characterLimit;
+  // Read without thousand separators: a screen reader set to another language than the page could
+  // take the dot for a decimal point.
+  const counterDescription = hasCounter
+    ? `${value.length} de ${characterLimit} caracteres.`
+    : undefined;
 
   const showFocus = focused && !disabled;
   const borderColor = disabled
@@ -101,8 +143,36 @@ export function TextField({
   // Web: the DOM links the messages through ids, in the order they are shown. React Native has
   // no equivalent on iOS or Android, so there the same messages are read as the input's hint.
   // Messages are full sentences, so they are joined with a space.
-  const describedBy = [error && errorId, helperText && helperId].filter(Boolean).join(' ');
-  const hint = [error && `Error: ${error}`, helperText].filter(Boolean).join(' ');
+  const describedBy = [
+    error && errorId,
+    helperText && helperId,
+    hasCounter && counterId,
+    overLimit && limitNoticeId,
+  ]
+    .filter(Boolean)
+    .join(' ');
+  const hint = [
+    error && `Error: ${error}`,
+    helperText,
+    counterDescription,
+    overLimit && 'Límite superado.',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  // Multiline heights follow the user's text size. iOS and Android also cap them by the window,
+  // so very large text keeps the field usable. On web both stay fixed: the browser zoom already
+  // scales them, and the server, which renders the first HTML, doesn't know the window.
+  const isWeb = process.env.EXPO_OS === 'web';
+  const lineHeight = typography.body.lineHeight * (isWeb ? 1 : windowSize.fontScale);
+  const linesHeight = (lines: number) => lines * lineHeight + INPUT_CHROME;
+  const maxHeight = isWeb
+    ? linesHeight(MAX_LINES)
+    : Math.max(
+        Math.min(linesHeight(MAX_LINES), windowSize.height * MAX_WINDOW_SHARE),
+        linesHeight(FLOOR_LINES),
+      );
+  const minHeight = Math.min(linesHeight(MIN_LINES), maxHeight);
 
   return (
     <View style={[styles.field, style]}>
@@ -119,6 +189,7 @@ export function TextField({
           ref={inputRef}
           value={value}
           onChangeText={onChangeText}
+          multiline={multiline}
           editable={!disabled}
           // Out of the tab order on web, like a disabled button.
           focusable={!disabled}
@@ -147,6 +218,11 @@ export function TextField({
               backgroundColor: disabled ? theme.neutralSubtle : theme.surface,
               color: disabled ? theme.textSecondary : theme.text,
             },
+            // No fixed height: React Native sizes a multiline input to its text between these bounds
+            // and scrolls inside it beyond the maximum (not yet verified on devices). Browsers need
+            // `field-sizing`; without it the field keeps its minimum height and scrolls. Nothing is
+            // measured in JS.
+            multiline && [styles.multiline, { minHeight, maxHeight }, isWeb && styles.growWithText],
             // Focus thickens the border to 2 px with an inner shadow, which takes no layout space,
             // so the text never moves. High contrast modes drop shadows and recolor the transparent
             // outline instead, so focus stays visible there too (web).
@@ -181,6 +257,40 @@ export function TextField({
             {helperText}
           </Text>
         ) : null}
+        {hasCounter ? (
+          <View
+            style={[
+              styles.counter,
+              error || helperText ? styles.messageAfterError : styles.message,
+            ]}>
+            {/* Always mounted while there is a limit, so crossing it is announced once (web and
+                Android). The count stays outside: it would be read on every keystroke. */}
+            <View aria-live="polite" style={styles.limitNotice}>
+              {overLimit ? (
+                <View style={styles.error}>
+                  <View style={styles.errorIcon}>
+                    <Icon name="error" size="sm" color="danger" />
+                  </View>
+                  <Text
+                    nativeID={limitNoticeId}
+                    style={[typography.callout, styles.errorText, { color: theme.danger }]}>
+                    Límite superado
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <Text
+              nativeID={counterId}
+              accessibilityLabel={counterDescription}
+              style={[
+                typography.callout,
+                styles.count,
+                { color: overLimit ? theme.danger : theme.textSecondary },
+              ]}>
+              {`${formatCount(value.length)} / ${formatCount(characterLimit)}`}
+            </Text>
+          </View>
+        ) : null}
       </View>
     </View>
   );
@@ -210,6 +320,21 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minWidth: 0,
   },
+  // Its own line, at the end. The notice wraps above the count when both don't fit.
+  counter: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'flex-end',
+    columnGap: space[3],
+  },
+  limitNotice: {
+    flexShrink: 1,
+    minWidth: 0,
+  },
+  // Same-width digits, so the count doesn't shift while typing.
+  count: {
+    fontVariant: ['tabular-nums'],
+  },
   input: {
     minHeight: layout.minTouchTarget,
     padding: space[3],
@@ -228,5 +353,14 @@ const styles = StyleSheet.create({
   focusOutline: {
     outlineWidth: 2,
     outlineColor: 'transparent',
+  },
+  // Line heights are needed to size the field in lines. Android centers multiline text unless told.
+  multiline: {
+    lineHeight: typography.body.lineHeight,
+    textAlignVertical: 'top',
+  },
+  // Web only: lets the browser size the field to its text (see `web-text-style.d.ts`).
+  growWithText: {
+    fieldSizing: 'content',
   },
 });

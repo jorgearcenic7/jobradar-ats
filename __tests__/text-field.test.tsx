@@ -1,9 +1,9 @@
 import { act, fireEvent, render, screen, userEvent } from '@testing-library/react-native';
 import { createRef, useState } from 'react';
-import { StyleSheet, type TextInputInstance } from 'react-native';
+import { Dimensions, StyleSheet, type TextInputInstance } from 'react-native';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { layout, palettes, typography } from '@/shared/theme';
+import { layout, palettes, space, typography } from '@/shared/theme';
 import { TextField, type TextFieldProps } from '@/shared/ui/text-field';
 
 jest.mock('@/hooks/use-color-scheme', () => ({ useColorScheme: jest.fn() }));
@@ -256,6 +256,230 @@ describe('TextField', () => {
 
     const field = screen.getByText('Job title').parent!;
     expect(StyleSheet.flatten(field.props.style)).toMatchObject({ marginTop: 8 });
+  });
+});
+
+// A job offer as people paste it: headings, blank lines, list markers, tabs, Windows line endings,
+// accents and symbols, repeated up to the requested length.
+function jobOffer(length: number) {
+  const block =
+    'Responsabilidades:\n- Diseñar APIs con Node.js y TypeScript.\n\n' +
+    'Requisitos:\r\n\t• 3+ años con «React Native» — inglés B2, €, ñ, ü.\n';
+  return block.repeat(Math.ceil(length / block.length)).slice(0, length);
+}
+
+function politeRegions() {
+  return screen.root!.queryAll((node) => node.props['aria-live'] === 'polite');
+}
+
+describe('TextField with several lines', () => {
+  const initialWindow = Dimensions.get('window');
+  const initialScreen = Dimensions.get('screen');
+  const chrome = space[3] * 2 + 2;
+
+  function setWindow(height: number, fontScale: number) {
+    Dimensions.set({
+      window: { ...initialWindow, height, fontScale },
+      screen: { ...initialScreen, height, fontScale },
+    });
+  }
+
+  beforeEach(() => {
+    mockedUseColorScheme.mockReturnValue('light');
+    setWindow(844, 1);
+  });
+
+  afterAll(() => {
+    Dimensions.set({ window: initialWindow, screen: initialScreen });
+  });
+
+  it('starts at six lines of text, grows up to twelve and then scrolls inside', async () => {
+    await render(<Field multiline />);
+
+    expect(input().props.multiline).toBe(true);
+    expect(inputStyle()).toMatchObject({
+      lineHeight: typography.body.lineHeight,
+      textAlignVertical: 'top',
+      minHeight: 6 * 24 + chrome,
+      maxHeight: 12 * 24 + chrome,
+    });
+    expect(inputStyle().height).toBeUndefined();
+    // The browser sizing is applied on web only; iOS and Android never receive it.
+    expect(inputStyle().fieldSizing).toBeUndefined();
+  });
+
+  it('measures its lines in the text size chosen by the user', async () => {
+    setWindow(844, 1.5);
+    await render(<Field multiline />);
+
+    expect(inputStyle()).toMatchObject({
+      minHeight: 6 * 36 + chrome,
+      // Twelve lines would take more than 45 % of the window.
+      maxHeight: 844 * 0.45,
+    });
+  });
+
+  it('keeps three lines and a minimum no taller than the maximum on a short window', async () => {
+    setWindow(375, 3);
+    await render(<Field multiline />);
+
+    const threeLines = 3 * 72 + chrome;
+    expect(inputStyle()).toMatchObject({ minHeight: threeLines, maxHeight: threeLines });
+  });
+
+  it.each([5_000, 20_000, 50_000, 100_000])(
+    'keeps every character of a pasted text of %i characters',
+    async (length) => {
+      const onChangeText = jest.fn();
+      function Controlled() {
+        const [value, setValue] = useState('');
+        return (
+          <TextField
+            label="Job title"
+            multiline
+            value={value}
+            onChangeText={(text) => {
+              onChangeText(text);
+              setValue(text);
+            }}
+          />
+        );
+      }
+      await render(<Controlled />);
+      const text = jobOffer(length);
+
+      await fireEvent.changeText(input(), text);
+
+      expect(onChangeText).toHaveBeenCalledWith(text);
+      expect(input().props.value).toBe(text);
+      expect(input().props.maxLength).toBeUndefined();
+    },
+  );
+
+  it('keeps single-line fields and fields without a limit unchanged', async () => {
+    await render(<Field value="Designer" />);
+
+    expect(input().props.multiline).toBe(false);
+    expect(inputStyle().lineHeight).toBeUndefined();
+    expect(inputStyle().minHeight).toBe(layout.minTouchTarget);
+    expect(screen.queryByText(/\//)).not.toBeOnTheScreen();
+    expect(politeRegions()).toHaveLength(1);
+  });
+});
+
+describe('TextField with a character limit', () => {
+  beforeEach(() => {
+    mockedUseColorScheme.mockReturnValue('light');
+  });
+
+  it('shows the count against the limit on its own line, after the messages', async () => {
+    await render(
+      <Field
+        multiline
+        value={jobOffer(2450)}
+        characterLimit={5000}
+        helperText="Paste the whole offer."
+        error="Add the requirements."
+      />,
+    );
+
+    const count = screen.getByText('2.450 / 5.000');
+    expect(count).toHaveStyle({
+      ...typography.callout,
+      color: palettes.light.textSecondary,
+      fontVariant: ['tabular-nums'],
+    });
+    const counter = count.parent!;
+    expect(input().parent!.children.at(-1)).toBe(counter);
+    expect(StyleSheet.flatten(counter.props.style)).toMatchObject({
+      justifyContent: 'flex-end',
+      paddingTop: space[1],
+    });
+  });
+
+  it('reads the count as words and links it after the other messages', async () => {
+    await render(
+      <Field value={jobOffer(2450)} characterLimit={5000} helperText="Paste the whole offer." />,
+    );
+
+    const count = screen.getByText('2.450 / 5.000');
+    const helper = screen.getByText('Paste the whole offer.');
+    expect(count.props.accessibilityLabel).toBe('2450 de 5000 caracteres.');
+    expect(input().props['aria-describedby']).toBe(
+      `${helper.props.nativeID} ${count.props.nativeID}`,
+    );
+    expect(input().props.accessibilityHint).toBe('Paste the whole offer. 2450 de 5000 caracteres.');
+  });
+
+  it('sits right below the field when there are no messages, also on a single line', async () => {
+    await render(<Field value="" characterLimit={80} />);
+
+    const counter = screen.getByText('0 / 80').parent!;
+    expect(input().props.multiline).toBe(false);
+    expect(StyleSheet.flatten(counter.props.style)).toMatchObject({ paddingTop: space[2] });
+  });
+
+  it.each([
+    [999, 1000, '999 / 1.000'],
+    [1000, 1000, '1.000 / 1.000'],
+    [20_000, 100_000, '20.000 / 100.000'],
+    [100_000, 100_000, '100.000 / 100.000'],
+  ])('groups the thousands of %i of %i', async (length, limit, shown) => {
+    await render(<Field value={jobOffer(length)} characterLimit={limit} />);
+
+    expect(screen.getByText(shown)).toBeOnTheScreen();
+    expect(screen.queryByText('Límite superado')).not.toBeOnTheScreen();
+  });
+
+  it('shows going over without cutting the text or marking the field as invalid', async () => {
+    const text = jobOffer(5001);
+    await render(<Field multiline value={text} characterLimit={5000} />);
+
+    const count = screen.getByText('5.001 / 5.000');
+    const notice = screen.getByText('Límite superado');
+    expect(count).toHaveStyle({ color: palettes.light.danger });
+    expect(notice).toHaveStyle({ ...typography.callout, color: palettes.light.danger });
+    // The icon is decorative, like the error's.
+    expect(screen.queryByRole('img')).not.toBeOnTheScreen();
+    expect(input().props.value).toBe(text);
+    expect(input().props.maxLength).toBeUndefined();
+    expect(input().props['aria-invalid']).toBeUndefined();
+    expect(inputStyle().borderColor).toBe(palettes.light.borderStrong);
+    expect(input().props['aria-describedby']).toBe(
+      `${count.props.nativeID} ${notice.props.nativeID}`,
+    );
+    expect(input().props.accessibilityHint).toBe('5001 de 5000 caracteres. Límite superado.');
+  });
+
+  it('announces crossing the limit once and never the count', async () => {
+    await render(<Field value="abc" characterLimit={5} />);
+    const [, region] = politeRegions();
+    expect(region.children).toHaveLength(0);
+
+    await screen.rerender(<Field value="abcd" characterLimit={5} />);
+    expect(region.children).toHaveLength(0);
+
+    await screen.rerender(<Field value="abcdef" characterLimit={5} />);
+    const [notice] = region.children;
+    expect(region).toContainElement(screen.getByText('Límite superado'));
+
+    // Typing on past the limit leaves the announced content as it was.
+    await screen.rerender(<Field value="abcdefg" characterLimit={5} />);
+    const [, sameRegion] = politeRegions();
+    expect(sameRegion).toBe(region);
+    expect(region.children).toEqual([notice]);
+
+    await screen.rerender(<Field value="abc" characterLimit={5} />);
+    expect(region.children).toHaveLength(0);
+    expect(screen.getByText('3 / 5')).toHaveStyle({ color: palettes.light.textSecondary });
+  });
+
+  it.each(['light', 'dark'] as const)('uses the theme colors in %s mode', async (scheme) => {
+    mockedUseColorScheme.mockReturnValue(scheme);
+    await render(<Field value="abcdef" characterLimit={5} />);
+
+    expect(screen.getByText('6 / 5')).toHaveStyle({ color: palettes[scheme].danger });
+    expect(screen.getByText('Límite superado')).toHaveStyle({ color: palettes[scheme].danger });
   });
 });
 
