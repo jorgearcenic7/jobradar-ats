@@ -21,6 +21,13 @@ export const radius = {
   full: 9999, // pills
 } as const;
 
+/** Icon sizes, shared by standalone icons and icons inside other components. */
+export const iconSize = {
+  sm: 16,
+  md: 20,
+  lg: 24,
+} as const;
+
 export const layout = {
   screenPadding: space[5],
   maxContentWidth: 800,

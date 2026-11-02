@@ -100,6 +100,7 @@ Las pruebas viven en `__tests__/`, fuera de `src/app/`, porque Expo Router trata
 ## Atribuciones de terceros
 
 - **Sora**, de Jonathan Barnbrook y Julián Moncada. Copyright 2019 The Sora Project Authors. Licencia [SIL Open Font License 1.1](assets/fonts/OFL.txt). Archivos OTF estáticos (SemiBold y Bold) sin modificar, obtenidos de [sora-xor/sora-font](https://github.com/sora-xor/sora-font) en el commit `7f9a9c5d0ccd1c099cfac420aa27133df1c5fdc4`.
+- **Material Symbols**, de Google. Licencia Apache 2.0. Fuente de iconos que `expo-symbols` utiliza en Android y web, distribuida sin modificar mediante la dependencia `@expo-google-fonts/material-symbols` (su licencia está en `node_modules/@expo-google-fonts/material-symbols/LICENSE_FONT`). En iOS se usan los SF Symbols del sistema.
 
 ## Licencia
 
