@@ -35,6 +35,8 @@ const textPairs: Pair[] = [
   ['warning', 'warningSubtle'],
   ['danger', 'dangerSubtle'],
   ['neutral', 'neutralSubtle'],
+  // Disabled buttons and text fields keep their text legible.
+  ['textSecondary', 'neutralSubtle'],
   ['danger', 'background'],
   ['danger', 'surface'],
 ];
@@ -45,6 +47,9 @@ const controlPairs: Pair[] = [
   ['primary', 'surface'],
   ['borderStrong', 'background'],
   ['borderStrong', 'surface'],
+  // Border of a text field with an error.
+  ['danger', 'background'],
+  ['danger', 'surface'],
   ['focusRing', 'background'],
   ['focusRing', 'surface'],
 ];
