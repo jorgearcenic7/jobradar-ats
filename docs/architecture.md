@@ -10,7 +10,7 @@ Cada funcionalidad del producto (ofertas, currículums, análisis, candidaturas�
 
 ## Estructura actual
 
-Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button` y `TextField`) y el primer módulo de funcionalidad: la capa `domain` de `cv-match`, el motor del analizador CV–oferta (Fase A). **El analizador todavía no tiene pantalla ni ruta**: su presentación y la importación de CV se incorporarán en bloques posteriores de la migración (ver [roadmap.md](roadmap.md)).
+Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button` y `TextField`) y la capa `domain` de los dos primeros módulos de funcionalidad, ambos de la Fase A: `cv-match`, el motor del analizador CV–oferta, y `cv-import`, la importación de CV. **El analizador todavía no tiene pantalla ni ruta, y aún no se pueden seleccionar ni leer archivos**: la presentación, la aplicación y la infraestructura, con sus dependencias, se incorporarán en bloques posteriores de la migración (ver [roadmap.md](roadmap.md)).
 
 ```text
 src/
@@ -19,6 +19,7 @@ src/
     index.tsx           # Pantalla de inicio provisional: Screen, título y Card
   features/
     cv-match/domain/    # Motor del analizador CV–oferta, en TypeScript puro (ver más abajo)
+    cv-import/domain/   # Reglas de la importación de CV, en TypeScript puro (ver más abajo)
   shared/ui/            # Componentes genéricos del sistema de diseño
     screen.tsx          # Contenedor de pantalla: fondo, áreas seguras, márgenes, scroll
     card.tsx            # Contenedor de contenido sobre una superficie
@@ -78,9 +79,34 @@ Limitaciones:
 - **Español.** Las reglas de importancia, negación y matización están escritas para textos en español; algunos encabezados del CV se reconocen también en inglés.
 - **Solo texto.** Analiza texto ya escrito o pegado; no lee archivos.
 
+### Módulo `cv-import` (Fase A)
+
+Obtiene el texto de un CV en PDF o DOCX para analizarlo. Por ahora solo existe su capa `domain`: **en el proyecto original todavía no se puede seleccionar ni leer ningún archivo**, porque faltan las capas `application` e `infrastructure` (selector de archivos y lectores) y sus dependencias (`expo-document-picker`, `pdfjs-dist` y `mammoth`).
+
+```text
+src/features/cv-import/domain/
+  detect-format.ts             # Formato por el contenido del archivo, no por su nombre
+  assemble-pdf-text.ts         # Reconstrucción de líneas a partir de los fragmentos de texto de un PDF
+  docx-html-to-text.ts         # Texto plano a partir del HTML sencillo que genera mammoth
+  normalize-extracted-text.ts  # Normalización de caracteres y líneas, con recuento de cambios
+  characters.ts                # Letras y caracteres ilegibles
+  assess-extraction.ts         # Evaluación de la calidad de la extracción
+  imported-cv.ts               # CV importado, correcciones del usuario y texto que se analiza
+  readers.ts                   # Contrato de los lectores, que implementará cada plataforma
+  types.ts                     # Tipos de formatos, fallos, avisos y estados
+```
+
+- **TypeScript puro.** Mismas condiciones que `cv-match`: solo importa sus propios archivos, sin React, Expo, red, disco, globales de plataforma ni otros módulos. Las librerías de lectura quedan detrás del contrato `CvReaders` de `readers.ts`. Se prueba en Jest (`__tests__/cv-import-*.test.ts`).
+- **Identificación de formatos.** Por las firmas de su contenido: PDF, DOCX (un ZIP con `word/document.xml`), Word antiguo o protegido con contraseña, RTF y archivos vacíos. El nombre del archivo solo sirve para avisar si no coincide.
+- **Normalización de texto.** Unifica saltos de línea, ligaduras, guiones suaves, caracteres invisibles, espacios especiales y líneas en blanco. Nunca elimina palabras, une líneas cortadas con guion ni recorta, y cuenta cada cambio.
+- **Reconstrucción de líneas PDF.** Agrupa en líneas los fragmentos de texto con posición de cada página, con umbrales proporcionales al tamaño de letra. Conserva todo el texto y marca las páginas cuyo orden de lectura puede ser incorrecto, como en los diseños de varias columnas.
+- **Texto de DOCX.** Convierte el HTML de mammoth en texto plano como una cadena: nunca se interpreta en un navegador, se inserta en la interfaz ni se ejecuta.
+- **Evaluación de la extracción.** Distingue errores demostrados, que bloquean el análisis (sin texto, por ejemplo un PDF escaneado, o con un 30 % o más de caracteres ilegibles), avisos que piden revisar el texto (caracteres ilegibles, páginas sin texto, orden de lectura) y notas inciertas que solo se muestran (poco texto). Los umbrales son configurables y se tratan como criterios, no como certezas.
+- **Gestión de correcciones.** El texto extraído no se modifica: la corrección del usuario se guarda aparte, se puede descartar y, si existe, es la que se analiza. Una corrección permite analizar un texto bloqueado, porque lo ha escrito el usuario.
+
 ## Estructura planificada
 
-> **Planificado.** Salvo `src/shared/theme/`, `src/shared/ui/` y `src/features/cv-match/domain/`, ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
+> **Planificado.** Salvo `src/shared/theme/`, `src/shared/ui/`, `src/features/cv-match/domain/` y `src/features/cv-import/domain/`, ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
 
 ```text
 src/
