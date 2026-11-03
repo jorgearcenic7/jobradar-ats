@@ -3,8 +3,8 @@ import type { ReactNode } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from '@/app/index';
-import { ThemedText } from '@/components/themed-text';
 import { DisplayFontContext, displayFontFamilies, displaySteps, typography } from '@/shared/theme';
+import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 // The safe area provider is a test harness only: in the app, Expo Router renders it.
 function withDisplayFont(available: boolean) {
@@ -37,22 +37,41 @@ describe('Sora font family', () => {
 });
 
 describe('ThemedText with Sora available', () => {
-  it.each(['title', 'subtitle'] as const)('sets the %s variant in Sora', async (type) => {
-    await render(<ThemedText type={type}>Headline</ThemedText>, {
+  it.each(['display', 'title', 'heading'] as const)('sets the %s step in Sora', async (step) => {
+    await render(<ThemedText step={step}>Headline</ThemedText>, {
       wrapper: withDisplayFont(true),
     });
 
     expect(screen.getByText('Headline')).toHaveStyle({ fontFamily: 'Sora', fontWeight: 600 });
   });
 
-  it.each(['default', 'small', 'smallBold', 'link', 'linkPrimary'] as const)(
-    'keeps the %s variant on the system font',
-    async (type) => {
-      await render(<ThemedText type={type}>Body</ThemedText>, { wrapper: withDisplayFont(true) });
+  it('sets figures in Sora Bold', async () => {
+    await render(<ThemedText step="metric">50 %</ThemedText>, { wrapper: withDisplayFont(true) });
+
+    expect(screen.getByText('50 %')).toHaveStyle({ fontFamily: 'Sora', fontWeight: 700 });
+  });
+
+  it.each(['headline', 'body', 'callout', 'footnote', 'caption'] as const)(
+    'keeps the %s step on the system font',
+    async (step) => {
+      await render(<ThemedText step={step}>Body</ThemedText>, { wrapper: withDisplayFont(true) });
 
       expect(screen.getByText('Body')).not.toHaveStyle({ fontFamily: 'Sora' });
     },
   );
+
+  it('sets second-level headings in Sora and third-level ones in the system font', async () => {
+    await render(
+      <>
+        <Heading level={2}>Results</Heading>
+        <Heading level={3}>Group</Heading>
+      </>,
+      { wrapper: withDisplayFont(true) },
+    );
+
+    expect(screen.getByText('Results')).toHaveStyle({ fontFamily: 'Sora' });
+    expect(screen.getByText('Group')).not.toHaveStyle({ fontFamily: 'Sora' });
+  });
 
   it('sets the home screen title in Sora and its message in the system font', async () => {
     await render(<HomeScreen />, { wrapper: withDisplayFont(true) });
@@ -67,10 +86,10 @@ describe('ThemedText with Sora available', () => {
 });
 
 describe('ThemedText without Sora', () => {
-  it.each(['title', 'subtitle'] as const)(
-    'falls back to the system font for the %s variant',
-    async (type) => {
-      await render(<ThemedText type={type}>Headline</ThemedText>, {
+  it.each(['display', 'title', 'heading'] as const)(
+    'falls back to the system font for the %s step',
+    async (step) => {
+      await render(<ThemedText step={step}>Headline</ThemedText>, {
         wrapper: withDisplayFont(false),
       });
 

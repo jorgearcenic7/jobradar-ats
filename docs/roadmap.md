@@ -42,7 +42,7 @@ El orden entre las subfases pendientes de la Fase 2 y la Fase A se decide en cad
 | 2c.2b   | `EmptyState`                                                                                 | Próxima    | —         |
 | 2d      | Consolidación: VoiceOver, Dynamic Type, capturas finales, revisión de código y documentación | Próxima    | —         |
 
-También queda pendiente, sin subfase asignada, la migración a `src/shared/` del código heredado de la plantilla: `ThemedText`, el adaptador `constants/theme.ts` y los hooks (ver [architecture.md](architecture.md)).
+También queda pendiente, sin subfase asignada, la migración a `src/shared/` de los hooks heredados de la plantilla. El `ThemedText` de la plantilla y el adaptador `constants/theme.ts` se retiraron en la Fase A, sustituidos por `src/shared/ui/themed-text.tsx` (ver [architecture.md](architecture.md)).
 
 ### Fase A — Analizador CV–oferta web
 
@@ -66,15 +66,25 @@ Límites:
 - **Sin OCR.** Los PDF escaneados o en imagen no se leen: se pide pegar el texto.
 - **Ejemplo ficticio.** «Cargar ejemplo ficticio» se conserva para desarrollo y pruebas, sin protagonismo en la app final.
 
-| Parte                                                                              | Laboratorio               | Proyecto original   |
-| ---------------------------------------------------------------------------------- | ------------------------- | ------------------- |
-| Motor de análisis: requisitos, evidencias, cobertura, recomendaciones, comparación | Implementado, con pruebas | Pendiente de migrar |
-| Pantalla `/analisis`                                                               | Implementada, con pruebas | Pendiente de migrar |
-| Importación PDF/DOCX en la web                                                     | Implementada, con pruebas | Pendiente de migrar |
-| Enlace provisional desde la pantalla de inicio                                     | No existe                 | Pendiente           |
-| Revisión en iOS y Android nativos, VoiceOver y TalkBack                            | Sin hacer                 | Pendiente           |
+| Parte                                                                              | Laboratorio               | Proyecto original                          |
+| ---------------------------------------------------------------------------------- | ------------------------- | ------------------------------------------ |
+| Motor de análisis: requisitos, evidencias, cobertura, recomendaciones, comparación | Implementado, con pruebas | Incorporado, con pruebas                   |
+| Importación PDF/DOCX en la web                                                     | Implementada, con pruebas | Incorporada, con pruebas                   |
+| Pantalla `/analisis`                                                               | Implementada, con pruebas | Incorporada, con pruebas                   |
+| Enlace provisional desde la pantalla de inicio                                     | No existe                 | Incorporado, con pruebas                   |
+| Recorrido en Chrome de escritorio (390 y 1440 px, modo claro y oscuro)             | Hecho                     | Verificado                                 |
+| Recorrido en Safari del iPhone                                                     | Sin hacer                 | **Pendiente**                              |
+| Revisión en iOS y Android nativos, VoiceOver y TalkBack                            | Sin hacer                 | Pendiente (importación nativa sin empezar) |
 
-Migración: el bloque 0 (copia de seguridad verificada del laboratorio, controles de línea base y rama `feature/analizador-cv-oferta`) está completado. La importación necesita `expo-document-picker`, `pdfjs-dist` y `mammoth`, ya evaluadas; se instalarán en el bloque 4, tras revisar de nuevo versiones, seguridad y cambios del lockfile. Las skills de Replica y su documentación experimental no se trasladan.
+Migración: los bloques 0 a 6 están hechos.
+
+- **Bloque 0:** copia de seguridad verificada del laboratorio y rama `feature/analizador-cv-oferta`.
+- **Bloques 1 a 5:** roadmap, motor, dominio de importación, dependencias y lectores, cada uno con su commit.
+- **Bloque 6:** interfaz y `ThemedText` compartido, pendiente de tu revisión y commit.
+
+Las skills de Replica y su documentación experimental no se trasladan.
+
+**Pendiente para completar la Fase A:** el recorrido en Safari del iPhone y la revisión final. La importación nativa, el OCR y la revisión con lectores de pantalla nativos quedan fuera de esta fase.
 
 ## Próximas fases
 

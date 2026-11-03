@@ -10,25 +10,31 @@ Cada funcionalidad del producto (ofertas, currículums, análisis, candidaturas�
 
 ## Estructura actual
 
-Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button` y `TextField`) y los dos primeros módulos de funcionalidad, ambos de la Fase A: `cv-match`, el motor del analizador CV–oferta (capa `domain`), y `cv-import`, la importación de CV (capas `domain`, `application` e `infrastructure`). **El analizador todavía no tiene pantalla ni ruta**: la importación ya lee PDF y DOCX en web, pero ninguna pantalla la usa. La presentación se incorporará en un bloque posterior de la migración (ver [roadmap.md](roadmap.md)).
+Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button`, `TextField` y `ThemedText`) y los dos primeros módulos de funcionalidad, ambos de la Fase A: `cv-match`, el analizador CV–oferta (capas `domain` y `presentation`), y `cv-import`, la importación de CV (las cuatro capas). El analizador se abre en la ruta `/analisis`, con un botón provisional en la pantalla de inicio hasta que existan las pestañas de la Fase 3 (ver [roadmap.md](roadmap.md)).
 
 ```text
 src/
   app/                  # Rutas de Expo Router
     _layout.tsx         # Stack provisional, tema de navegación e import de global.css
-    index.tsx           # Pantalla de inicio provisional: Screen, título y Card
+    index.tsx           # Pantalla de inicio provisional: título, Card y botón al analizador
+    analisis.tsx        # Analizador CV–oferta: monta la pantalla de cv-match y la vuelta al inicio
   features/
-    cv-match/domain/    # Motor del analizador CV–oferta, en TypeScript puro (ver más abajo)
+    cv-match/           # Analizador CV–oferta (ver más abajo)
+      domain/           # Motor en TypeScript puro
+      presentation/     # Pantalla, hook de estado y componentes de resultados
     cv-import/          # Importación de CV en PDF y DOCX (ver más abajo)
+      index.ts          # API pública y ensamblaje del módulo
       domain/           # Reglas en TypeScript puro
       application/      # Caso de uso: de un archivo elegido a un CV importado
       infrastructure/   # Selector de archivos y lectores reales (web) o no disponibles (nativo)
+      presentation/     # Campo del CV, estado de la importación y mensajes
   shared/ui/            # Componentes genéricos del sistema de diseño
     screen.tsx          # Contenedor de pantalla: fondo, áreas seguras, márgenes, scroll
     card.tsx            # Contenedor de contenido sobre una superficie
     icon.tsx            # Iconos con catálogo multiplataforma (expo-symbols)
     button.tsx          # Botón principal y secundario con estados accesibles
     text-field.tsx      # Campo de texto de una o varias líneas con etiqueta, ayuda, error y contador
+    themed-text.tsx     # Texto con la escala tipográfica y los colores del tema, y Heading
     web-text-style.d.ts # Tipo de `fieldSizing`, estilo web que React Native no declara
   shared/theme/         # Tokens del sistema de diseño (fuente única)
     colors.ts           # Paletas semánticas claro/oscuro
@@ -37,8 +43,6 @@ src/
     layout.ts           # Espaciado, radios, tamaños de icono, área táctil y medidas de pantalla
     navigation.ts       # Temas de navegación derivados de las paletas
     index.ts            # Punto de entrada: @/shared/theme
-  components/           # ThemedText (pendiente de migrar)
-  constants/theme.ts    # Adaptador temporal que reexporta desde @/shared/theme
   hooks/                # useColorScheme (nativo y web) y useTheme
   global.css            # Variables de fuentes y áreas seguras de Screen en web
 __tests__/              # Pruebas (fuera de src/app)
@@ -52,11 +56,19 @@ assets/                 # Iconos y pantalla de bienvenida
   fonts/                # Sora SemiBold y Bold (OTF) y su licencia OFL.txt
 ```
 
-`components/`, `constants/` y `hooks/` son código heredado de la plantilla. Ya leen sus valores de `src/shared/theme/`, pero su migración definitiva a `src/shared/` (y la eliminación del adaptador) queda para una tarea posterior de la Fase 2. `ThemedView` se eliminó en la Fase 2b.1b: `Screen` lo sustituye.
+`hooks/` es código heredado de la plantilla. Ya lee sus valores de `src/shared/theme/`, pero su migración definitiva a `src/shared/` queda para una tarea posterior de la Fase 2. `ThemedView` se eliminó en la Fase 2b.1b (`Screen` lo sustituye). El `ThemedText` de la plantilla (`src/components/`) y el adaptador `src/constants/theme.ts` se eliminaron en la Fase A, cuando dejaron de tener consumidores: los sustituye `src/shared/ui/themed-text.tsx`. La exportación `Fonts` de `@/shared/theme`, que solo usaba aquel componente, sigue disponible sin consumidores.
+
+### `ThemedText` y `Heading`
+
+Único componente compartido de texto, con la interfaz basada en los tokens: `step` es un paso de la escala tipográfica (`body` por defecto) y `color`, un color del tema (`text` por defecto). Los pasos de `displaySteps` usan Sora cuando ha cargado. El `style` de quien lo usa se aplica el último.
+
+`Heading` es un `ThemedText` con `accessibilityRole="header"` y `aria-level`: en web se convierte en `<h2>` o `<h3>`. El nivel 2 usa el paso `heading` (Sora) y el nivel 3, `headline`. El título de cada pantalla es un `ThemedText` de paso `title` con `accessibilityRole="header"`, que en web es el `<h1>`.
 
 ### Módulo `cv-match` (Fase A)
 
-Compara el texto de un CV con el de una oferta, requisito por requisito. Por ahora solo existe su capa `domain`.
+Compara el texto de un CV con el de una oferta, requisito por requisito. Tiene las capas `domain` y `presentation`.
+
+#### Dominio
 
 ```text
 src/features/cv-match/domain/
@@ -85,11 +97,33 @@ Limitaciones:
 - **Motor heurístico.** Reglas y un catálogo cerrado escritos para JobRadar, sin IA. Lo que no está en el catálogo se marca como no evaluable en lugar de adivinarse.
 - **Sin predicciones.** La cobertura mide los requisitos detectados en la oferta. No es la decisión de ningún ATS real ni una probabilidad de contratación.
 - **Español.** Las reglas de importancia, negación y matización están escritas para textos en español; algunos encabezados del CV se reconocen también en inglés.
-- **Solo texto.** Analiza texto ya escrito o pegado; no lee archivos.
+- **Solo texto.** Analiza texto ya escrito o pegado; no lee archivos (eso lo hace `cv-import`).
+
+#### Presentación
+
+```text
+src/features/cv-match/presentation/
+  cv-match-screen.tsx      # Pantalla del analizador: CV, oferta, «Analizar», avisos y resultados
+  use-cv-match.ts          # Estado del análisis: validación, resultado, comparación y desactualización
+  coverage-summary.tsx     # Cobertura, puntos y recuentos por estado, con su explicación
+  requirement-item.tsx     # Un requisito: estado, aportación, motivo y evidencias del CV y la oferta
+  status-badge.tsx         # Estado con icono y texto, nunca solo color
+  analysis-changes.tsx     # Cambios respecto al análisis anterior
+  recommendation-list.tsx  # Recomendaciones
+  labels.ts                # Textos de estados, importancia, secciones y formatos de números
+  sample-texts.ts          # CV y oferta ficticios para la demostración
+```
+
+- **Flujo.** El CV se elige como PDF o DOCX (acción principal en web) o se pega («Pegar texto en su lugar»). La oferta se pega completa. «Analizar» valida que haya texto en ambos, mueve el foco al primer campo que falte y muestra la cobertura, los requisitos agrupados por estado con sus evidencias y las recomendaciones.
+- **Resultados desactualizados.** Si cambia el CV o la oferta tras analizar, los resultados siguen visibles con un aviso hasta volver a analizar. Si se sustituye el CV por otro documento, los resultados anteriores se ocultan. El nuevo análisis se compara con el anterior solo si la oferta es la misma.
+- **En memoria.** Los textos y resultados no se guardan ni se envían: al cerrar la pantalla se pierden.
+- **Demostración solo en desarrollo.** «Cargar ejemplo ficticio» aparece únicamente con `__DEV__`, separado y debajo de «Analizar», y marcado como demostración. No llega a la compilación publicada.
+- **Vuelta al inicio provisional.** La pantalla recibe `onGoHome` de la ruta, que vuelve atrás o, si se abrió directamente, sustituye la ruta por la de inicio. Así `cv-match` no depende de Expo Router.
+- **Componentes locales.** El indicador de estado y los avisos se quedan dentro del módulo hasta que las subfases 2c.2a y 2c.2b creen `Badge`, `Notice` y `EmptyState` compartidos.
 
 ### Módulo `cv-import` (Fase A)
 
-Obtiene el texto de un CV en PDF o DOCX para analizarlo. Tiene las capas `domain`, `application` e `infrastructure`; todavía no tiene `presentation`, así que **ninguna pantalla permite aún elegir un archivo**.
+Obtiene el texto de un CV en PDF o DOCX para analizarlo. Tiene las cuatro capas, y otros módulos solo lo usan a través de su API pública, `src/features/cv-import/index.ts`.
 
 #### Dominio
 
@@ -157,11 +191,44 @@ Limitaciones:
 - **Sin OCR.** Un PDF escaneado o hecho de imágenes se bloquea con un aviso de posible escaneo, y se pide pegar el texto.
 - **Documentos protegidos.** Los PDF con contraseña y los Word protegidos o antiguos (`.doc`) no se leen: se pide guardarlos sin contraseña, como PDF o como `.docx`.
 - **Diseños complejos.** En los PDF con varias columnas, el orden de lectura puede ser incorrecto y se pide revisarlo. En los DOCX se pierden los encabezados y pies de página.
-- **Sin verificar en navegadores dentro del original.** Sin pantalla, la importación solo se ha comprobado con Jest. La prueba en navegadores llegará con la presentación.
+
+#### Presentación y API pública
+
+```text
+src/features/cv-import/
+  index.ts                      # API pública: CvFileField, useCvImport y el tipo CvImport
+  presentation/
+    use-cv-import.ts            # useCvImportWith: estado de la importación con dependencias inyectadas
+    cv-file-field.tsx           # Campo del CV: elegir o sustituir, estado del documento y texto editable
+    messages.ts                 # Mensajes de fallos y avisos de extracción
+```
+
+- **Inyección de dependencias.** El hook de presentación (`useCvImportWith`) recibe `canPickFile`, `pickFile` y `readers`, y nunca importa la infraestructura. `index.ts` es el punto de composición: une el selector y los lectores de la plataforma y expone `useCvImport()` ya ensamblado.
+- **Dependencias entre módulos.** `cv-match` solo importa `@/features/cv-import`, y `cv-import` no importa nada de `cv-match`. No hay dependencias circulares (comprobado con un análisis de importaciones de `src/`).
+- **Estado del documento.** Muestra el nombre, el formato, las páginas, si el texto está listo, tiene avisos o está bloqueado, y cada aviso de extracción. Las confirmaciones (PDF de más de 20 páginas) y los rechazos (más de 10 MB) se muestran en el mismo sitio. Una región en vivo educada anuncia cada cambio.
+- **Revisión del texto.** El texto extraído se puede corregir en un `TextField` multilínea y restaurar después. El archivo original no cambia.
+- **Elegir o sustituir.** Si se cancela el selector o la confirmación de un PDF largo, se conserva el CV anterior. Un archivo rechazado o que no se puede leer sí sustituye al anterior. Antes de la hidratación, «Seleccionar CV» aparece desactivado, porque aún no respondería.
+- **App nativa.** Como `canPickFile` es `false`, la pantalla empieza con el CV pegado y explica que importar un PDF o un Word todavía no está disponible en la app para iOS y Android.
+
+#### Verificación en navegador
+
+Comprobado en Chrome de escritorio con Playwright, sobre el servidor de desarrollo de este proyecto, a 390 y 1440 px y en modo claro y oscuro:
+
+- PDF y DOCX ficticios importados y analizados; la estructura del texto se conserva.
+- PDF a dos columnas con aviso de orden, PDF escaneado bloqueado, PDF dañado, Word antiguo y archivo de 11 MB rechazado.
+- Confirmación del PDF de 25 páginas: al cancelar se conserva el CV anterior, y al confirmar se leen las 25 páginas. Al cancelar el selector también se conserva el CV.
+- Edición, aviso de resultados desactualizados, comparación con el análisis anterior, restauración y sustitución del CV.
+- Navegación por teclado con foco visible, encabezados `h1` → `h2` → `h3` sin saltos, vuelta al inicio (también abriendo `/analisis` directamente) y botones atrás y adelante del navegador.
+- Sin desplazamiento horizontal.
+- Sin errores en la consola durante el recorrido.
+- Todo el tráfico va al propio servidor: pdf.js, su worker y mammoth se descargan en fragmentos propios solo al elegir un PDF o un DOCX. En la compilación de producción, pdf.js ocupa dos fragmentos (0,6 y 1,3 MB), mammoth otro (313 KB) y la ruta `/analisis`, 87 KB.
+- Las dos rutas se renderizan en el servidor sin errores.
+
+**Pendiente:** Safari en iPhone y otros navegadores (Firefox, Safari de escritorio), lectores de pantalla reales y documentos reales distintos de los ficticios.
 
 ## Estructura planificada
 
-> **Planificado.** Salvo `src/shared/theme/`, `src/shared/ui/`, `src/features/cv-match/domain/` y `src/features/cv-import/` (`domain/`, `application/` e `infrastructure/`), ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
+> **Planificado.** Salvo `src/shared/theme/`, `src/shared/ui/`, `src/features/cv-match/` (`domain/` y `presentation/`) y `src/features/cv-import/` (las cuatro capas), ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
 
 ```text
 src/
@@ -224,7 +291,7 @@ Estas reglas todavía no se aplican de forma automática. Se valorará reforzarl
 | Contraste verificado por tests (`__tests__/theme-contrast.test.ts`)           | Texto ≥ 4,5:1 y controles ≥ 3:1 (WCAG 2.2 AA). Los bordes decorativos están exentos, pero no pueden ser la única señal visual.                                                                                                                                                                                                                                                                                                                                                                                               |
 | Sin límite de escalado de texto (`maxFontSizeMultiplier`)                     | Priorizar maquetas flexibles. Cualquier límite futuro deberá justificarse en el componente concreto.                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | `global.css` importado solo en `src/app/_layout.tsx`                          | Orden de carga correcto del CSS global, como indica Expo Router.                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Adaptadores temporales (`constants/theme.ts`, variantes de ThemedText)        | Migrar por pasos sin romper los componentes existentes; reexportan o reutilizan los tokens, sin duplicar valores.                                                                                                                                                                                                                                                                                                                                                                                                            |
+| Un único `ThemedText` compartido, con `step` y `color` del tema               | Sustituye al `ThemedText` de la plantilla y al `Copy` del laboratorio, que hacían lo mismo. Los nombres coinciden con los tokens, sin traducir variantes, y `Heading` aporta los encabezados semánticos de la web.                                                                                                                                                                                                                                                                                                           |
 | Sora solo en títulos y cifras (`displaySteps`); sistema en el resto           | Personalidad en los titulares sin perder la legibilidad ni el escalado de la fuente del sistema. SemiBold 600 en títulos, Bold 700 en cifras.                                                                                                                                                                                                                                                                                                                                                                                |
 | Sora como una familia con dos pesos, cargada con `useFonts` en el layout raíz | Patrón de Expo SDK 58. Llamado durante el render para que el servidor web incruste `@font-face` y `preload` en el HTML, sin errores de hidratación.                                                                                                                                                                                                                                                                                                                                                                          |
 | Sin bloqueo indefinido: se renderiza con `loaded` o con `error`               | El splash nativo se mantiene mientras carga. Si la carga falla, la app sigue con la fuente del sistema (`DisplayFontContext` en `false`).                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -328,6 +395,8 @@ Situación a 1 de noviembre de 2026: **46 avisos (45 moderados y 1 bajo, ninguno
 - **pdf.js en el hilo principal.** Sin worker propio, un PDF largo o complejo puede bloquear la interfaz mientras se lee su texto. La confirmación a partir de 20 páginas reduce el riesgo, pero no se ha medido el tiempo de lectura en navegadores.
 - **Versiones fijas de pdf.js y mammoth.** `pdfjs-dist` y `mammoth` están fijadas a versiones exactas para no cambiar los lectores sin probarlos. No reciben parches automáticos: hay que revisar `npm audit` y los avisos de pdf.js, porque los PDF son datos no fiables.
 - **`expo-document-picker` en compilaciones nativas.** Se vinculará en iOS y Android aunque allí la importación todavía no lo use. Su plugin de configuración solo añade permisos de iCloud y no se ha añadido a `app.json`.
+- **`<input>` oculto tras cancelar el selector (web).** `expo-document-picker` solo elimina su `<input type="file">` cuando se elige un archivo. Cada cancelación deja uno oculto en la página hasta recargarla. No tiene efectos visibles.
+- **Formato de miles duplicado.** `cv-import/presentation/messages.ts` repite la función de `TextField` que agrupa los miles con punto. Convendrá compartirla cuando otro componente la necesite.
 - **Riesgos futuros.** La importación nativa y la IA local o gratuita dependerán de librerías que habrá que validar con Expo SDK 58, iOS, Android y la privacidad de los datos.
 
 ## Cuestiones pendientes no técnicas

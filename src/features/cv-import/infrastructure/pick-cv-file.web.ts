@@ -10,6 +10,8 @@ export const acceptedTypes = [
   '.docx',
 ];
 
+export const canPickCvFile = true;
+
 /** Opens the browser's file picker. Must be called from a user action, such as a button press. */
 export async function pickCvFile(): Promise<PickResult> {
   const result = await DocumentPicker.getDocumentAsync({
