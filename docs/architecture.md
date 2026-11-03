@@ -10,13 +10,15 @@ Cada funcionalidad del producto (ofertas, currículums, análisis, candidaturas�
 
 ## Estructura actual
 
-Hoy el proyecto contiene la base técnica y los tokens del sistema de diseño (Fase 2a.1). **Todavía no existe ningún módulo de funcionalidad.**
+Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button` y `TextField`) y el primer módulo de funcionalidad: la capa `domain` de `cv-match`, el motor del analizador CV–oferta (Fase A). **El analizador todavía no tiene pantalla ni ruta**: su presentación y la importación de CV se incorporarán en bloques posteriores de la migración (ver [roadmap.md](roadmap.md)).
 
 ```text
 src/
   app/                  # Rutas de Expo Router
     _layout.tsx         # Stack provisional, tema de navegación e import de global.css
     index.tsx           # Pantalla de inicio provisional: Screen, título y Card
+  features/
+    cv-match/domain/    # Motor del analizador CV–oferta, en TypeScript puro (ver más abajo)
   shared/ui/            # Componentes genéricos del sistema de diseño
     screen.tsx          # Contenedor de pantalla: fondo, áreas seguras, márgenes, scroll
     card.tsx            # Contenedor de contenido sobre una superficie
@@ -43,9 +45,42 @@ assets/                 # Iconos y pantalla de bienvenida
 
 `components/`, `constants/` y `hooks/` son código heredado de la plantilla. Ya leen sus valores de `src/shared/theme/`, pero su migración definitiva a `src/shared/` (y la eliminación del adaptador) queda para una tarea posterior de la Fase 2. `ThemedView` se eliminó en la Fase 2b.1b: `Screen` lo sustituye.
 
+### Módulo `cv-match` (Fase A)
+
+Compara el texto de un CV con el de una oferta, requisito por requisito. Por ahora solo existe su capa `domain`.
+
+```text
+src/features/cv-match/domain/
+  analyze-match.ts       # Punto de entrada: analyzeMatch(cvText, offerText)
+  offer-requirements.ts  # Requisitos de la oferta, con su importancia y sus frases de origen
+  cv-structure.ts        # Secciones y frases del CV, y comprobaciones básicas (contacto, cifras)
+  assess.ts              # Estado y evidencias de cada requisito
+  coverage.ts            # Puntos y cobertura
+  recommendations.ts     # Recomendaciones a partir del resultado
+  compare.ts             # Cambios entre dos análisis
+  criteria.ts            # Niveles de estudios, niveles de idioma (MCER) y años
+  skill-catalog.ts       # Catálogo cerrado de habilidades, conocimientos e idiomas
+  text.ts                # Normalización, líneas, frases y búsqueda de términos
+  input.ts               # Campos que deben rellenarse antes de analizar
+  types.ts               # Tipos del resultado
+```
+
+- **TypeScript puro.** Solo importa sus propios archivos. No depende de React, React Native, Expo, red, disco ni otros módulos, y no usa globales de plataforma. Se prueba en Jest sin renderizar nada (`__tests__/cv-match-*.test.ts`). Se ejecuta en el dispositivo y no guarda nada.
+- **Requisitos.** De la oferta extrae conceptos del catálogo, idiomas con nivel, estudios mínimos y años de experiencia. Cada requisito conserva las frases literales de las que sale y su importancia (obligatorio, deseable, sin clasificar o ambigua). Las líneas que no reconoce se muestran como no evaluables.
+- **Evidencias textuales.** Cada requisito queda respaldado (una frase de experiencia o proyectos describe su uso), mencionado (se nombra sin describir el uso), no acreditado o no evaluable. Siempre lleva el motivo en lenguaje claro y, cuando las hay, las frases literales del CV en que se basa. El conocimiento teórico, el aprendizaje en curso y las negaciones («Docker: sin experiencia») nunca cuentan como respaldo.
+- **Cobertura explicable.** 1 punto por requisito respaldado, 0,5 por mencionado y 0 por no acreditado; los obligatorios pesan el doble. El porcentaje es la parte de los puntos posibles y se entrega con los puntos y los recuentos por estado. Los requisitos no evaluables no cuentan; si no se puede evaluar ninguno, no hay porcentaje.
+- **Recomendaciones.** Se construyen con textos fijos y etiquetas de la oferta, nunca con contenido del CV, y no sugieren añadir experiencia, titulaciones ni habilidades que el usuario no tenga.
+
+Limitaciones:
+
+- **Motor heurístico.** Reglas y un catálogo cerrado escritos para JobRadar, sin IA. Lo que no está en el catálogo se marca como no evaluable en lugar de adivinarse.
+- **Sin predicciones.** La cobertura mide los requisitos detectados en la oferta. No es la decisión de ningún ATS real ni una probabilidad de contratación.
+- **Español.** Las reglas de importancia, negación y matización están escritas para textos en español; algunos encabezados del CV se reconocen también en inglés.
+- **Solo texto.** Analiza texto ya escrito o pegado; no lee archivos.
+
 ## Estructura planificada
 
-> **Planificado.** Salvo `src/shared/theme/` y `src/shared/ui/`, ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
+> **Planificado.** Salvo `src/shared/theme/`, `src/shared/ui/` y `src/features/cv-match/domain/`, ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
 
 ```text
 src/
@@ -141,7 +176,7 @@ Estas reglas todavía no se aplican de forma automática. Se valorará reforzarl
 
 ## Restricciones de producto que afectan al diseño
 
-- **Puntuación explicable:** el futuro motor ATS debe devolver, junto a cada puntuación, los criterios aplicados y las evidencias encontradas en el CV y la oferta. Esta lógica pertenecerá a la capa `domain`.
+- **Puntuación explicable:** el motor debe devolver, junto a cada puntuación, los criterios aplicados y las evidencias encontradas en el CV y la oferta. Esta lógica pertenece a la capa `domain` (hoy, la de `cv-match`).
 - **Sin predicciones:** ningún texto ni cálculo debe presentar el resultado como la decisión que tomaría un ATS real.
 - **Sin invención de datos:** las recomendaciones y la edición de CV no pueden añadir experiencia, titulaciones ni habilidades que el usuario no haya aportado.
 - **Datos personales:** los CV contienen datos personales. Cualquier almacenamiento, envío a servicios externos o uso de IA deberá justificarse y evaluarse en términos de privacidad (RGPD) antes de implementarse.
