@@ -10,7 +10,7 @@ Cada funcionalidad del producto (ofertas, currículums, análisis, candidaturas�
 
 ## Estructura actual
 
-Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button` y `TextField`) y la capa `domain` de los dos primeros módulos de funcionalidad, ambos de la Fase A: `cv-match`, el motor del analizador CV–oferta, y `cv-import`, la importación de CV. **El analizador todavía no tiene pantalla ni ruta, y aún no se pueden seleccionar ni leer archivos**: la presentación, la aplicación y la infraestructura, con sus dependencias, se incorporarán en bloques posteriores de la migración (ver [roadmap.md](roadmap.md)).
+Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button` y `TextField`) y los dos primeros módulos de funcionalidad, ambos de la Fase A: `cv-match`, el motor del analizador CV–oferta (capa `domain`), y `cv-import`, la importación de CV (capas `domain`, `application` e `infrastructure`). **El analizador todavía no tiene pantalla ni ruta**: la importación ya lee PDF y DOCX en web, pero ninguna pantalla la usa. La presentación se incorporará en un bloque posterior de la migración (ver [roadmap.md](roadmap.md)).
 
 ```text
 src/
@@ -19,7 +19,10 @@ src/
     index.tsx           # Pantalla de inicio provisional: Screen, título y Card
   features/
     cv-match/domain/    # Motor del analizador CV–oferta, en TypeScript puro (ver más abajo)
-    cv-import/domain/   # Reglas de la importación de CV, en TypeScript puro (ver más abajo)
+    cv-import/          # Importación de CV en PDF y DOCX (ver más abajo)
+      domain/           # Reglas en TypeScript puro
+      application/      # Caso de uso: de un archivo elegido a un CV importado
+      infrastructure/   # Selector de archivos y lectores reales (web) o no disponibles (nativo)
   shared/ui/            # Componentes genéricos del sistema de diseño
     screen.tsx          # Contenedor de pantalla: fondo, áreas seguras, márgenes, scroll
     card.tsx            # Contenedor de contenido sobre una superficie
@@ -39,7 +42,12 @@ src/
   hooks/                # useColorScheme (nativo y web) y useTheme
   global.css            # Variables de fuentes y áreas seguras de Screen en web
 __tests__/              # Pruebas (fuera de src/app)
-jest/style-mock.js      # Sustituto de los imports de CSS en Jest
+jest/                   # Stubs y utilidades de prueba
+  style-mock.js         # Sustituto de los imports de CSS en Jest
+  cv-fixtures.ts        # PDF y DOCX ficticios generados en código, sin archivos binarios
+  real-cv-readers.ts    # Lectores con pdf.js y mammoth reales para las pruebas de integración
+  pdfjs-node.cjs        # Ejecuta pdf.js en un proceso de Node aparte (Jest no carga sus módulos ES)
+  pdfjs-text-items.mjs  # Script de ese proceso: devuelve los fragmentos de texto de cada página
 assets/                 # Iconos y pantalla de bienvenida
   fonts/                # Sora SemiBold y Bold (OTF) y su licencia OFL.txt
 ```
@@ -81,7 +89,9 @@ Limitaciones:
 
 ### Módulo `cv-import` (Fase A)
 
-Obtiene el texto de un CV en PDF o DOCX para analizarlo. Por ahora solo existe su capa `domain`: **en el proyecto original todavía no se puede seleccionar ni leer ningún archivo**, porque faltan las capas `application` e `infrastructure` (selector de archivos y lectores) y sus dependencias (`expo-document-picker`, `pdfjs-dist` y `mammoth`).
+Obtiene el texto de un CV en PDF o DOCX para analizarlo. Tiene las capas `domain`, `application` e `infrastructure`; todavía no tiene `presentation`, así que **ninguna pantalla permite aún elegir un archivo**.
+
+#### Dominio
 
 ```text
 src/features/cv-import/domain/
@@ -104,9 +114,54 @@ src/features/cv-import/domain/
 - **Evaluación de la extracción.** Distingue errores demostrados, que bloquean el análisis (sin texto, por ejemplo un PDF escaneado, o con un 30 % o más de caracteres ilegibles), avisos que piden revisar el texto (caracteres ilegibles, páginas sin texto, orden de lectura) y notas inciertas que solo se muestran (poco texto). Los umbrales son configurables y se tratan como criterios, no como certezas.
 - **Gestión de correcciones.** El texto extraído no se modifica: la corrección del usuario se guarda aparte, se puede descartar y, si existe, es la que se analiza. Una corrección permite analizar un texto bloqueado, porque lo ha escrito el usuario.
 
+#### Aplicación e infraestructura
+
+```text
+src/features/cv-import/
+  application/import-cv.ts        # importCvFile: tamaño, formato, lectura y confirmación
+  infrastructure/
+    pick-cv-file.web.ts           # Selector del navegador con expo-document-picker
+    pick-cv-file.ts               # Nativo: «no disponible», sin abrir ningún selector
+    pdf-reader.web.ts             # Lector de PDF con pdf.js (compilación legacy)
+    pdf-reader.ts                 # Nativo: no disponible
+    docx-reader.web.ts            # Lector de DOCX con mammoth
+    docx-reader.ts                # Nativo: no disponible
+    cv-readers.ts                 # Lectores de la plataforma actual
+    pdfjs-worker.d.ts             # Tipo del módulo del worker de pdf.js, que no trae declaraciones
+```
+
+Metro elige los archivos `.web.ts` en web y los `.ts` en iOS y Android. Por eso pdf.js y mammoth no deberían entrar en las compilaciones nativas, aunque no se ha comprobado con una compilación nativa real.
+
+| Plataforma    | Elegir archivo                                                         | PDF                                     | DOCX                             |
+| ------------- | ---------------------------------------------------------------------- | --------------------------------------- | -------------------------------- |
+| Web           | `expo-document-picker` (selector del navegador), solo `.pdf` y `.docx` | pdf.js 6.4.299 (`legacy`), en el equipo | mammoth 1.13.0, en el equipo     |
+| iOS y Android | **No implementado.** Devuelve «no disponible» sin abrir el selector    | No disponible (error de lectura)        | No disponible (error de lectura) |
+
+- **Extracción local.** El archivo se lee en el navegador desde su `File`, sin copia en base64, y el texto se extrae en el propio equipo. Ningún documento se envía a un servidor.
+- **Carga diferida.** pdf.js, su worker y mammoth se cargan con `import()` la primera vez que se abre un PDF o un DOCX, y pdf.js solo una vez. Metro los separa en fragmentos propios, así que no pesan en la carga inicial. Mientras ninguna pantalla use la importación, no forman parte de la compilación web.
+- **pdf.js `legacy`.** Esta compilación incluye compatibilidad con API recientes (`Math.sumPrecise`, `URL.parse`) para Safari antiguos. El código del worker se ejecuta en el hilo principal: no se sirve ningún archivo de worker ni se fija `workerSrc`, así que nunca se carga código de otro origen.
+- **Sin peticiones de pdf.js.** Se abre con los bytes del archivo y sin ninguna URL de recursos (mapas de caracteres, fuentes estándar, perfiles de color, WebAssembly): `disableAutoFetch`, `disableStream`, `disableRange`, `useWorkerFetch: false`, `useWasm: false`, `useSystemFonts: false`. Solo registra errores.
+- **Sin contenido activo.** Solo se pide el texto de cada página (`getTextContent`): no se dibujan páginas ni se usa la capa de anotaciones, XFA está desactivado y no se carga el entorno de scripts de pdf.js. En la versión 6.4.299, los módulos que se cargan no contienen `eval` ni `new Function`; la vulnerabilidad GHSA-hq66 está corregida desde la 6.2.108.
+- **DOCX sin HTML en la interfaz.** mammoth convierte el documento en HTML, que se transforma en texto como una cadena. Nunca se interpreta, se inserta en la interfaz ni se ejecuta. Las imágenes no se convierten ni se copian en el HTML.
+- **Límites provisionales.** Los archivos de más de **10 MB** se rechazan sin leerlos, tanto por el tamaño que declara el navegador como por los bytes leídos. Un PDF de **más de 20 páginas** pide confirmación antes de leer su texto; si se confirma, se leen todas las páginas, y si se cancela, se cierra sin leerlo. Nada se recorta.
+- **Fallos controlados.** Formato no admitido o vacío, Word antiguo o protegido, PDF con contraseña, archivo dañado y error de lectura dan un CV importado fallido con su motivo, no una excepción.
+
+Pruebas:
+
+- **Sin navegador.** `__tests__/cv-import-application.test.ts` y `cv-import-adapters.test.ts` prueban el caso de uso y los adaptadores con dobles de prueba, incluidas las opciones de pdf.js y el comportamiento nativo.
+- **Lectores reales.** `cv-import-integration.test.ts` usa mammoth y pdf.js reales con PDF y DOCX ficticios generados en `jest/cv-fixtures.ts`. Jest no carga los módulos ES de pdf.js, por lo que pdf.js se ejecuta en un proceso de Node aparte (`jest/pdfjs-node.cjs`).
+
+Limitaciones:
+
+- **Sin importación nativa.** iOS y Android no pueden elegir ni leer archivos: pdf.js no funciona en Hermes y mammoth no se ha probado allí.
+- **Sin OCR.** Un PDF escaneado o hecho de imágenes se bloquea con un aviso de posible escaneo, y se pide pegar el texto.
+- **Documentos protegidos.** Los PDF con contraseña y los Word protegidos o antiguos (`.doc`) no se leen: se pide guardarlos sin contraseña, como PDF o como `.docx`.
+- **Diseños complejos.** En los PDF con varias columnas, el orden de lectura puede ser incorrecto y se pide revisarlo. En los DOCX se pierden los encabezados y pies de página.
+- **Sin verificar en navegadores dentro del original.** Sin pantalla, la importación solo se ha comprobado con Jest. La prueba en navegadores llegará con la presentación.
+
 ## Estructura planificada
 
-> **Planificado.** Salvo `src/shared/theme/`, `src/shared/ui/`, `src/features/cv-match/domain/` y `src/features/cv-import/domain/`, ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
+> **Planificado.** Salvo `src/shared/theme/`, `src/shared/ui/`, `src/features/cv-match/domain/` y `src/features/cv-import/` (`domain/`, `application/` e `infrastructure/`), ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
 
 ```text
 src/
@@ -162,7 +217,7 @@ Estas reglas todavía no se aplican de forma automática. Se valorará reforzarl
 | ESLint (`eslint-config-expo`) + Prettier, con `eslint-config-prettier`        | ESLint para errores y Prettier para el formato, sin reglas en conflicto.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Finales de línea LF (`.gitattributes` y `.prettierrc`)                        | Evitar diferencias de CRLF/LF al desarrollar desde Windows.                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Jest 30 + `jest-expo` + React Native Testing Library 14                       | Combinación indicada por la documentación de Expo SDK 58; `react-test-renderer` está obsoleto y no admite React 19.                                                                                                                                                                                                                                                                                                                                                                                                          |
-| Tests en `__tests__/`, stub de CSS en `jest/style-mock.js`                    | Expo Router reserva `src/app/` para rutas, y Jest no puede interpretar el CSS que importa el layout raíz.                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| Tests en `__tests__/`, stubs y utilidades de prueba en `jest/`                | Expo Router reserva `src/app/` para rutas, y Jest no puede interpretar el CSS que importa el layout raíz. Los PDF y DOCX de prueba se generan en código, sin archivos binarios ni datos personales.                                                                                                                                                                                                                                                                                                                          |
 | `"types": ["jest"]` en `tsconfig.json`                                        | Hacer visibles a TypeScript los globales de Jest (`describe`, `it`, `expect`).                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Tokens de diseño en `src/shared/theme/`, sin librería de estilos              | Una sola fuente de verdad sin dependencias nuevas. Ningún color hexadecimal vive fuera de `colors.ts`.                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Paletas semánticas claro/oscuro seleccionadas con `useTheme()`                | Los componentes usan nombres de intención (`surface`, `accentText`), no colores. El esquema sale del `useColorScheme` seguro para hidratación.                                                                                                                                                                                                                                                                                                                                                                               |
@@ -270,7 +325,10 @@ Situación a 1 de noviembre de 2026: **46 avisos (45 moderados y 1 bajo, ninguno
 - **Copiar en Windows.** El portapapeles de Windows guarda los saltos como `\r\n`; al pegar, el navegador los vuelve a guardar como `\n`. El texto es el mismo; solo cambia el carácter de salto.
 - **Textos del contador en español fijo.** «de», «caracteres» y «Límite superado» están escritos en el componente, igual que el resto de la interfaz, que no tiene i18n.
 - **Idioma del documento web.** Sin `src/app/+html.tsx`, Expo Router declara la página en inglés (`lang="en"`) aunque la interfaz esté en español, y un lector de pantalla puede pronunciarla en inglés. Por eso el contador se lee sin separadores de miles. Se corregirá al crear `+html.tsx`, que necesita autorización.
-- **Riesgos futuros.** La importación de PDF/DOCX y la IA local o gratuita dependerán de librerías que habrá que validar con Expo SDK 58, iOS, Android, la web y la privacidad de los datos.
+- **pdf.js en el hilo principal.** Sin worker propio, un PDF largo o complejo puede bloquear la interfaz mientras se lee su texto. La confirmación a partir de 20 páginas reduce el riesgo, pero no se ha medido el tiempo de lectura en navegadores.
+- **Versiones fijas de pdf.js y mammoth.** `pdfjs-dist` y `mammoth` están fijadas a versiones exactas para no cambiar los lectores sin probarlos. No reciben parches automáticos: hay que revisar `npm audit` y los avisos de pdf.js, porque los PDF son datos no fiables.
+- **`expo-document-picker` en compilaciones nativas.** Se vinculará en iOS y Android aunque allí la importación todavía no lo use. Su plugin de configuración solo añade permisos de iCloud y no se ha añadido a `app.json`.
+- **Riesgos futuros.** La importación nativa y la IA local o gratuita dependerán de librerías que habrá que validar con Expo SDK 58, iOS, Android y la privacidad de los datos.
 
 ## Cuestiones pendientes no técnicas
 

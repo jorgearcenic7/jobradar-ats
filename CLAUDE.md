@@ -25,7 +25,7 @@
 ## Calidad, seguridad y arquitectura
 
 - Mantén la arquitectura modular por funcionalidades descrita en [docs/architecture.md](docs/architecture.md), sin sobreingeniería ni carpetas vacías.
-- Mantén las rutas de `src/app/` ligeras. Los tests van en `__tests__/` y los stubs de Jest en `jest/`.
+- Mantén las rutas de `src/app/` ligeras. Los tests van en `__tests__/`; los stubs y las utilidades de prueba (fixtures, lectores reales), en `jest/`.
 - Sigue buenas prácticas de seguridad: no guardes secretos en el repositorio y trata los datos de los CV como datos personales.
 - Producto: no afirmes que la app predice la decisión de un ATS real y no inventes experiencia, titulaciones ni habilidades del usuario.
 - Usa las skills y los MCP disponibles cuando aporten valor (por ejemplo, las skills `expo:*`, de verificación o de revisión de código).
