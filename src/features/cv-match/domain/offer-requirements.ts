@@ -501,7 +501,14 @@ export function extractOfferRequirements(
   offerText: string,
   catalog: readonly SkillConcept[] = skillCatalog,
 ): OfferRequirement[] {
-  const index = indexCatalog(catalog);
+  return extractOfferRequirementsFromIndex(offerText, indexCatalog(catalog));
+}
+
+/** Internal entry point for an analysis that has already prepared its catalog. */
+export function extractOfferRequirementsFromIndex(
+  offerText: string,
+  index: CatalogIndex,
+): OfferRequirement[] {
   const requirements = new Map<string, OfferRequirement>();
   const lines = splitLines(offerText);
   let section: Section = { role: 'preamble' };

@@ -1,7 +1,7 @@
 import { assessRequirement } from './assess';
 import { computeCoverage, contributionOf } from './coverage';
 import { parseCv } from './cv-structure';
-import { extractOfferRequirements } from './offer-requirements';
+import { extractOfferRequirementsFromIndex } from './offer-requirements';
 import { buildRecommendations } from './recommendations';
 import { indexCatalog, skillCatalog, type SkillConcept } from './skill-catalog';
 import type { AnalysisResult, RequirementAssessment } from './types';
@@ -19,16 +19,17 @@ export function analyzeMatch(
   const index = indexCatalog(catalog);
   const cv = parseCv(cvText, index);
 
-  const requirements: RequirementAssessment[] = extractOfferRequirements(offerText, catalog).map(
-    (requirement) => {
-      const assessment = assessRequirement(requirement, cv.units, index);
-      return {
-        requirement,
-        ...assessment,
-        contribution: contributionOf(assessment.status, requirement.importance),
-      };
-    },
-  );
+  const requirements: RequirementAssessment[] = extractOfferRequirementsFromIndex(
+    offerText,
+    index,
+  ).map((requirement) => {
+    const assessment = assessRequirement(requirement, cv.units, index);
+    return {
+      requirement,
+      ...assessment,
+      contribution: contributionOf(assessment.status, requirement.importance),
+    };
+  });
 
   return {
     requirements,
