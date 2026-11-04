@@ -19,6 +19,7 @@ import {
 } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
+import { formatCount } from '@/shared/format';
 import { layout, radius, space, typography } from '@/shared/theme';
 import { Icon } from '@/shared/ui/icon';
 
@@ -75,13 +76,6 @@ const FLOOR_LINES = 3;
 const MAX_WINDOW_SHARE = 0.45;
 // Vertical padding and the 1 px border on each side.
 const INPUT_CHROME = space[3] * 2 + 2;
-
-// Groups thousands with a dot, four-digit numbers included (`Intl` in Spanish leaves 2450
-// ungrouped). Plain code also gives the same result on the server and in the browser, so the
-// counter can't break hydration.
-function formatCount(count: number) {
-  return String(count).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
 
 /**
  * Text input with a visible label above it, and the error, guidance and optional counter below it.

@@ -1,6 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
+import { formatCount } from '@/shared/format';
 import { radius, space, type ThemeColor } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
 import { ThemedText } from '@/shared/ui/themed-text';
@@ -11,7 +12,6 @@ import type { ImportedCv } from '../domain/types';
 import {
   extractionCaution,
   failureMessage,
-  formatCount,
   formatMegabytes,
   issueMessage,
   issueTones,

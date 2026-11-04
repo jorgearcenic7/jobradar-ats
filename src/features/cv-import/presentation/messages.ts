@@ -1,10 +1,5 @@
 import type { ExtractionFailure, ExtractionIssue, IssueLevel } from '../domain/types';
 
-/** Thousands grouped with a dot, as the rest of the interface; no `Intl` (see TextField). */
-export function formatCount(value: number): string {
-  return String(value).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
 export function formatMegabytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`;
 }
