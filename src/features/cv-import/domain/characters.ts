@@ -10,7 +10,7 @@ const letterPattern = (() => {
   }
 })();
 
-export function isLetter(char: string): boolean {
+function isLetter(char: string): boolean {
   return letterPattern ? letterPattern.test(char) : char.toLowerCase() !== char.toUpperCase();
 }
 

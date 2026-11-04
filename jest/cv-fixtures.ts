@@ -107,7 +107,7 @@ function littleEndian(values: [value: number, bytes: 2 | 4][]) {
 }
 
 /** A ZIP archive with uncompressed ("stored") entries. */
-export function buildZip(entries: Record<string, string>): Uint8Array {
+function buildZip(entries: Record<string, string>): Uint8Array {
   const locals: Uint8Array[] = [];
   const centrals: Uint8Array[] = [];
   let offset = 0;

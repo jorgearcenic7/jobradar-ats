@@ -121,7 +121,7 @@ export const skillCatalog: readonly SkillConcept[] = [
   ]),
 ];
 
-export const languageCatalog: readonly LanguageConcept[] = [
+const languageCatalog: readonly LanguageConcept[] = [
   { id: 'en', label: 'inglés', aliases: ['ingles', 'english'] },
   { id: 'es', label: 'español', aliases: ['espanol', 'castellano', 'spanish'] },
   { id: 'fr', label: 'francés', aliases: ['frances', 'french'] },
