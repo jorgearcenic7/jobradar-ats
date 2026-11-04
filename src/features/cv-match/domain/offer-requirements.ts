@@ -1,3 +1,20 @@
+/*
+Extrae de una oferta de empleo los requisitos que JobRadar puede evaluar.
+
+La oferta se recorre línea a línea. Los encabezados («Requisitos», «Se valorará», «Funciones»,
+«Ofrecemos»…) indican en qué sección está cada frase y con qué firmeza se pide, y las palabras
+de la propia frase («imprescindible», «valorable») pueden matizarlo. Así se separa lo que se
+exige al candidato de lo que cuenta la empresa sobre sí misma, su producto, sus beneficios o
+cómo inscribirse, y no se penaliza al candidato por tecnologías que solo aparecen ahí.
+
+En cada frase se reconocen conceptos del catálogo, idiomas con su nivel, la titulación y los
+años de experiencia. Lo que no se sabe interpretar no se adivina: las líneas de una lista de
+requisitos que no nombran nada conocido se devuelven como no reconocidas, y las frases que
+pueden ser o no un requisito quedan pendientes de revisión. Ninguna de las dos puntúa.
+
+Las reglas están pensadas para ofertas en español, con algunas expresiones habituales en
+inglés, y solo reconocen lo que figura en el catálogo.
+*/
 import {
   compareEducation,
   educationLabels,
@@ -26,12 +43,14 @@ import {
 import type { Importance, OfferRequirement } from './types';
 
 /**
- * What the current part of the offer is about:
- * - `preamble`: text before the first heading, or an offer without headings.
- * - `requirements`: what the offer asks of the candidate.
- * - `description`: the tasks of the job.
- * - `excluded`: company, product, culture, benefits, conditions or how to apply.
- * - `doubtful`: a heading JobRadar cannot classify. Its sentences are held for review.
+ * De qué trata la parte de la oferta que se está leyendo:
+ * - `preamble`: el texto anterior al primer encabezado reconocido, o una oferta sin encabezados.
+ * - `requirements`: lo que la oferta pide al candidato.
+ * - `description`: las funciones del puesto.
+ * - `excluded`: la empresa, el producto, la cultura, los beneficios, las condiciones o cómo
+ *   inscribirse.
+ * - `doubtful`: un encabezado que JobRadar no sabe clasificar. Sus frases quedan pendientes de
+ *   revisión.
  */
 type Section =
   | { role: 'preamble' }
@@ -40,11 +59,11 @@ type Section =
   | { role: 'excluded' }
   | { role: 'doubtful'; heading: string };
 
-/** What a line says about the sections, before taking the current section into account. */
+/** Lo que dice una línea sobre las secciones, antes de tener en cuenta la sección actual. */
 type Heading = Exclude<Section, { role: 'preamble' | 'doubtful' }> | 'topic' | 'unknown';
 
-// Words that make a requirement mandatory. "Requisitos" on its own is weaker: a
-// "Requisitos deseables" heading is about preferred requirements.
+// Palabras que hacen obligatorio un requisito. «Requisitos» es más débil y no está aquí: un
+// encabezado «Requisitos deseables» habla de requisitos que se valoran, no que se exigen.
 const requiredWords = [
   'imprescindible',
   'imprescindibles',
@@ -90,6 +109,8 @@ const preferredWords = [
   'opcional',
 ];
 
+// Se retiran de la frase antes de buscar las palabras anteriores, para que «No es
+// imprescindible» no convierta el requisito en obligatorio.
 const negatedRequiredWords = [
   'no es imprescindible',
   'no imprescindible',
@@ -115,8 +136,8 @@ const descriptionHeadingWords = [
   'el rol',
 ];
 
-// Headings of a requirements list that do not say how firmly it is asked: the
-// importance stays unclassified.
+// Encabezados de una lista de requisitos que no dicen con qué firmeza se piden: la
+// importancia queda sin clasificar.
 const profileHeadingWords = [
   'perfil',
   'tu perfil',
@@ -138,8 +159,8 @@ const profileHeadingWords = [
   'you have',
 ];
 
-// Headings that name a topic ("Backend", "Idiomas") instead of a kind of section. Inside a
-// requirements list they are subheadings and keep its importance.
+// Encabezados que nombran un tema («Backend», «Idiomas») en lugar de un tipo de sección.
+// Dentro de una lista de requisitos son subencabezados y conservan su importancia.
 const topicHeadingWords = [
   'stack',
   'tecnologias',
@@ -168,6 +189,8 @@ const topicHeadingWords = [
   'education',
 ];
 
+// Secciones que no hablan del candidato: todas sus líneas se descartan hasta el siguiente
+// encabezado.
 const ignoredHeadingWords = [
   'ofrecemos',
   'que ofrecemos',
@@ -227,8 +250,8 @@ const ignoredHeadingWords = [
   'how to apply',
 ];
 
-// Sentences outside a requirements list that are not about the candidate: how to apply,
-// benefits, and the company, its culture or its product.
+// Frases que, fuera de una lista de requisitos, no hablan del candidato: cómo inscribirse,
+// los beneficios, o la empresa, su cultura o su producto.
 const notRequirementWords = [
   'envia tu',
   'envianos',
@@ -283,7 +306,8 @@ const notRequirementWords = [
   'our culture',
 ];
 
-// The company describing its own way of working. It may hint at a requirement or not.
+// La empresa describe su propia forma de trabajar. Puede insinuar un requisito o no, así que
+// la frase queda pendiente de revisión.
 const companyPracticeWords = [
   'usamos',
   'utilizamos',
@@ -296,8 +320,8 @@ const companyPracticeWords = [
   'our stack',
 ];
 
-// Words that ask something of the candidate. They keep a sentence with any of the cues
-// above as a requirement: "Somos una startup que busca experiencia con React".
+// Palabras que piden algo al candidato. Mantienen como requisito una frase que contenga
+// alguna de las señales anteriores: «Somos una startup que busca experiencia con React».
 const demandWords = [
   'experiencia',
   'experience',
@@ -317,13 +341,13 @@ const demandWords = [
   'you have',
 ];
 
-/** Importance stated by the words of one sentence, or `null` when it states none. */
+/** Importancia que declaran las palabras de una frase, o `null` si no declaran ninguna. */
 function statedImportance(normalized: string): Importance | null {
   const negated = containsAny(normalized, negatedRequiredWords);
   const rest = removePhrases(normalized, negatedRequiredWords);
   const required = containsAny(rest, requiredWords);
   const preferred = containsAny(rest, preferredWords);
-  // "No es imprescindible, pero se valorará" is preferred; a bare negation is unclear.
+  // «No es imprescindible, pero se valorará» es valorable; una negación sin más es ambigua.
   if (negated) return preferred ? 'preferred' : 'ambiguous';
   if (required && preferred) return 'ambiguous';
   if (required) return 'required';
@@ -331,10 +355,12 @@ function statedImportance(normalized: string): Importance | null {
 }
 
 /**
- * A heading is a short line without a bullet, a final period or any catalog term. Known
- * words classify it. A line with only a topic or with unknown words counts as a heading
- * when it ends with a colon or introduces a bulleted list, so a short sentence of a
- * paragraph is not taken for one.
+ * Un encabezado es una línea corta (hasta seis palabras), sin viñeta, sin punto, coma ni
+ * punto y coma al final y sin ningún término del catálogo: una línea que nombra una
+ * tecnología es un requisito, no un título. Las palabras conocidas lo clasifican. Una línea
+ * que solo nombra un tema o que tiene palabras desconocidas cuenta como encabezado si termina
+ * en dos puntos, o si empieza por mayúscula e introduce una lista con viñetas; así, una frase
+ * corta de un párrafo no se toma por encabezado.
  */
 function headingOf(
   line: Line,
@@ -353,6 +379,7 @@ function headingOf(
   if (containsAny(text, ignoredHeadingWords)) return { role: 'excluded' };
   const stated = statedImportance(text);
   if (stated) return { role: 'requirements', importance: stated };
+  // «Requisitos» sin ningún matiz se entiende como una lista de requisitos obligatorios.
   if (containsAny(text, requirementHeadingWords)) {
     return { role: 'requirements', importance: 'required' };
   }
@@ -368,23 +395,33 @@ function headingOf(
 
 function nextSection(current: Section, heading: Heading, line: Line): Section {
   if (heading === 'topic') {
+    // Fuera de una lista de requisitos, un tema («Idiomas») abre una sin importancia declarada.
     return current.role === 'requirements'
       ? current
       : { role: 'requirements', importance: 'unclassified' };
   }
   if (heading === 'unknown') {
-    // Before the first known heading nothing can leak into the unknown one.
+    /*
+    La sección desconocida evita que sus frases hereden el papel de la sección anterior; por
+    ejemplo, que cuenten como requisitos solo por venir después de «Requisitos». Antes del
+    primer encabezado reconocido no hay nada que heredar, así que se sigue en el preámbulo.
+    */
     if (current.role === 'preamble') return current;
     return { role: 'doubtful', heading: line.text.replace(/:\s*$/, '').trim() };
   }
   return heading;
 }
 
+// Fuera de una lista de requisitos (preámbulo, funciones del puesto) la sección no aporta
+// importancia: solo la deciden las palabras de la frase.
 function sectionImportance(section: Section): Importance {
   return section.role === 'requirements' ? section.importance : 'unclassified';
 }
 
-/** Requirements lists and unknown sections report the lines JobRadar cannot read. */
+/**
+ * Las listas de requisitos y las secciones desconocidas informan de las líneas que JobRadar
+ * no sabe leer.
+ */
 function reportsEveryLine(section: Section) {
   return section.role === 'requirements' || section.role === 'doubtful';
 }
@@ -392,10 +429,12 @@ function reportsEveryLine(section: Section) {
 type SentenceRole = 'requirement' | 'review' | 'excluded';
 
 /**
- * Every sentence of a requirements list is a requirement. Elsewhere, a sentence about
- * applying, benefits or the company is left out, and one about how the company works,
- * or under an unknown heading, is held for review. A stated importance always makes a
- * requirement; outside unknown sections, so do words that ask something of the candidate.
+ * Toda frase de una lista de requisitos es un requisito. En el resto de la oferta, una frase
+ * sobre cómo inscribirse, los beneficios o la empresa se descarta, y una sobre cómo trabaja la
+ * empresa, o bajo un encabezado desconocido, queda pendiente de revisión. Una importancia
+ * declarada convierte siempre la frase en requisito; fuera de las secciones desconocidas,
+ * también las palabras que piden algo al candidato. Sin ninguna de estas señales, la frase
+ * cuenta como requisito.
  */
 function sentenceRole(
   normalized: string,
@@ -412,8 +451,8 @@ function sentenceRole(
 }
 
 /**
- * The section sets the importance unless the sentence says otherwise. When both say
- * different things ("Imprescindible" under "Se valorará"), the result is ambiguous.
+ * La sección fija la importancia salvo que la frase diga otra cosa. Si las dos dicen cosas
+ * distintas («Imprescindible» bajo «Se valorará»), el resultado es ambiguo.
  */
 function combineImportance(section: Importance, stated: Importance | null): Importance {
   if (!stated || stated === section) return section;
@@ -421,7 +460,10 @@ function combineImportance(section: Importance, stated: Importance | null): Impo
   return 'ambiguous';
 }
 
-/** A mention in the job description does not contradict a requirement elsewhere. */
+/**
+ * Importancia de un requisito que aparece en varias frases. Una mención sin importancia
+ * declarada, como las de las funciones del puesto, no contradice lo que se pide en otra parte.
+ */
 function mergeImportance(a: Importance, b: Importance): Importance {
   if (a === b) return a;
   if (a === 'unclassified') return b;
@@ -429,13 +471,17 @@ function mergeImportance(a: Importance, b: Importance): Importance {
   return 'ambiguous';
 }
 
-// Distributes over the union, so each kind keeps its own fields.
+// Se distribuye sobre la unión, para que cada tipo de requisito conserve sus propios campos.
 type Candidate = OfferRequirement extends infer Item
   ? Item extends OfferRequirement
     ? Omit<Item, 'importance' | 'sources'>
     : never
   : never;
 
+/**
+ * Requisitos que nombra una frase: cada concepto del catálogo una sola vez, los idiomas con
+ * el nivel que se lee junto a ellos, la titulación y los años de experiencia.
+ */
 function recognize(normalized: string, index: CatalogIndex): Candidate[] {
   const candidates: Candidate[] = [];
   const conceptIds: string[] = [];
@@ -469,7 +515,7 @@ function recognize(normalized: string, index: CatalogIndex): Candidate[] {
     });
   }
 
-  // "Grado o máster" asks for at least a degree: the lowest level is the requirement.
+  // «Grado o máster» pide al menos un grado: el requisito es el nivel más bajo.
   const [education] = findEducationLevels(normalized).sort(compareEducation);
   if (education) {
     candidates.push({
@@ -480,6 +526,11 @@ function recognize(normalized: string, index: CatalogIndex): Candidate[] {
     });
   }
 
+  /*
+  Solo se usa la primera cifra seguida de «años» («3-5 años» se lee como 5; «tres años», en
+  letras, no se reconoce) y se asocia a todos los conceptos de la frase. Esos conceptos siguen
+  siendo además requisitos propios, evaluados por separado.
+  */
   const [years] = findYears(normalized);
   if (years !== undefined && mentionsExperience(normalized)) {
     const labels = conceptIds.map((id) => index.concepts.get(id)!.label);
@@ -497,6 +548,14 @@ function recognize(normalized: string, index: CatalogIndex): Candidate[] {
   return candidates;
 }
 
+/**
+ * Extrae los requisitos de una oferta con el catálogo indicado (por defecto, el de la app).
+ *
+ * Cada requisito conserva en `sources` las frases literales de la oferta de las que procede,
+ * para que el usuario pueda comprobar por qué se ha reconocido. Un requisito que aparece en
+ * varias frases se devuelve una sola vez, con la importancia combinada de todas ellas. El
+ * orden es el de su primera aparición.
+ */
 export function extractOfferRequirements(
   offerText: string,
   catalog: readonly SkillConcept[] = skillCatalog,
@@ -504,7 +563,7 @@ export function extractOfferRequirements(
   return extractOfferRequirementsFromIndex(offerText, indexCatalog(catalog));
 }
 
-/** Internal entry point for an analysis that has already prepared its catalog. */
+/** Punto de entrada interno para un análisis que ya ha preparado el índice del catálogo. */
 export function extractOfferRequirementsFromIndex(
   offerText: string,
   index: CatalogIndex,
@@ -533,8 +592,9 @@ export function extractOfferRequirementsFromIndex(
       const importance = combineImportance(sectionImportance(section), stated);
       const candidates = recognize(normalized, index);
 
-      // Kept as it is, without scoring it, so the user can decide whether it applies.
+      // Se conserva tal cual, sin puntuarla, para que el usuario decida si le afecta.
       if (role === 'review') {
+        // Una práctica de la empresa que no nombra nada conocido no deja nada que revisar.
         if (candidates.length === 0 && !reportsEveryLine(section)) continue;
         review += 1;
         const id = `review:${review}`;
@@ -550,8 +610,8 @@ export function extractOfferRequirementsFromIndex(
         continue;
       }
 
-      // Lines of a requirements section that name nothing known are shown as such,
-      // instead of being dropped or guessed.
+      // Las líneas de una lista de requisitos o de una sección desconocida que no nombran nada
+      // conocido se muestran como tales, en lugar de descartarlas o adivinar qué piden.
       if (candidates.length === 0 && reportsEveryLine(section)) {
         unrecognized += 1;
         const id = `unrecognized:${unrecognized}`;

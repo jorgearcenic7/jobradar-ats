@@ -1,3 +1,19 @@
+/*
+Evalúa cada requisito de la oferta frente a las frases del CV y explica el resultado.
+
+Para cada requisito se buscan las frases del CV que lo nombran y se clasifica cada una según lo
+que dice de él: describe su uso (respaldo), solo lo nombra (mención), lo presenta como
+conocimiento teórico o como algo que se está aprendiendo, o lo niega. Con esas evidencias se
+decide el estado (`supported`, `mentioned`, `missing` o `not-evaluable`) y un motivo legible.
+
+Las evidencias son siempre frases literales del CV, para que el usuario pueda comprobar de
+dónde sale cada conclusión. El motor no deduce lo que el CV no dice: no calcula duraciones a
+partir de las fechas y no da crédito parcial a un nivel de idioma o a unos años inferiores a
+los que pide la oferta.
+
+Las reglas de negación, aprendizaje y conocimiento teórico están escritas para CV en español,
+con algunas expresiones habituales en inglés, y se aplican frase a frase.
+*/
 import {
   compareCefr,
   compareEducation,
@@ -20,6 +36,7 @@ import type {
   RequirementStatus,
 } from './types';
 
+/** Resultado de evaluar un requisito: estado, motivo legible y evidencias literales del CV. */
 export type Assessment = { status: RequirementStatus; reason: string; evidence: Evidence[] };
 
 type Requirement<Kind extends OfferRequirement['kind']> = Extract<OfferRequirement, { kind: Kind }>;
@@ -36,6 +53,8 @@ const sectionNames: Record<CvSectionKind, string> = {
   other: 'otras secciones',
 };
 
+// Expresiones que niegan la experiencia con el término cuando aparecen antes de él, en la
+// misma cláusula.
 const negationCues = [
   'no tengo',
   'no he',
@@ -59,10 +78,12 @@ const negationCues = [
   'do not',
 ];
 
-// "y no Docker", "pero no con Docker": a bare "no" right before the term.
-// "no solo Docker" is not a negation and does not match.
+// «y no Docker», «pero no con Docker»: un «no» suelto justo antes del término.
+// «no solo Docker» no es una negación y no coincide.
 const directNegation = /(^|\s)no(\s+(con|en|de|el|la|los|las))?\s*$/;
 
+// Señales de que el término se está aprendiendo o solo interesa. Se buscan antes de él, en la
+// misma cláusula.
 const learningCues = [
   'aprendiendo',
   'aprender',
@@ -74,6 +95,7 @@ const learningCues = [
   'learning',
 ];
 
+// Verbos de acción, sobre todo en primera persona del pasado, que indican trabajo realizado.
 const actionVerbs = [
   'desarrolle',
   'implemente',
@@ -119,7 +141,12 @@ const actionVerbs = [
   'automated',
 ];
 
-// Clauses end at punctuation or at a contrast: "Node.js, pero no con Docker".
+/*
+Las negaciones y el aprendizaje se buscan en la cláusula anterior al término, no en toda la
+frase, para que afecten solo a lo que acompañan: en «Node.js, pero no con Docker» la negación
+se refiere a Docker y no a Node.js. Una cláusula termina en una coma, un punto y coma, unos dos
+puntos, un paréntesis o una conjunción como «pero», «aunque» o «sino».
+*/
 const clauseBreak = /[,;:()]|\s(?:pero|aunque|sino|but|although)\s/g;
 
 function clauseBefore(normalized: string, position: number) {
@@ -131,7 +158,7 @@ function clauseBefore(normalized: string, position: number) {
   return before.slice(start);
 }
 
-// "Docker: sin experiencia", "Docker (no)": a negation right after the term.
+// «Docker: sin experiencia», «Docker (no)»: una negación justo después del término.
 const negationAfter = /^\s*[:\-–—(]?\s*(?:sin experiencia|ninguna experiencia|nada|no)(?![a-z])/;
 
 function isNegated(normalized: string, match: TermMatch) {
@@ -147,9 +174,9 @@ function isLearning(normalized: string, match: TermMatch) {
   return containsAny(clauseBefore(normalized, match.start), learningCues);
 }
 
-// Theoretical or indirect knowledge. Read in the whole sentence, because the hedge often
-// comes after the term ("Conozco Docker de forma teórica"). A long sentence in the
-// experience section is not evidence when it says this.
+// Conocimiento teórico o indirecto. Se busca en toda la frase porque suele aparecer después
+// del término («Conozco Docker de forma teórica»). Una frase larga de la sección de
+// experiencia que lo diga no cuenta como respaldo.
 const hedgeCues = [
   'he oido hablar',
   'oido hablar',
@@ -177,19 +204,28 @@ function isHedged(normalized: string) {
   return containsAny(normalized, hedgeCues);
 }
 
-/** "Tecnologías: React, Docker, AWS" or "Docker, Kubernetes, Git": an enumeration, not a description. */
+/**
+ * «Tecnologías: React, Docker, AWS» o «Docker, Kubernetes, Git»: una enumeración, no una
+ * descripción de uso.
+ */
 function isList(text: string) {
   const body = text.includes(':') ? text.slice(text.indexOf(':') + 1) : text;
   const items = body.split(/[,;|·•]/).filter((item) => item.trim());
   return items.length >= 3 && items.every((item) => countWords(item) <= 3);
 }
 
+// Una frase más corta, como «React y Docker», nombra herramientas pero no describe su uso.
 const minimumDescriptionWords = 6;
 
 function isDescription(unit: CvUnit) {
   return countWords(unit.text) >= minimumDescriptionWords && !isList(unit.text);
 }
 
+/*
+Señales que hacen más concreta una evidencia: cifras (sin contar las fechas), fechas y verbos de
+acción. Se adjuntan a cada evidencia como información; no intervienen en el estado del
+requisito.
+*/
 function signalsOf(unit: CvUnit): EvidenceSignal[] {
   const signals: EvidenceSignal[] = [];
   if (/\d/.test(withoutDates(unit.text))) signals.push('number');
@@ -202,6 +238,7 @@ function evidenceOf(unit: CvUnit, role: EvidenceRole): Evidence {
   return { text: unit.text, section: unit.section, role, signals: signalsOf(unit) };
 }
 
+// Las evidencias más sólidas se muestran primero.
 const roleOrder: EvidenceRole[] = ['support', 'mention', 'hedged', 'learning', 'negation'];
 
 function sortEvidence(evidence: Evidence[]) {
@@ -219,7 +256,7 @@ function assessConcept(
   index: CatalogIndex,
 ): Assessment {
   const concept = index.concepts.get(requirement.conceptId);
-  // A degree or certificate proves knowledge, not hands-on use of a tool.
+  // Una titulación o un certificado acreditan conocimientos, no el uso práctico de una herramienta.
   const supportingSections: CvSectionKind[] =
     concept?.kind === 'knowledge'
       ? ['experience', 'projects', 'education', 'certifications']
@@ -229,6 +266,12 @@ function assessConcept(
   for (const unit of units) {
     const match = unit.conceptMatches().find((item) => item.id === requirement.conceptId);
     if (!match) continue;
+    /*
+    El orden decide qué pesa más en una misma frase: la negación, después el conocimiento
+    teórico y el aprendizaje. Solo una frase descriptiva de una sección que acredita el uso
+    respalda el requisito; las demás menciones, salvo las negaciones, son evidencia
+    insuficiente.
+    */
     let role: EvidenceRole = 'mention';
     if (isNegated(unit.normalized, match)) role = 'negation';
     else if (isHedged(unit.normalized)) role = 'hedged';
@@ -285,6 +328,7 @@ function assessLanguage(
   const mentions: { unit: CvUnit; level: CefrLevel | null }[] = [];
   const negations: CvUnit[] = [];
 
+  // Un idioma cuenta en cualquier sección del CV, no solo en «Idiomas».
   for (const unit of units) {
     const match = unit.languageMatches().find((item) => item.id === requirement.languageId);
     if (!match) continue;
@@ -314,7 +358,7 @@ function assessLanguage(
     ],
   });
 
-  // The CV names the language, but JobRadar cannot read the level the offer asks for.
+  // El CV nombra el idioma, pero JobRadar no sabe interpretar el nivel que pide la oferta.
   if (requirement.level === null && requirement.levelText !== null) {
     return result(
       'not-evaluable',
@@ -322,7 +366,7 @@ function assessLanguage(
     );
   }
 
-  // With several different levels in the CV, the lowest one is used.
+  // Si el CV indica varios niveles distintos, se usa el más bajo.
   const levels = mentions
     .map((mention) => mention.level)
     .filter((level): level is CefrLevel => level !== null)
@@ -340,13 +384,18 @@ function assessLanguage(
       `El CV indica un nivel ${cvLevel} de ${name}, igual o superior al ${requirement.level} que pide la oferta.`,
     );
   }
-  // A known level below the requested one does not meet the requirement: no partial credit.
+  // Un nivel conocido inferior al pedido no cumple el requisito: no hay crédito parcial.
   return result(
     'missing',
     `El CV indica un nivel ${cvLevel} de ${name}, inferior al ${requirement.level} que pide la oferta.`,
   );
 }
 
+/*
+Solo la sección de formación acredita una titulación, y en ella cuenta el nivel más alto. Si
+esa sección no indica ninguno, la mención de un nivel suficiente en otra parte del CV es
+evidencia insuficiente. La especialidad no se comprueba.
+*/
 function assessEducation(requirement: Requirement<'education'>, units: CvUnit[]): Assessment {
   const found = units.flatMap((unit) =>
     findEducationLevels(unit.normalized, {
@@ -390,6 +439,11 @@ function assessYears(
   units: CvUnit[],
   index: CatalogIndex,
 ): Assessment {
+  /*
+  Una frase declara años para el requisito si nombra todos sus conceptos o, cuando el
+  requisito no nombra ninguno, si habla de experiencia. Si hay varias declaraciones, se usa la
+  cifra mayor.
+  */
   const statements = units.flatMap((unit) => {
     const conceptIds = unit.conceptMatches().map((item) => item.id);
     const related = requirement.conceptIds.length
@@ -400,7 +454,7 @@ function assessYears(
   const most = statements.reduce((max, item) => Math.max(max, item.years), 0);
 
   if (statements.length > 0) {
-    // Fewer declared years than requested do not meet the requirement: no partial credit.
+    // Declarar menos años de los pedidos no cumple el requisito: no hay crédito parcial.
     const supported = most >= requirement.years;
     return {
       status: supported ? 'supported' : 'missing',
@@ -411,7 +465,7 @@ function assessYears(
     };
   }
 
-  // No duration stated: the requirement is understood, the evidence is what is missing.
+  // El CV no declara ninguna duración: el requisito se entiende, lo que falta es la evidencia.
   const notFromDates = 'JobRadar no calcula la duración a partir de las fechas.';
   if (requirement.conceptIds.length === 0) {
     const hasExperience = units.some((unit) => unit.section === 'experience');
@@ -444,6 +498,12 @@ function assessYears(
   };
 }
 
+/**
+ * Evalúa un requisito de la oferta frente a las frases del CV.
+ *
+ * Los requisitos no reconocidos y los pendientes de revisión no se evalúan: se devuelven como
+ * `not-evaluable`, sin evidencias, para que no cuenten en la cobertura.
+ */
 export function assessRequirement(
   requirement: OfferRequirement,
   units: CvUnit[],
