@@ -9,7 +9,7 @@ import {
 } from './criteria';
 import { withoutDates, type CvUnit } from './cv-structure';
 import type { CatalogIndex } from './skill-catalog';
-import { containsAny, countWords, findTerms, type TermMatch } from './text';
+import { containsAny, countWords, type TermMatch } from './text';
 import type {
   CefrLevel,
   CvSectionKind,
@@ -227,9 +227,7 @@ function assessConcept(
 
   const evidence: Evidence[] = [];
   for (const unit of units) {
-    const match = findTerms(unit.normalized, index.conceptTerms).find(
-      (item) => item.id === requirement.conceptId,
-    );
+    const match = unit.conceptMatches().find((item) => item.id === requirement.conceptId);
     if (!match) continue;
     let role: EvidenceRole = 'mention';
     if (isNegated(unit.normalized, match)) role = 'negation';
@@ -288,9 +286,7 @@ function assessLanguage(
   const negations: CvUnit[] = [];
 
   for (const unit of units) {
-    const match = findTerms(unit.normalized, index.languageTerms).find(
-      (item) => item.id === requirement.languageId,
-    );
+    const match = unit.languageMatches().find((item) => item.id === requirement.languageId);
     if (!match) continue;
     if (isNegated(unit.normalized, match)) negations.push(unit);
     else mentions.push({ unit, level: languageLevelAt(unit.normalized, match.start).level });
@@ -395,7 +391,7 @@ function assessYears(
   index: CatalogIndex,
 ): Assessment {
   const statements = units.flatMap((unit) => {
-    const conceptIds = findTerms(unit.normalized, index.conceptTerms).map((item) => item.id);
+    const conceptIds = unit.conceptMatches().map((item) => item.id);
     const related = requirement.conceptIds.length
       ? requirement.conceptIds.every((id) => conceptIds.includes(id))
       : mentionsExperience(unit.normalized);
@@ -432,7 +428,7 @@ function assessYears(
     .map((id) => index.concepts.get(id)?.label ?? id)
     .join(' y ');
   const related = units.filter((unit) => {
-    const matches = findTerms(unit.normalized, index.conceptTerms);
+    const matches = unit.conceptMatches();
     return requirement.conceptIds.every((id) => {
       const match = matches.find((item) => item.id === id);
       return match && !isNegated(unit.normalized, match);

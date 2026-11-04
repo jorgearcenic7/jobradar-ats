@@ -363,6 +363,66 @@ describe('theoretical or indirect knowledge', () => {
   });
 });
 
+// Los términos de cada frase del CV se buscan una vez y los reutilizan todos los requisitos.
+describe('one CV sentence read by several requirements', () => {
+  const offer = `Requisitos
+- React.
+- React Native.
+- Java.
+- JavaScript.
+- 3 años de experiencia con React Native.
+- Inglés B2.
+- Francés B1.`;
+
+  it('is evidence for every requirement it names', () => {
+    const sentence =
+      'Desarrollé una app con React Native y una web con React y JavaScript para 3.000 clientes.';
+    const result = analyzeMatch(cvWith(`- ${sentence}`), offer);
+    for (const id of ['concept:react', 'concept:react-native', 'concept:javascript']) {
+      expect(assessment(result, id).status).toBe('supported');
+      expect(assessment(result, id).evidence.map((item) => item.text)).toEqual([sentence]);
+    }
+  });
+
+  it('keeps the priority of the longest alias', () => {
+    const cv = cvWith('- Desarrollé una app con React Native y JavaScript para 3.000 clientes.');
+    const result = analyzeMatch(cv, offer);
+    expect(assessment(result, 'concept:react-native').status).toBe('supported');
+    expect(assessment(result, 'concept:react').status).toBe('missing');
+    expect(assessment(result, 'concept:java').status).toBe('missing');
+  });
+
+  it('evaluates negations and years for each term of the sentence', () => {
+    const cv = `${cvWith('- Tengo 4 años de experiencia con React Native, pero no con Java.')}
+IDIOMAS
+Inglés B2 y francés B1`;
+    const result = analyzeMatch(cv, offer);
+    expect(assessment(result, 'years:3:react-native').status).toBe('supported');
+    expect(assessment(result, 'concept:java').status).toBe('missing');
+    expect(assessment(result, 'concept:java').evidence[0].role).toBe('negation');
+    expect(assessment(result, 'language:en:B2').status).toBe('supported');
+    expect(assessment(result, 'language:fr:B1').status).toBe('supported');
+  });
+
+  it('gives the same result whatever the order of the requirements', () => {
+    const cv = `${cvWith('- Tengo 4 años de experiencia con React Native, pero no con Java.')}
+- Desarrollé una web con React y JavaScript para 3.000 clientes.
+IDIOMAS
+Inglés B2 y francés B1`;
+    const [heading, ...lines] = offer.split('\n');
+    const reversed = [heading, ...lines.reverse()].join('\n');
+    // Invertir la oferta también invierte sus frases de origen; solo se compara lo que sale del CV.
+    const byId = (result: AnalysisResult) =>
+      Object.fromEntries(
+        result.requirements.map(({ requirement, status, reason, evidence, contribution }) => [
+          requirement.id,
+          { status, reason, evidence, contribution },
+        ]),
+      );
+    expect(byId(analyzeMatch(cv, reversed))).toEqual(byId(analyzeMatch(cv, offer)));
+  });
+});
+
 describe('worked example of the coverage', () => {
   const cv = `Marta Ruiz (perfil ficticio)
 marta.ruiz@example.com · 600 111 222

@@ -1,9 +1,42 @@
 import { namesAnyTerm, type CatalogIndex } from './skill-catalog';
-import { countWords, normalize, splitLines, splitSentences } from './text';
+import {
+  countWords,
+  findTerms,
+  normalize,
+  splitLines,
+  splitSentences,
+  type TermMatch,
+} from './text';
 import type { CvChecks, CvSectionKind } from './types';
 
 /** One sentence of the CV. `text` is a literal slice of the CV. */
-export type CvUnit = { text: string; normalized: string; section: CvSectionKind };
+export type CvUnit = {
+  text: string;
+  normalized: string;
+  section: CvSectionKind;
+  // Términos del catálogo que aparecen en la frase. Se buscan una sola vez (ver `once`).
+  conceptMatches: () => readonly TermMatch[];
+  languageMatches: () => readonly TermMatch[];
+};
+
+/*
+ * Cada requisito de la oferta recorre todas las frases del CV en busca de sus términos, y
+ * antes cada recorrido volvía a pasar el catálogo completo por las mismas frases. Ahora la
+ * búsqueda se hace la primera vez que un requisito la pide y el resto reutiliza el resultado.
+ *
+ * Es equivalente porque `findTerms` solo depende del texto normalizado de la frase y de la
+ * lista de términos, y ninguno de los dos cambia durante el análisis: se obtienen las mismas
+ * coincidencias, en el mismo orden y con la misma prioridad de los alias más largos. Para que
+ * siga siéndolo, nadie debe modificar las listas devueltas (por eso son de solo lectura).
+ *
+ * El resultado se guarda en la propia frase, así que desaparece con el análisis y no hay
+ * estado global. Se calcula a demanda, y no al leer el CV, para no buscar en vano cuando la
+ * oferta no pide ningún concepto o idioma.
+ */
+function once<T>(compute: () => T): () => T {
+  let value: T | undefined;
+  return () => (value ??= compute());
+}
 
 export type ParsedCv = { units: CvUnit[]; checks: CvChecks };
 
@@ -143,7 +176,14 @@ export function parseCv(cvText: string, index: CatalogIndex): ParsedCv {
     }
     if (!sections.includes(section)) sections.push(section);
     for (const sentence of splitSentences(line.text)) {
-      units.push({ text: sentence, normalized: normalize(sentence), section });
+      const normalized = normalize(sentence);
+      units.push({
+        text: sentence,
+        normalized,
+        section,
+        conceptMatches: once(() => findTerms(normalized, index.conceptTerms)),
+        languageMatches: once(() => findTerms(normalized, index.languageTerms)),
+      });
     }
   }
 
