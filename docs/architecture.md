@@ -105,6 +105,7 @@ Limitaciones:
 src/features/cv-match/presentation/
   cv-match-screen.tsx      # Pantalla del analizador: CV, oferta, «Analizar», avisos y resultados
   use-cv-match.ts          # Estado del análisis: validación, resultado, comparación y desactualización
+  analysis-results.tsx     # Bloque de resultados: cobertura, cambios, requisitos por estado y recomendaciones
   coverage-summary.tsx     # Cobertura, puntos y recuentos por estado, con su explicación
   requirement-item.tsx     # Un requisito: estado, aportación, motivo y evidencias del CV y la oferta
   status-badge.tsx         # Estado con icono y texto, nunca solo color

@@ -1,0 +1,75 @@
+import { StyleSheet, View } from 'react-native';
+
+import type { AnalysisComparison } from '@/features/cv-match/domain/compare';
+import type { AnalysisResult, RequirementStatus } from '@/features/cv-match/domain/types';
+import { space } from '@/shared/theme';
+import { Card } from '@/shared/ui/card';
+import { Heading, ThemedText } from '@/shared/ui/themed-text';
+
+import { AnalysisChanges } from './analysis-changes';
+import { CoverageSummary } from './coverage-summary';
+import { statusGroupDescriptions, statusGroupTitles } from './labels';
+import { RecommendationList } from './recommendation-list';
+import { RequirementItem } from './requirement-item';
+
+const groupOrder: RequirementStatus[] = ['supported', 'mentioned', 'missing', 'not-evaluable'];
+
+type AnalysisResultsProps = {
+  result: AnalysisResult;
+  comparison: AnalysisComparison | null;
+  offerChanged: boolean;
+};
+
+export function AnalysisResults({ result, comparison, offerChanged }: AnalysisResultsProps) {
+  return (
+    <View style={styles.results}>
+      <Heading level={2}>Resultados</Heading>
+      <CoverageSummary coverage={result.coverage} />
+      {comparison ? <AnalysisChanges comparison={comparison} /> : null}
+      {offerChanged ? (
+        <ThemedText step="footnote" color="textSecondary">
+          La oferta ha cambiado desde el análisis anterior, así que los resultados no se comparan
+          con él.
+        </ThemedText>
+      ) : null}
+
+      {result.requirements.length === 0 ? (
+        <Card>
+          <ThemedText step="callout">
+            No se ha reconocido ningún requisito en la oferta. Comprueba que el texto incluye sus
+            requisitos.
+          </ThemedText>
+        </Card>
+      ) : (
+        groupOrder.map((status) => {
+          const items = result.requirements.filter((item) => item.status === status);
+          if (items.length === 0) return null;
+          return (
+            <View key={status} style={styles.group}>
+              <Heading level={3}>{`${statusGroupTitles[status]} (${items.length})`}</Heading>
+              <ThemedText step="footnote" color="textSecondary">
+                {statusGroupDescriptions[status]}
+              </ThemedText>
+              <View role="list" style={styles.group}>
+                {items.map((item) => (
+                  <RequirementItem key={item.requirement.id} assessment={item} />
+                ))}
+              </View>
+            </View>
+          );
+        })
+      )}
+
+      <RecommendationList recommendations={result.recommendations} />
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  results: {
+    gap: space[4],
+  },
+  group: {
+    gap: space[3],
+  },
+});

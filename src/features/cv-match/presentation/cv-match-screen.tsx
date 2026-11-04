@@ -2,25 +2,20 @@ import { useRef, useState } from 'react';
 import { StyleSheet, View, type TextInputInstance } from 'react-native';
 
 import { CvFileField, useCvImport, type CvImport } from '@/features/cv-import';
-import type { AnalysisResult, RequirementStatus } from '@/features/cv-match/domain/types';
+import type { AnalysisResult } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
 import { radius, space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
-import { ThemedText, Heading } from '@/shared/ui/themed-text';
+import { ThemedText } from '@/shared/ui/themed-text';
 import { Icon } from '@/shared/ui/icon';
 import { Screen } from '@/shared/ui/screen';
 import { TextField } from '@/shared/ui/text-field';
 
-import { AnalysisChanges } from './analysis-changes';
-import { CoverageSummary } from './coverage-summary';
-import { formatPercent, statusGroupDescriptions, statusGroupTitles } from './labels';
-import { RecommendationList } from './recommendation-list';
-import { RequirementItem } from './requirement-item';
+import { AnalysisResults } from './analysis-results';
+import { formatPercent } from './labels';
 import { sampleCv } from './sample-texts';
 import { useCvMatch, type CvInput } from './use-cv-match';
-
-const groupOrder: RequirementStatus[] = ['supported', 'mentioned', 'missing', 'not-evaluable'];
 
 type CvMode = 'file' | 'paste';
 
@@ -195,46 +190,7 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
       ) : null}
 
       {result ? (
-        <View style={styles.results}>
-          <Heading level={2}>Resultados</Heading>
-          <CoverageSummary coverage={result.coverage} />
-          {comparison ? <AnalysisChanges comparison={comparison} /> : null}
-          {offerChanged ? (
-            <ThemedText step="footnote" color="textSecondary">
-              La oferta ha cambiado desde el análisis anterior, así que los resultados no se
-              comparan con él.
-            </ThemedText>
-          ) : null}
-
-          {result.requirements.length === 0 ? (
-            <Card>
-              <ThemedText step="callout">
-                No se ha reconocido ningún requisito en la oferta. Comprueba que el texto incluye
-                sus requisitos.
-              </ThemedText>
-            </Card>
-          ) : (
-            groupOrder.map((status) => {
-              const items = result.requirements.filter((item) => item.status === status);
-              if (items.length === 0) return null;
-              return (
-                <View key={status} style={styles.group}>
-                  <Heading level={3}>{`${statusGroupTitles[status]} (${items.length})`}</Heading>
-                  <ThemedText step="footnote" color="textSecondary">
-                    {statusGroupDescriptions[status]}
-                  </ThemedText>
-                  <View role="list" style={styles.group}>
-                    {items.map((item) => (
-                      <RequirementItem key={item.requirement.id} assessment={item} />
-                    ))}
-                  </View>
-                </View>
-              );
-            })
-          )}
-
-          <RecommendationList recommendations={result.recommendations} />
-        </View>
+        <AnalysisResults result={result} comparison={comparison} offerChanged={offerChanged} />
       ) : null}
     </Screen>
   );
@@ -283,11 +239,5 @@ const styles = StyleSheet.create({
   },
   noticeText: {
     flex: 1,
-  },
-  results: {
-    gap: space[4],
-  },
-  group: {
-    gap: space[3],
   },
 });
