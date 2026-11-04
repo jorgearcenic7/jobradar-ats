@@ -111,6 +111,7 @@ function forRequirement(assessment: RequirementAssessment): Recommendation | nul
         message: `La oferta pide ${label} y tu CV no indica cuánto tiempo tienes esa experiencia. Si la tienes, indica la duración real; JobRadar no la calcula a partir de las fechas.`,
       };
     case 'unrecognized':
+    case 'review':
       return null;
   }
 }
@@ -173,6 +174,17 @@ export function buildRecommendations(
         unrecognized === 1
           ? 'JobRadar no ha podido evaluar 1 requisito de la oferta. Revísalo tú y comprueba si tu CV lo refleja.'
           : `JobRadar no ha podido evaluar ${unrecognized} requisitos de la oferta. Revísalos tú y comprueba si tu CV los refleja.`,
+    });
+  }
+
+  const review = assessments.filter((item) => item.requirement.kind === 'review').length;
+  if (review > 0) {
+    recommendations.push({
+      kind: 'review-sentences',
+      message:
+        review === 1
+          ? 'JobRadar no sabe si 1 frase de la oferta es un requisito. Revísala tú: no cuenta en el porcentaje.'
+          : `JobRadar no sabe si ${review} frases de la oferta son requisitos. Revísalas tú: no cuentan en el porcentaje.`,
     });
   }
 

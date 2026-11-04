@@ -6,7 +6,13 @@ import {
   languageLevelAt,
   mentionsExperience,
 } from './criteria';
-import { indexCatalog, skillCatalog, type CatalogIndex, type SkillConcept } from './skill-catalog';
+import {
+  indexCatalog,
+  namesAnyTerm,
+  skillCatalog,
+  type CatalogIndex,
+  type SkillConcept,
+} from './skill-catalog';
 import {
   containsAny,
   countWords,
@@ -19,7 +25,23 @@ import {
 } from './text';
 import type { Importance, OfferRequirement } from './types';
 
-type Section = Importance | 'ignored';
+/**
+ * What the current part of the offer is about:
+ * - `preamble`: text before the first heading, or an offer without headings.
+ * - `requirements`: what the offer asks of the candidate.
+ * - `description`: the tasks of the job.
+ * - `excluded`: company, product, culture, benefits, conditions or how to apply.
+ * - `doubtful`: a heading JobRadar cannot classify. Its sentences are held for review.
+ */
+type Section =
+  | { role: 'preamble' }
+  | { role: 'requirements'; importance: Importance }
+  | { role: 'description' }
+  | { role: 'excluded' }
+  | { role: 'doubtful'; heading: string };
+
+/** What a line says about the sections, before taking the current section into account. */
+type Heading = Exclude<Section, { role: 'preamble' | 'doubtful' }> | 'topic' | 'unknown';
 
 // Words that make a requirement mandatory. "Requisitos" on its own is weaker: a
 // "Requisitos deseables" heading is about preferred requirements.
@@ -93,18 +115,206 @@ const descriptionHeadingWords = [
   'el rol',
 ];
 
+// Headings of a requirements list that do not say how firmly it is asked: the
+// importance stays unclassified.
+const profileHeadingWords = [
+  'perfil',
+  'tu perfil',
+  'perfil buscado',
+  'lo que buscamos',
+  'que buscamos',
+  'a quien buscamos',
+  'sobre ti',
+  'lo que necesitas',
+  'que necesitas',
+  'lo que aportas',
+  'que aportas',
+  'about you',
+  'your profile',
+  'who you are',
+  'what we are looking for',
+  "what we're looking for",
+  'what you bring',
+  'you have',
+];
+
+// Headings that name a topic ("Backend", "Idiomas") instead of a kind of section. Inside a
+// requirements list they are subheadings and keep its importance.
+const topicHeadingWords = [
+  'stack',
+  'tecnologias',
+  'herramientas',
+  'habilidades',
+  'competencias',
+  'conocimientos',
+  'tecnicos',
+  'tecnicas',
+  'soft skills',
+  'hard skills',
+  'skills',
+  'tools',
+  'frontend',
+  'front-end',
+  'backend',
+  'back-end',
+  'bases de datos',
+  'cloud',
+  'idiomas',
+  'languages',
+  'experiencia',
+  'experience',
+  'estudios',
+  'titulacion',
+  'education',
+];
+
 const ignoredHeadingWords = [
   'ofrecemos',
   'que ofrecemos',
   'beneficios',
+  'ventajas',
   'sobre nosotros',
   'quienes somos',
+  'sobre la empresa',
+  'la empresa',
+  'nuestra empresa',
+  'la compania',
+  'el producto',
+  'nuestro producto',
+  'la plataforma',
+  'nuestra plataforma',
+  'cultura',
+  'nuestra cultura',
+  'valores',
+  'nuestros valores',
+  'mision',
+  'por que unirte',
+  'por que trabajar',
+  'por que nosotros',
+  'por que elegirnos',
   'about us',
+  'about the company',
+  'who we are',
+  'our culture',
+  'why join',
+  'why us',
   'benefits',
+  'perks',
   'we offer',
   'condiciones',
-  'proceso de seleccion',
+  'retribucion',
+  'compensacion',
+  'compensation',
   'salario',
+  'salary',
+  'ubicacion',
+  'localizacion',
+  'location',
+  'modalidad',
+  'jornada',
+  'tipo de contrato',
+  'proceso de seleccion',
+  'proceso de contratacion',
+  'hiring process',
+  'siguientes pasos',
+  'next steps',
+  'como aplicar',
+  'como postular',
+  'como postularte',
+  'como inscribirte',
+  'candidatura',
+  'candidaturas',
+  'how to apply',
+];
+
+// Sentences outside a requirements list that are not about the candidate: how to apply,
+// benefits, and the company, its culture or its product.
+const notRequirementWords = [
+  'envia tu',
+  'envianos',
+  'manda tu',
+  'adjunta',
+  'inscribete',
+  'postulate',
+  'tu candidatura',
+  'send your',
+  'send us',
+  'to apply',
+  'apply now',
+  'ofrecemos',
+  'we offer',
+  'formacion continua',
+  'plan de formacion',
+  'presupuesto de formacion',
+  'presupuesto anual',
+  'seguro medico',
+  'seguro de salud',
+  'ticket restaurante',
+  'tickets restaurante',
+  'retribucion flexible',
+  'horario flexible',
+  'jornada flexible',
+  'jornada intensiva',
+  'teletrabajo',
+  'dias de vacaciones',
+  'salario',
+  'banda salarial',
+  'rango salarial',
+  'contrato indefinido',
+  'clases de',
+  'health insurance',
+  'paid time off',
+  'salary',
+  'stock options',
+  'somos',
+  'nuestra mision',
+  'nuestra vision',
+  'nuestros valores',
+  'nuestra cultura',
+  'nuestro proposito',
+  'fundada en',
+  'fundado en',
+  'se integra con',
+  'se integran con',
+  'nos integramos con',
+  'integrates with',
+  'our mission',
+  'our values',
+  'our culture',
+];
+
+// The company describing its own way of working. It may hint at a requirement or not.
+const companyPracticeWords = [
+  'usamos',
+  'utilizamos',
+  'trabajamos con',
+  'desplegamos',
+  'nuestro stack',
+  'we use',
+  'we deploy',
+  'we work with',
+  'our stack',
+];
+
+// Words that ask something of the candidate. They keep a sentence with any of the cues
+// above as a requirement: "Somos una startup que busca experiencia con React".
+const demandWords = [
+  'experiencia',
+  'experience',
+  'conocimiento',
+  'conocimientos',
+  'knowledge',
+  'dominio',
+  'manejo',
+  'capacidad',
+  'buscamos',
+  'busca',
+  'buscando',
+  'looking for',
+  'necesitamos',
+  'we need',
+  'tienes',
+  'you have',
 ];
 
 /** Importance stated by the words of one sentence, or `null` when it states none. */
@@ -120,22 +330,85 @@ function statedImportance(normalized: string): Importance | null {
   return preferred ? 'preferred' : null;
 }
 
-function headingSection(line: Line, normalized: string, index: CatalogIndex): Section | null {
-  if (line.bulleted || findTerms(normalized, index.conceptTerms).length > 0) return null;
-  if (findTerms(normalized, index.languageTerms).length > 0) return null;
+/**
+ * A heading is a short line without a bullet, a final period or any catalog term. Known
+ * words classify it. A line with only a topic or with unknown words counts as a heading
+ * when it ends with a colon or introduces a bulleted list, so a short sentence of a
+ * paragraph is not taken for one.
+ */
+function headingOf(
+  line: Line,
+  normalized: string,
+  index: CatalogIndex,
+  introducesList: boolean,
+): Heading | null {
+  if (line.bulleted || namesAnyTerm(normalized, index)) return null;
   const endsWithColon = /:\s*$/.test(normalized);
   const text = normalized
     .replace(/:\s*$/, '')
     .replace(/^[#¿¡\s]+/, '')
     .trim();
-  if (!text || text.includes(':') || text.endsWith('.') || countWords(text) > 6) return null;
+  if (!text || text.includes(':') || /[.,;]$/.test(text) || countWords(text) > 6) return null;
 
-  if (containsAny(text, ignoredHeadingWords)) return 'ignored';
+  if (containsAny(text, ignoredHeadingWords)) return { role: 'excluded' };
   const stated = statedImportance(text);
-  if (stated) return stated;
-  if (containsAny(text, requirementHeadingWords)) return 'required';
-  if (endsWithColon || containsAny(text, descriptionHeadingWords)) return 'unclassified';
-  return null;
+  if (stated) return { role: 'requirements', importance: stated };
+  if (containsAny(text, requirementHeadingWords)) {
+    return { role: 'requirements', importance: 'required' };
+  }
+  if (containsAny(text, profileHeadingWords)) {
+    return { role: 'requirements', importance: 'unclassified' };
+  }
+  if (containsAny(text, descriptionHeadingWords)) return { role: 'description' };
+
+  const looksLikeHeading = endsWithColon || (introducesList && /^[#¿¡\s]*\p{Lu}/u.test(line.text));
+  if (!looksLikeHeading) return null;
+  return containsAny(text, topicHeadingWords) ? 'topic' : 'unknown';
+}
+
+function nextSection(current: Section, heading: Heading, line: Line): Section {
+  if (heading === 'topic') {
+    return current.role === 'requirements'
+      ? current
+      : { role: 'requirements', importance: 'unclassified' };
+  }
+  if (heading === 'unknown') {
+    // Before the first known heading nothing can leak into the unknown one.
+    if (current.role === 'preamble') return current;
+    return { role: 'doubtful', heading: line.text.replace(/:\s*$/, '').trim() };
+  }
+  return heading;
+}
+
+function sectionImportance(section: Section): Importance {
+  return section.role === 'requirements' ? section.importance : 'unclassified';
+}
+
+/** Requirements lists and unknown sections report the lines JobRadar cannot read. */
+function reportsEveryLine(section: Section) {
+  return section.role === 'requirements' || section.role === 'doubtful';
+}
+
+type SentenceRole = 'requirement' | 'review' | 'excluded';
+
+/**
+ * Every sentence of a requirements list is a requirement. Elsewhere, a sentence about
+ * applying, benefits or the company is left out, and one about how the company works,
+ * or under an unknown heading, is held for review. A stated importance always makes a
+ * requirement; outside unknown sections, so do words that ask something of the candidate.
+ */
+function sentenceRole(
+  normalized: string,
+  section: Section,
+  stated: Importance | null,
+): SentenceRole {
+  if (section.role === 'requirements' || stated) return 'requirement';
+  if (section.role !== 'doubtful' && containsAny(normalized, demandWords)) return 'requirement';
+  if (containsAny(normalized, notRequirementWords)) return 'excluded';
+  if (section.role === 'doubtful' || containsAny(normalized, companyPracticeWords)) {
+    return 'review';
+  }
+  return 'requirement';
 }
 
 /**
@@ -230,25 +503,49 @@ export function extractOfferRequirements(
 ): OfferRequirement[] {
   const index = indexCatalog(catalog);
   const requirements = new Map<string, OfferRequirement>();
-  let section: Section = 'unclassified';
+  const lines = splitLines(offerText);
+  let section: Section = { role: 'preamble' };
   let unrecognized = 0;
+  let review = 0;
 
-  for (const line of splitLines(offerText)) {
-    const heading = headingSection(line, normalize(line.text), index);
+  for (const [position, line] of lines.entries()) {
+    const introducesList = lines[position + 1]?.bulleted ?? false;
+    const heading = headingOf(line, normalize(line.text), index, introducesList);
     if (heading) {
-      section = heading;
+      section = nextSection(section, heading, line);
       continue;
     }
-    if (section === 'ignored') continue;
+    if (section.role === 'excluded') continue;
 
     for (const sentence of splitSentences(line.text)) {
       const normalized = normalize(sentence);
-      const importance = combineImportance(section, statedImportance(normalized));
+      const stated = statedImportance(normalized);
+      const role = sentenceRole(normalized, section, stated);
+      if (role === 'excluded') continue;
+
+      const importance = combineImportance(sectionImportance(section), stated);
       const candidates = recognize(normalized, index);
+
+      // Kept as it is, without scoring it, so the user can decide whether it applies.
+      if (role === 'review') {
+        if (candidates.length === 0 && !reportsEveryLine(section)) continue;
+        review += 1;
+        const id = `review:${review}`;
+        requirements.set(id, {
+          kind: 'review',
+          id,
+          label: sentence,
+          importance,
+          sources: [sentence],
+          cause: section.role === 'doubtful' ? 'unknown-section' : 'company-practice',
+          heading: section.role === 'doubtful' ? section.heading : null,
+        });
+        continue;
+      }
 
       // Lines of a requirements section that name nothing known are shown as such,
       // instead of being dropped or guessed.
-      if (candidates.length === 0 && section !== 'unclassified') {
+      if (candidates.length === 0 && reportsEveryLine(section)) {
         unrecognized += 1;
         const id = `unrecognized:${unrecognized}`;
         requirements.set(id, {

@@ -27,7 +27,18 @@ export type OfferRequirement =
     })
   | (RequirementBase & { kind: 'education'; level: EducationLevel })
   | (RequirementBase & { kind: 'years'; years: number; conceptIds: string[] })
-  | (RequirementBase & { kind: 'unrecognized' });
+  | (RequirementBase & { kind: 'unrecognized' })
+  | (RequirementBase & {
+      /** A sentence that may or may not be a requirement. Shown for review, never scored. */
+      kind: 'review';
+      /**
+       * - `unknown-section`: it sits under a heading JobRadar cannot classify.
+       * - `company-practice`: it describes how the company works without asking for it.
+       */
+      cause: 'unknown-section' | 'company-practice';
+      /** The unclassified heading, for `unknown-section`. */
+      heading: string | null;
+    });
 
 export type CvSectionKind =
   | 'header'
@@ -99,6 +110,7 @@ export type RecommendationKind =
   | 'education'
   | 'years'
   | 'review-unrecognized'
+  | 'review-sentences'
   | 'contact'
   | 'section'
   | 'measurable-results';

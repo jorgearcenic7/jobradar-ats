@@ -469,5 +469,14 @@ export function assessRequirement(
           'JobRadar no reconoce ningún criterio en esta línea de la oferta, así que no la evalúa ni la puntúa.',
         evidence: [],
       };
+    case 'review':
+      return {
+        status: 'not-evaluable',
+        reason:
+          requirement.cause === 'unknown-section'
+            ? `Esta frase está en el apartado «${requirement.heading}», que JobRadar no sabe clasificar: puede ser un requisito o información sobre la empresa. No se puntúa; revisa tú si te la piden.`
+            : 'Esta frase describe cómo trabaja la empresa, pero no lo pide expresamente. No se puntúa; revisa tú si el puesto lo exige.',
+        evidence: [],
+      };
   }
 }
