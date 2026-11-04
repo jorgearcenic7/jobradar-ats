@@ -89,6 +89,24 @@ describe('PDF reader', () => {
     expect(destroy).toHaveBeenCalled();
   });
 
+  // Entre páginas el lector cede el turno al navegador: el orden y los errores no cambian.
+  it('reads pages in order and stops at the first page that fails', async () => {
+    const getPage = jest.fn(async (pageNumber: number) => {
+      if (pageNumber === 2)
+        throw Object.assign(new Error('fallo'), { name: 'UnknownErrorException' });
+      return { getTextContent: async () => ({ items: [] }) };
+    });
+    const pdfjs = {
+      getDocument: () => ({
+        promise: Promise.resolve({ numPages: 3, getPage }),
+        destroy: async () => {},
+      }),
+    } as unknown as PdfjsModule;
+    const document = await createPdfReader(async () => pdfjs).openPdf(new Uint8Array([1]));
+    await expect(document.readPages()).rejects.toEqual(new CvReadError('read-error'));
+    expect(getPage.mock.calls).toEqual([[1], [2]]);
+  });
+
   it.each([
     ['PasswordException', 'password-protected'],
     ['InvalidPDFException', 'corrupt'],
