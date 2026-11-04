@@ -1,29 +1,16 @@
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AnalysisRoute from '@/app/analisis';
 import { analyzeMatch } from '@/features/cv-match/domain/analyze-match';
 import { sampleCv, sampleOffer } from '@/features/cv-match/presentation/sample-texts';
+
+import { SafeArea } from '../jest/safe-area';
 
 // The screen as on web, where CV files can be picked. The native app has its own test.
 jest.mock('@/features/cv-import/infrastructure/pick-cv-file', () => ({
   canPickCvFile: true,
   pickCvFile: jest.fn(),
 }));
-
-// Test harness only: in the app, Expo Router renders the safe area provider.
-function SafeArea({ children }: { children: ReactNode }) {
-  return (
-    <SafeAreaProvider
-      initialMetrics={{
-        frame: { x: 0, y: 0, width: 390, height: 844 },
-        insets: { top: 0, right: 0, bottom: 0, left: 0 },
-      }}>
-      {children}
-    </SafeAreaProvider>
-  );
-}
 
 async function renderScreen() {
   await render(<AnalysisRoute />, { wrapper: SafeArea });

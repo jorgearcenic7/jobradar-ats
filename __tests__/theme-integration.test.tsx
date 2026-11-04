@@ -1,28 +1,15 @@
 import { render, renderHook, screen } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from '@/app/index';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useTheme } from '@/hooks/use-theme';
 import { navigationThemes, palettes } from '@/shared/theme';
 
+import { SafeArea } from '../jest/safe-area';
+
 jest.mock('@/hooks/use-color-scheme', () => ({ useColorScheme: jest.fn() }));
 
 const mockedUseColorScheme = jest.mocked(useColorScheme);
-
-// Test harness only: in the app, Expo Router renders the safe area provider.
-function SafeArea({ children }: { children: ReactNode }) {
-  return (
-    <SafeAreaProvider
-      initialMetrics={{
-        frame: { x: 0, y: 0, width: 390, height: 844 },
-        insets: { top: 0, right: 0, bottom: 0, left: 0 },
-      }}>
-      {children}
-    </SafeAreaProvider>
-  );
-}
 
 describe.each(['light', 'dark'] as const)('%s scheme', (scheme) => {
   const palette = palettes[scheme];

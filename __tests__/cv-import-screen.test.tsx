@@ -1,6 +1,4 @@
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
-import type { ReactNode } from 'react';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import AnalysisRoute from '@/app/analisis';
 import type { PickResult } from '@/features/cv-import/domain/readers';
@@ -15,6 +13,7 @@ import {
   type PdfLine,
 } from '../jest/cv-fixtures';
 import { pickedFile } from '../jest/real-cv-readers';
+import { SafeArea } from '../jest/safe-area';
 
 // The whole flow on the analysis screen with the real PDF.js and mammoth on fictional
 // documents. Only the system file picker is simulated: Jest has no browser.
@@ -29,18 +28,6 @@ jest.mock('@/features/cv-import/infrastructure/cv-readers', () => ({
 jest.setTimeout(60_000);
 
 const pick = jest.mocked(pickCvFile);
-
-function SafeArea({ children }: { children: ReactNode }) {
-  return (
-    <SafeAreaProvider
-      initialMetrics={{
-        frame: { x: 0, y: 0, width: 390, height: 844 },
-        insets: { top: 0, right: 0, bottom: 0, left: 0 },
-      }}>
-      {children}
-    </SafeAreaProvider>
-  );
-}
 
 const pdfCv: PdfLine[] = [
   [50, 780, 'Lucía Ficticia Ortega'],
