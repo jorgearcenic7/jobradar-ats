@@ -39,8 +39,6 @@ yarn-error.*
 # test coverage
 coverage/
 
-example
-
 # generated native folders
 /ios
 /android

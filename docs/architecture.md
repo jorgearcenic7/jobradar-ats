@@ -38,13 +38,13 @@ src/
     web-text-style.d.ts # Tipo de `fieldSizing`, estilo web que React Native no declara
   shared/theme/         # Tokens del sistema de diseño (fuente única)
     colors.ts           # Paletas semánticas claro/oscuro
-    typography.ts       # Escala tipográfica y familias de fuentes
+    typography.ts       # Escala tipográfica y pasos que usan Sora (displaySteps)
     fonts.ts            # Carga de Sora y contexto de disponibilidad
     layout.ts           # Espaciado, radios, tamaños de icono, área táctil y medidas de pantalla
     navigation.ts       # Temas de navegación derivados de las paletas
     index.ts            # Punto de entrada: @/shared/theme
   hooks/                # useColorScheme (nativo y web) y useTheme
-  global.css            # Variables de fuentes y áreas seguras de Screen en web
+  global.css            # Áreas seguras de Screen en web
 __tests__/              # Pruebas (fuera de src/app)
 jest/                   # Stubs y utilidades de prueba
   style-mock.js         # Sustituto de los imports de CSS en Jest
@@ -56,7 +56,7 @@ assets/                 # Iconos y pantalla de bienvenida
   fonts/                # Sora SemiBold y Bold (OTF) y su licencia OFL.txt
 ```
 
-`hooks/` es código heredado de la plantilla. Ya lee sus valores de `src/shared/theme/`, pero su migración definitiva a `src/shared/` queda para una tarea posterior de la Fase 2. `ThemedView` se eliminó en la Fase 2b.1b (`Screen` lo sustituye). El `ThemedText` de la plantilla (`src/components/`) y el adaptador `src/constants/theme.ts` se eliminaron en la Fase A, cuando dejaron de tener consumidores: los sustituye `src/shared/ui/themed-text.tsx`. La exportación `Fonts` de `@/shared/theme`, que solo usaba aquel componente, sigue disponible sin consumidores.
+`hooks/` es código heredado de la plantilla. Ya lee sus valores de `src/shared/theme/`, pero su migración definitiva a `src/shared/` queda para una tarea posterior de la Fase 2. `ThemedView` se eliminó en la Fase 2b.1b (`Screen` lo sustituye). El `ThemedText` de la plantilla (`src/components/`) y el adaptador `src/constants/theme.ts` se eliminaron en la Fase A, cuando dejaron de tener consumidores: los sustituye `src/shared/ui/themed-text.tsx`. La exportación `Fonts` de `@/shared/theme`, que solo usaba aquel componente, y las variables de fuentes de `global.css` en las que se apoyaba en web se eliminaron en la Fase 1c de limpieza, porque ya no tenían consumidores y no formaban parte de la tipografía basada en Sora.
 
 ### `ThemedText` y `Heading`
 
