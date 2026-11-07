@@ -1,3 +1,5 @@
+import type { NoticeTone } from '@/shared/ui/notice';
+
 import type { ExtractionFailure, ExtractionIssue, IssueLevel } from '../domain/types';
 
 export function formatMegabytes(bytes: number): string {
@@ -46,13 +48,11 @@ export function issueMessage(issue: ExtractionIssue): string {
   }
 }
 
-export const issueTones: Record<
-  IssueLevel,
-  { icon: 'error' | 'warning' | 'info'; color: 'danger' | 'warning' | 'textSecondary' }
-> = {
-  error: { icon: 'error', color: 'danger' },
-  warning: { icon: 'warning', color: 'warning' },
-  uncertain: { icon: 'info', color: 'textSecondary' },
+// Tono del aviso según la gravedad de la incidencia; una duda se presenta como información.
+export const issueTones: Record<IssueLevel, NoticeTone> = {
+  error: 'danger',
+  warning: 'warning',
+  uncertain: 'info',
 };
 
 /** Shown with every imported document: extraction is never guaranteed to be complete. */

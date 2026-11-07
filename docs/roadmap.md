@@ -38,7 +38,7 @@ El orden entre las subfases pendientes de la Fase 2 y la Fase A se decide en cad
 | 2b.2b   | Componente `Button`                                                                          | Completada | `1b33c2b` |
 | 2c.1a   | `TextField` de una línea                                                                     | Completada | `0b85f00` |
 | 2c.1b   | `TextField` multilínea y contador opcional                                                   | Completada | `8db3fc3` |
-| 2c.2a   | `Badge` y `Notice`                                                                           | Próxima    | —         |
+| 2c.2a   | `Badge` y `Notice`                                                                           | Completada | —         |
 | 2c.2b   | `EmptyState`                                                                                 | Próxima    | —         |
 | 2d      | Consolidación: VoiceOver, Dynamic Type, capturas finales, revisión de código y documentación | Próxima    | —         |
 

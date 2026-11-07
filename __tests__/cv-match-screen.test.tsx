@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import AnalysisRoute from '@/app/analisis';
 import { analyzeMatch } from '@/features/cv-match/domain/analyze-match';
 import { sampleCv, sampleOffer } from '@/features/cv-match/presentation/sample-texts';
+import { palettes } from '@/shared/theme';
 
 import { SafeArea } from '../jest/safe-area';
 
@@ -120,6 +122,21 @@ describe('CV match screen', () => {
       `${sampleCv}\n\nPERFIL\nTengo 4 años de experiencia con React en comercio electrónico.`,
     );
     expect(screen.getByText(/Has cambiado el texto desde el último análisis/)).toBeOnTheScreen();
+    // Aviso de advertencia, anunciado de forma educada y sin interrumpir como una alerta.
+    const root = screen.root!;
+    const region = [root, ...root.queryAll(() => true)].find(
+      (node) =>
+        node.props['aria-live'] === 'polite' &&
+        node.queryAll(
+          (child) =>
+            StyleSheet.flatten(child.props.style)?.backgroundColor ===
+              palettes.light.warningSubtle &&
+            child.queryAll((text) => /Has cambiado el texto/.test(String(text.props.children)))
+              .length > 0,
+        ).length > 0,
+    );
+    expect(region).toBeDefined();
+    expect(screen.queryByRole('alert')).toBeNull();
 
     await user.press(analyzeButton());
 

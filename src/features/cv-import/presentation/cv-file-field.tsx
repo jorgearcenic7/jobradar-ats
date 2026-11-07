@@ -1,11 +1,11 @@
 import { StyleSheet, View } from 'react-native';
 
-import { useTheme } from '@/hooks/use-theme';
 import { formatCount } from '@/shared/format';
-import { radius, space, type ThemeColor } from '@/shared/theme';
+import { space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
+import { Icon } from '@/shared/ui/icon';
+import { Notice, type NoticeTone } from '@/shared/ui/notice';
 import { ThemedText } from '@/shared/ui/themed-text';
-import { Icon, type IconName } from '@/shared/ui/icon';
 import { TextField } from '@/shared/ui/text-field';
 
 import type { ImportedCv } from '../domain/types';
@@ -18,16 +18,17 @@ import {
 } from './messages';
 import { useHydrated, type CvImport } from './use-cv-import';
 
-type Tone = { icon: IconName; color: ThemeColor };
-
-function Notice({ tone, children }: { tone: Tone; children: string }) {
+/*
+Error de validación del CV, con el mismo aspecto que el error de un `TextField`: va junto a los
+botones que lo resuelven y no en un recuadro, que queda para los avisos sobre el documento.
+*/
+function FieldError({ children }: { children: string }) {
   return (
-    <View style={styles.notice}>
-      <Icon name={tone.icon} size="sm" color={tone.color} />
-      <ThemedText
-        step="callout"
-        color={tone.color === 'textSecondary' ? 'text' : tone.color}
-        style={styles.noticeText}>
+    <View style={styles.fieldError}>
+      <View style={styles.fieldErrorIcon}>
+        <Icon name="error" size="sm" color="danger" />
+      </View>
+      <ThemedText step="callout" color="danger" style={styles.fieldErrorText}>
         {children}
       </ThemedText>
     </View>
@@ -41,80 +42,67 @@ function describeDocument(cv: ImportedCv) {
   return [fileName, kind, pages].filter(Boolean).join(' · ');
 }
 
-const tones = {
-  success: { icon: 'checkCircle', color: 'success' },
-  warning: { icon: 'warning', color: 'warning' },
-  error: { icon: 'error', color: 'danger' },
-  info: { icon: 'info', color: 'textSecondary' },
-} satisfies Record<string, Tone>;
-
 function DocumentStatus({ cvImport }: { cvImport: CvImport }) {
   const { state } = cvImport;
   switch (state.kind) {
     case 'empty':
       return null;
     case 'reading':
-      return (
-        <Notice tone={tones.info}>{`Leyendo «${state.fileName}» en este dispositivo…`}</Notice>
-      );
+      return <Notice tone="info">{`Leyendo «${state.fileName}» en este dispositivo…`}</Notice>;
     case 'unavailable':
       return (
-        <Notice tone={tones.info}>
+        <Notice tone="info">
           Importar archivos todavía no está disponible en esta versión de la app. Pega el texto del
           CV.
         </Notice>
       );
     case 'too-large':
       return (
-        <Notice tone={tones.error}>
+        <Notice tone="danger">
           {`«${state.fileName}» ocupa ${formatMegabytes(state.byteSize)} y el límite es de ${formatMegabytes(state.maxBytes).replace(',0', '')}. Elige un archivo más pequeño o pega el texto.`}
         </Notice>
       );
     case 'needs-confirmation':
+      // Las acciones van dentro del aviso: son la respuesta a su pregunta.
       return (
-        <View style={styles.block}>
-          <Notice tone={tones.warning}>
-            {`«${state.fileName}» tiene ${state.pageCount} páginas, más de las ${state.pageLimit} habituales en un CV. Se leerá completo, sin recortar nada. ¿Quieres continuar?`}
-          </Notice>
-          <View style={styles.actions}>
-            <Button
-              label={`Leer las ${state.pageCount} páginas`}
-              onPress={cvImport.confirmLongPdf}
-            />
-            <Button label="Cancelar" variant="secondary" onPress={cvImport.cancelLongPdf} />
-          </View>
-        </View>
+        <Notice
+          tone="warning"
+          actions={
+            <>
+              <Button
+                label={`Leer las ${state.pageCount} páginas`}
+                onPress={cvImport.confirmLongPdf}
+              />
+              <Button label="Cancelar" variant="secondary" onPress={cvImport.cancelLongPdf} />
+            </>
+          }>
+          {`«${state.fileName}» tiene ${state.pageCount} páginas, más de las ${state.pageLimit} habituales en un CV. Se leerá completo, sin recortar nada. ¿Quieres continuar?`}
+        </Notice>
       );
     case 'imported': {
       const { cv } = state;
+      // El nombre del documento encabeza el aviso de su estado, que es lo que describe.
       if (cv.status === 'failed') {
         return (
-          <View style={styles.block}>
-            <ThemedText step="callout" style={styles.fileName}>
-              {describeDocument(cv)}
-            </ThemedText>
-            <Notice tone={tones.error}>{failureMessage(cv.failure)}</Notice>
-          </View>
+          <Notice tone="danger" title={describeDocument(cv)}>
+            {failureMessage(cv.failure)}
+          </Notice>
         );
       }
-      const summary =
+      const summary: { tone: NoticeTone; text: string } =
         cv.status === 'blocked'
-          ? { tone: tones.error, text: 'No hay texto que se pueda analizar.' }
+          ? { tone: 'danger', text: 'No hay texto que se pueda analizar.' }
           : cv.status === 'needs-review'
-            ? {
-                tone: tones.warning,
-                text: 'Texto extraído con avisos: revísalo antes de analizar.',
-              }
+            ? { tone: 'warning', text: 'Texto extraído con avisos: revísalo antes de analizar.' }
             : {
-                tone: tones.success,
+                tone: 'success',
                 text: `Texto extraído: ${formatCount(cv.extractedText.length)} caracteres.`,
               };
       return (
         <View style={styles.block}>
-          <ThemedText step="callout" style={styles.fileName}>
-            {describeDocument(cv)}
-          </ThemedText>
-          <Notice tone={summary.tone}>{summary.text}</Notice>
+          <Notice tone={summary.tone} title={describeDocument(cv)}>
+            {summary.text}
+          </Notice>
           {cv.issues.map((issue, index) => (
             <Notice key={index} tone={issueTones[issue.level]}>
               {issueMessage(issue)}
@@ -135,7 +123,6 @@ export type CvFileFieldProps = {
 
 /** Picks a PDF or DOCX, shows how its text was read and lets the user review that text. */
 export function CvFileField({ cvImport, error, onPasteInstead }: CvFileFieldProps) {
-  const theme = useTheme();
   const hydrated = useHydrated();
   const { state } = cvImport;
   const cv = state.kind === 'imported' && state.cv.status !== 'failed' ? state.cv : null;
@@ -169,11 +156,7 @@ export function CvFileField({ cvImport, error, onPasteInstead }: CvFileFieldProp
       {/* Always mounted, so screen readers announce each change of the document status. */}
       <View aria-live="polite" style={styles.block}>
         <DocumentStatus cvImport={cvImport} />
-        {error ? (
-          <View style={[styles.errorBox, { backgroundColor: theme.dangerSubtle }]}>
-            <Notice tone={tones.error}>{error}</Notice>
-          </View>
-        ) : null}
+        {error ? <FieldError>{error}</FieldError> : null}
       </View>
 
       {cv ? (
@@ -218,19 +201,17 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: space[3],
   },
-  notice: {
+  // Mismas medidas que el error de `TextField`.
+  fieldError: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: space[2],
+    gap: space[1],
   },
-  noticeText: {
-    flex: 1,
+  fieldErrorIcon: {
+    marginTop: 3,
   },
-  fileName: {
-    fontWeight: 600,
-  },
-  errorBox: {
-    padding: space[3],
-    borderRadius: radius.md,
+  fieldErrorText: {
+    flexShrink: 1,
+    minWidth: 0,
   },
 });

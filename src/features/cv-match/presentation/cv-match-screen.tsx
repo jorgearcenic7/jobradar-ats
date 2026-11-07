@@ -4,11 +4,11 @@ import { StyleSheet, View, type TextInputInstance } from 'react-native';
 import { CvFileField, useCvImport, type CvImport } from '@/features/cv-import';
 import type { AnalysisResult } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
-import { radius, space } from '@/shared/theme';
+import { space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
+import { Notice } from '@/shared/ui/notice';
 import { ThemedText } from '@/shared/ui/themed-text';
-import { Icon } from '@/shared/ui/icon';
 import { Screen } from '@/shared/ui/screen';
 import { TextField } from '@/shared/ui/text-field';
 
@@ -113,13 +113,10 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
                 onPress={() => setCvMode('file')}
               />
             ) : (
-              <View style={styles.pending}>
-                <Icon name="info" size="sm" color="textSecondary" />
-                <ThemedText step="callout" style={styles.noticeText}>
-                  Importar un PDF o un Word todavía no está disponible en la app para iOS y Android.
-                  Por ahora, pega el texto de tu CV.
-                </ThemedText>
-              </View>
+              <Notice tone="info">
+                Importar un PDF o un Word todavía no está disponible en la app para iOS y Android.
+                Por ahora, pega el texto de tu CV.
+              </Notice>
             )}
           </View>
         )}
@@ -171,21 +168,19 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
       </Card>
 
       {match.cvReplaced ? (
-        <View style={[styles.notice, { backgroundColor: theme.warningSubtle }]} aria-live="polite">
-          <Icon name="warning" color="warning" />
-          <ThemedText step="callout" style={styles.noticeText}>
+        <View aria-live="polite">
+          <Notice tone="warning">
             Has cambiado de CV. Pulsa «Analizar» para ver los resultados del nuevo.
-          </ThemedText>
+          </Notice>
         </View>
       ) : null}
 
       {isOutdated ? (
-        <View style={[styles.notice, { backgroundColor: theme.warningSubtle }]} aria-live="polite">
-          <Icon name="warning" color="warning" />
-          <ThemedText step="callout" style={styles.noticeText}>
+        <View aria-live="polite">
+          <Notice tone="warning">
             Has cambiado el texto desde el último análisis. Pulsa «Analizar» para actualizar los
             resultados.
-          </ThemedText>
+          </Notice>
         </View>
       ) : null}
 
@@ -224,20 +219,5 @@ const styles = StyleSheet.create({
     paddingTop: space[4],
     borderTopWidth: 1,
     borderStyle: 'dashed',
-  },
-  pending: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space[2],
-  },
-  notice: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: space[2],
-    padding: space[4],
-    borderRadius: radius.md,
-  },
-  noticeText: {
-    flex: 1,
   },
 });

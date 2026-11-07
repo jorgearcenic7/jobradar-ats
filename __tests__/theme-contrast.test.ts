@@ -39,6 +39,11 @@ const textPairs: Pair[] = [
   ['textSecondary', 'neutralSubtle'],
   ['danger', 'background'],
   ['danger', 'surface'],
+  // Título y mensaje de `Notice` sobre el fondo de cada tono.
+  ['text', 'accentSubtle'],
+  ['text', 'successSubtle'],
+  ['text', 'warningSubtle'],
+  ['text', 'dangerSubtle'],
 ];
 
 // Boundaries of interactive controls and focus indicators: WCAG 1.4.11 requires 3:1.

@@ -1,7 +1,9 @@
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import AnalysisRoute from '@/app/analisis';
 import { sampleCv, sampleOffer } from '@/features/cv-match/presentation/sample-texts';
+import { palettes } from '@/shared/theme';
 
 import { SafeArea } from '../jest/safe-area';
 
@@ -15,6 +17,15 @@ describe('CV match screen in the native app', () => {
     expect(
       screen.getByText(/Importar un PDF o un Word todavía no está disponible en la app/),
     ).toBeOnTheScreen();
+    // Es información, no un error: se muestra como aviso informativo.
+    const root = screen.root!;
+    const infoNotice = [root, ...root.queryAll(() => true)].find(
+      (node) =>
+        StyleSheet.flatten(node.props.style)?.backgroundColor === palettes.light.accentSubtle &&
+        node.queryAll((child) => /todavía no está disponible/.test(String(child.props.children)))
+          .length > 0,
+    );
+    expect(infoNotice).toBeDefined();
     expect(screen.queryByRole('button', { name: 'Seleccionar CV' })).not.toBeOnTheScreen();
     expect(
       screen.queryByRole('button', { name: 'Seleccionar un archivo en su lugar' }),

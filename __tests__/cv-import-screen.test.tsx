@@ -1,8 +1,10 @@
 import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import AnalysisRoute from '@/app/analisis';
 import type { PickResult } from '@/features/cv-import/domain/readers';
 import { pickCvFile } from '@/features/cv-import/infrastructure/pick-cv-file';
+import { palettes } from '@/shared/theme';
 
 import {
   buildCompoundFile,
@@ -210,5 +212,102 @@ describe('CV import on the analysis screen', () => {
 
     await user.press(screen.getByRole('button', { name: 'Seleccionar un archivo en su lugar' }));
     expect(screen.getByRole('button', { name: 'Seleccionar CV' })).toBeOnTheScreen();
+  });
+});
+
+// Cómo se muestran los mensajes: avisos del documento en `Notice` y errores de validación junto
+// a su control, en una región que los anuncia sin interrumpir.
+describe('import and validation messages on the analysis screen', () => {
+  beforeEach(() => pick.mockReset());
+
+  const allNodes = () => {
+    const root = screen.root!;
+    return [root, ...root.queryAll(() => true)];
+  };
+  const textIn = (node: ReturnType<typeof allNodes>[number], text: RegExp) =>
+    node.queryAll(
+      (child) => typeof child.props.children === 'string' && text.test(child.props.children),
+    ).length > 0;
+  // El recuadro de aviso más interno con ese fondo que contiene el texto.
+  const noticeWith = (text: RegExp, background: keyof typeof palettes.light) =>
+    allNodes()
+      .filter(
+        (node) =>
+          StyleSheet.flatten(node.props.style)?.backgroundColor === palettes.light[background],
+      )
+      .find((node) => textIn(node, text));
+
+  it('titles the document status with the document name', async () => {
+    const user = await renderScreen();
+    await selectCv(user, picked('cv-ficticio.pdf', buildTextPdf([pdfCv])));
+    await screen.findByText('cv-ficticio.pdf · PDF · 1 página');
+
+    const notice = noticeWith(/^Texto extraído: \d/, 'successSubtle');
+    expect(notice).toBeDefined();
+    expect(textIn(notice!, /^cv-ficticio\.pdf · PDF · 1 página$/)).toBe(true);
+    expect(screen.getByText('cv-ficticio.pdf · PDF · 1 página')).toHaveStyle({ fontWeight: 600 });
+  });
+
+  it('shows the warnings of a two-column PDF as warning notices, without losing any message', async () => {
+    const left = [
+      'EXPERIENCIA',
+      '- Diseñé informes ficticios con Python.',
+      '- Coordiné un equipo de tres personas.',
+    ];
+    const right = ['HABILIDADES', 'Python, SQL, Docker', 'IDIOMAS', 'Inglés: C1'];
+    const lines: PdfLine[] = [
+      ...left.map((text, index): PdfLine => [50, 760 - index * 16, text]),
+      ...right.map((text, index): PdfLine => [320, 760 - index * 16, text]),
+    ];
+    const user = await renderScreen();
+    await selectCv(user, picked('dos-columnas.pdf', buildTextPdf([lines])));
+
+    expect(
+      await screen.findByText('Texto extraído con avisos: revísalo antes de analizar.'),
+    ).toBeOnTheScreen();
+    expect(noticeWith(/^Texto extraído con avisos/, 'warningSubtle')).toBeDefined();
+    expect(noticeWith(/varias columnas/, 'warningSubtle')).toBeDefined();
+  });
+
+  it('shows a PDF without text as a danger notice', async () => {
+    const user = await renderScreen();
+    await selectCv(user, picked('escaneado.pdf', buildImageOnlyPdf()));
+    await screen.findByText(/todavía no reconoce texto en imágenes \(OCR\)/);
+
+    expect(noticeWith(/^No hay texto que se pueda analizar\.$/, 'dangerSubtle')).toBeDefined();
+    expect(noticeWith(/\(OCR\)/, 'dangerSubtle')).toBeDefined();
+  });
+
+  it('keeps the long PDF question and its answers in one notice', async () => {
+    const pages = Array.from({ length: 25 }, (_, index): PdfLine[] => [
+      [50, 780, `Página ${index + 1}`],
+    ]);
+    const user = await renderScreen();
+    await selectCv(user, picked('largo.pdf', buildTextPdf(pages)));
+    await screen.findByText(/tiene 25 páginas/);
+
+    const notice = noticeWith(/tiene 25 páginas/, 'warningSubtle');
+    expect(notice).toBeDefined();
+    expect(textIn(notice!, /^Leer las 25 páginas$/)).toBe(true);
+    expect(textIn(notice!, /^Cancelar$/)).toBe(true);
+  });
+
+  it('shows the CV and offer validation errors inline, in the same style', async () => {
+    const user = await renderScreen();
+    await analyze(user);
+
+    const cvError = screen.getByText('Selecciona tu CV o pega su texto para analizarlo.');
+    const offerError = screen.getByText('Pega el texto de la oferta para analizarla.');
+    expect(cvError).toHaveStyle({ color: palettes.light.danger });
+    expect(offerError).toHaveStyle({ color: palettes.light.danger });
+    // Ninguno de los dos va en un recuadro: los recuadros quedan para los avisos.
+    expect(noticeWith(/^Selecciona tu CV/, 'dangerSubtle')).toBeUndefined();
+    expect(noticeWith(/^Pega el texto de la oferta/, 'dangerSubtle')).toBeUndefined();
+    // El error del CV llega a los lectores de pantalla por la región educada del campo.
+    const region = allNodes().find(
+      (node) => node.props['aria-live'] === 'polite' && textIn(node, /^Selecciona tu CV/),
+    );
+    expect(region).toBeDefined();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 });
