@@ -426,6 +426,76 @@ describe('negated years of experience', () => {
   });
 });
 
+// Negar una duración no es negar la tecnología, ni tampoco acreditarla.
+describe('technology mentioned next to a denied duration', () => {
+  const offer = 'Requisitos\n- React.\n- Python.\n- Mínimo 3 años de experiencia con React.';
+  const resultOf = (experienceLine: string) => analyzeMatch(cvWith(experienceLine), offer);
+  const recommendationFor = (result: AnalysisResult, id: string) =>
+    result.recommendations.find((item) => item.requirementId === id);
+
+  it.each([
+    '- No tengo 5 años de experiencia con React.',
+    '- Nunca he trabajado 5 años con React.',
+    '- No tengo 5 años con React; tengo 3.',
+  ])('does not read "%s" as having no experience with React', (line) => {
+    const result = resultOf(line);
+    const react = assessment(result, 'concept:react');
+    expect(react.status).toBe('mentioned');
+    expect(react.contribution).toEqual({ points: 0.5, weight: 2 });
+    expect(react.evidence.map((item) => item.role)).toEqual(['mention']);
+    expect(react.reason).toBe(
+      'React aparece en la experiencia, pero sin una frase que describa dónde lo usaste.',
+    );
+    expect(recommendationFor(result, 'concept:react')?.message).toBe(
+      '«React» aparece en tu CV sin un ejemplo de uso. Si lo has usado en un puesto o proyecto, describe allí qué hiciste con ello.',
+    );
+    // La duración negada sigue sin acreditar los años.
+    expect(assessment(result, 'years:3:react').status).toBe('missing');
+  });
+
+  it('keeps an explicit denial of any experience', () => {
+    const result = resultOf('- No tengo experiencia con React.');
+    const react = assessment(result, 'concept:react');
+    expect(react.status).toBe('missing');
+    expect(react.reason).toBe('El CV indica que no tienes experiencia con React.');
+    expect(recommendationFor(result, 'concept:react')?.kind).toBe('negated');
+  });
+
+  it('keeps positive evidence of use with fewer years than requested', () => {
+    const result = resultOf('- Tengo 2 años desarrollando aplicaciones con React.');
+    expect(assessment(result, 'concept:react').status).toBe('supported');
+    expect(assessment(result, 'years:3:react').status).toBe('missing');
+  });
+
+  it('keeps the positive evidence of another clause without inventing a duration', () => {
+    const result = resultOf(
+      '- No tengo 5 años con React, pero he desarrollado aplicaciones con React.',
+    );
+    expect(assessment(result, 'concept:react').status).toBe('supported');
+    expect(assessment(result, 'years:3:react').status).toBe('missing');
+  });
+
+  it('still reads "no solo" as an affirmation', () => {
+    const result = resultOf('- No solo tengo 5 años con React, también he trabajado con Vue.');
+    expect(assessment(result, 'concept:react').status).toBe('supported');
+    expect(assessment(result, 'years:3:react').status).toBe('supported');
+  });
+
+  it('applies a denial of experience only to the technology it names', () => {
+    const result = resultOf('- No tengo experiencia con React, pero sí con Python.');
+    expect(assessment(result, 'concept:react').status).toBe('missing');
+    expect(assessment(result, 'concept:python').status).toBe('supported');
+  });
+
+  it.each([
+    '- No tengo 5 años de experiencia y no uso React.',
+    '- No he usado React durante 5 años.',
+    '- React: sin experiencia, no tengo 5 años.',
+  ])('still reads "%s" as a denial of React', (line) => {
+    expect(assessment(resultOf(line), 'concept:react').status).toBe('missing');
+  });
+});
+
 // Cada cifra de años cuenta solo para las tecnologías de su propio tramo de la frase.
 describe('years attributed to each clause', () => {
   const offer = `Requisitos

@@ -171,6 +171,31 @@ function isNegated(normalized: string, match: Pick<TermMatch, 'start' | 'end'>) 
   );
 }
 
+/*
+En «No tengo 5 años de experiencia con React» la negación recae sobre la duración, no sobre
+React: el CV no dice que no tenga ninguna experiencia, sino que no llega a esa cifra. Se
+reconoce porque entre la negación y el término hay una cifra de años negada y, después de esa
+cifra, ninguna otra negación. En cambio, «No tengo 5 años y no uso React» sí niega React.
+*/
+function negatesOnlyDuration(normalized: string, match: TermMatch) {
+  const clauseStart = match.start - clauseBefore(normalized, match.start).length;
+  const duration = findYearMentions(normalized)
+    .filter(
+      (mention) =>
+        mention.start >= clauseStart &&
+        mention.end <= match.start &&
+        isNegated(normalized, mention),
+    )
+    .at(-1);
+  if (!duration) return false;
+  const between = normalized.slice(duration.end, match.start);
+  return !(
+    containsAny(between, negationCues) ||
+    directNegation.test(between) ||
+    negationAfter.test(normalized.slice(match.end))
+  );
+}
+
 function isLearning(normalized: string, match: TermMatch) {
   return containsAny(clauseBefore(normalized, match.start), learningCues);
 }
@@ -265,19 +290,32 @@ function assessConcept(
 
   const evidence: Evidence[] = [];
   for (const unit of units) {
-    const match = unit.conceptMatches().find((item) => item.id === requirement.conceptId);
-    if (!match) continue;
+    const mentions = unit.conceptMatches().filter((item) => item.id === requirement.conceptId);
+    if (mentions.length === 0) continue;
+    const durationOnly = (item: TermMatch) =>
+      isNegated(unit.normalized, item) && negatesOnlyDuration(unit.normalized, item);
+    // Si la frase vuelve a nombrar la tecnología («…, pero he desarrollado aplicaciones con
+    // React»), cuenta esa otra mención en lugar de la que solo acompaña a la duración negada.
+    const match = mentions.find((item) => !durationOnly(item)) ?? mentions[0];
+    const onlyDurationDenied = durationOnly(match);
     /*
     El orden decide qué pesa más en una misma frase: la negación, después el conocimiento
     teórico y el aprendizaje. Solo una frase descriptiva de una sección que acredita el uso
     respalda el requisito; las demás menciones, salvo las negaciones, son evidencia
-    insuficiente.
+    insuficiente. Una mención cuya negación solo afecta a una duración no es una negación de
+    la tecnología, pero tampoco un respaldo: queda como evidencia insuficiente.
     */
     let role: EvidenceRole = 'mention';
-    if (isNegated(unit.normalized, match)) role = 'negation';
+    if (isNegated(unit.normalized, match) && !onlyDurationDenied) role = 'negation';
     else if (isHedged(unit.normalized)) role = 'hedged';
     else if (isLearning(unit.normalized, match)) role = 'learning';
-    else if (supportingSections.includes(unit.section) && isDescription(unit)) role = 'support';
+    else if (
+      !onlyDurationDenied &&
+      supportingSections.includes(unit.section) &&
+      isDescription(unit)
+    ) {
+      role = 'support';
+    }
     evidence.push(evidenceOf(unit, role));
   }
 
