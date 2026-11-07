@@ -1,17 +1,27 @@
 import { StyleSheet, View } from 'react-native';
 
-import type { Coverage, RequirementStatus } from '@/features/cv-match/domain/types';
+import type {
+  Coverage,
+  RequirementAssessment,
+  RequirementStatus,
+} from '@/features/cv-match/domain/types';
 import { space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { Icon } from '@/shared/ui/icon';
 
 import { formatNumber, formatPercent, statusLabels } from './labels';
+import { CoverageBar } from './coverage-bar';
 import { statusTones } from './status-badge';
 
 const order: RequirementStatus[] = ['supported', 'mentioned', 'missing', 'not-evaluable'];
 
-export function CoverageSummary({ coverage }: { coverage: Coverage }) {
+type CoverageSummaryProps = {
+  coverage: Coverage;
+  assessments: readonly RequirementAssessment[];
+};
+
+export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps) {
   return (
     <Card style={styles.card}>
       <ThemedText step="callout" color="textSecondary">
@@ -31,6 +41,8 @@ export function CoverageSummary({ coverage }: { coverage: Coverage }) {
           </ThemedText>
         </View>
       )}
+
+      {coverage.percentage === null ? null : <CoverageBar assessments={assessments} />}
 
       <View role="list" style={styles.counts}>
         {order.map((status) => (

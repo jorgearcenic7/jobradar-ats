@@ -25,7 +25,7 @@ El orden entre las subfases pendientes de la Fase 2 y la Fase A se decide en cad
 
 ### Fase 2 — Sistema de diseño
 
-**En curso.** Los tokens, los componentes base y los componentes de estado están terminados. Faltan los componentes interactivos de la subfase 2c.3, que necesita el rediseño de Resultados, y la consolidación.
+**En curso.** Los tokens, los componentes base y los componentes de estado están terminados. `CoverageBar` está implementado, pendiente de revisión y commit; todavía faltan `SegmentedControl` y la consolidación.
 
 | Subfase | Contenido                                                                                    | Estado                                       | Commit    |
 | ------- | -------------------------------------------------------------------------------------------- | -------------------------------------------- | --------- |
@@ -40,8 +40,9 @@ El orden entre las subfases pendientes de la Fase 2 y la Fase A se decide en cad
 | 2c.1b   | `TextField` multilínea y contador opcional                                                   | Completada                                   | `8db3fc3` |
 | 2c.2a   | `Badge` y `Notice`                                                                           | Completada                                   | `8f41942` |
 | 2c.2b   | `EmptyState`                                                                                 | Completada                                   | `23ef3c1` |
-| 2c.3a   | `Disclosure`                                                                                 | Implementada, pendiente de revisión y commit | —         |
-| 2c.3    | Resto de componentes interactivos: `SegmentedControl` y `CoverageBar`                        | Próxima                                      | —         |
+| 2c.3a   | `Disclosure`                                                                                 | Completada                                   | `f3ec5b6` |
+| 2c.3b   | `CoverageBar` e integración limitada en el resumen de cobertura                              | Implementada, pendiente de revisión y commit | —         |
+| 2c.3    | Componente interactivo pendiente: `SegmentedControl`                                         | Próxima                                      | —         |
 | 2d      | Consolidación: VoiceOver, Dynamic Type, capturas finales, revisión de código y documentación | Próxima                                      | —         |
 
 También queda pendiente, sin subfase asignada, la migración a `src/shared/` de los hooks heredados de la plantilla. El `ThemedText` de la plantilla y el adaptador `constants/theme.ts` se retiraron en la Fase A, sustituidos por `src/shared/ui/themed-text.tsx` (ver [architecture.md](architecture.md)).

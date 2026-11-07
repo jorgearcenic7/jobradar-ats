@@ -25,7 +25,7 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
   return (
     <View style={styles.results}>
       <Heading level={2}>Resultados</Heading>
-      <CoverageSummary coverage={result.coverage} />
+      <CoverageSummary coverage={result.coverage} assessments={result.requirements} />
       {comparison ? <AnalysisChanges comparison={comparison} /> : null}
       {offerChanged ? (
         <ThemedText step="footnote" color="textSecondary">
