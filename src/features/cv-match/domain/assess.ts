@@ -19,7 +19,7 @@ import {
   compareEducation,
   educationLabels,
   findEducationLevels,
-  findYears,
+  findYearMentions,
   languageLevelAt,
   mentionsExperience,
 } from './criteria';
@@ -161,7 +161,8 @@ function clauseBefore(normalized: string, position: number) {
 // «Docker: sin experiencia», «Docker (no)»: una negación justo después del término.
 const negationAfter = /^\s*[:\-–—(]?\s*(?:sin experiencia|ninguna experiencia|nada|no)(?![a-z])/;
 
-function isNegated(normalized: string, match: TermMatch) {
+// Sirve para un término del catálogo y para una cifra de años: solo importa su posición.
+function isNegated(normalized: string, match: Pick<TermMatch, 'start' | 'end'>) {
   const clause = clauseBefore(normalized, match.start);
   return (
     containsAny(clause, negationCues) ||
@@ -384,7 +385,8 @@ function assessLanguage(
       `El CV indica un nivel ${cvLevel} de ${name}, igual o superior al ${requirement.level} que pide la oferta.`,
     );
   }
-  // Un nivel conocido inferior al pedido no cumple el requisito: no hay crédito parcial.
+  // Un nivel conocido inferior al pedido no cumple el requisito: en los idiomas no hay crédito
+  // parcial.
   return result(
     'missing',
     `El CV indica un nivel ${cvLevel} de ${name}, inferior al ${requirement.level} que pide la oferta.`,
@@ -434,27 +436,90 @@ function assessEducation(requirement: Requirement<'education'>, units: CvUnit[])
   return { status: 'missing', reason: `El CV no muestra ${required}.`, evidence: [] };
 }
 
+// Conjunciones que separan, dentro de una frase, lo que se dice de cosas distintas.
+const contrastBreak = /\s(?:pero|aunque|sino|but|although)\s/g;
+
+/** Conceptos del tramo de la frase que contiene `position`, entre conjunciones de contraste. */
+function conceptsAround(unit: CvUnit, position: number): string[] {
+  let start = 0;
+  let end = unit.normalized.length;
+  let match: RegExpExecArray | null;
+  contrastBreak.lastIndex = 0;
+  while ((match = contrastBreak.exec(unit.normalized))) {
+    if (match.index >= position) {
+      end = match.index;
+      break;
+    }
+    start = match.index + match[0].length;
+  }
+  return unit
+    .conceptMatches()
+    .filter((item) => item.start >= start && item.end <= end)
+    .map((item) => item.id);
+}
+
+/*
+Cifras de años que una frase atribuye al requisito. La frase debe nombrar todos sus conceptos
+o, si el requisito no nombra ninguno, hablar de experiencia. Cada cifra se refiere solo a los
+conceptos de su propio tramo de la frase: en «No tengo 5 años con React, pero sí 6 años con
+Python» los 6 años son de Python. Una cifra de un tramo sin conceptos no se atribuye a ninguno:
+en «Tengo 8 años de experiencia profesional, pero solo 2 años con Python» los 8 años son
+generales, no de Python. En una frase sin conjunciones de contraste, el tramo es la frase
+entera, como en «Tengo 5 años de experiencia, sobre todo con React».
+
+Una cifra negada («No tengo 5 años…», «Nunca he trabajado 5 años…») o atribuida a un concepto
+que la frase niega no prueba que se cumpla el requisito. Tampoco dice cuántos años se tienen,
+así que no se deduce ninguna otra cifra: se aparta en `denied` solo para explicar el resultado.
+`deniedDurations` guarda aparte las cifras negadas en sí mismas, porque negar una duración no
+es lo mismo que negar toda experiencia con la tecnología.
+*/
+function yearsStatedFor(requirement: Requirement<'years'>, unit: CvUnit) {
+  const stated: number[] = [];
+  const denied: number[] = [];
+  const deniedDurations: number[] = [];
+  const { conceptIds } = requirement;
+  const matches = unit.conceptMatches();
+  const named = conceptIds.length
+    ? conceptIds.every((id) => matches.some((item) => item.id === id))
+    : mentionsExperience(unit.normalized);
+  if (!named) return { stated, denied, deniedDurations };
+
+  const conceptDenied = !conceptIds.every((id) =>
+    matches.some((item) => item.id === id && !isNegated(unit.normalized, item)),
+  );
+  for (const mention of findYearMentions(unit.normalized)) {
+    if (conceptIds.length) {
+      const nearby = conceptsAround(unit, mention.start);
+      if (!conceptIds.every((id) => nearby.includes(id))) continue;
+    }
+    const durationNegated = isNegated(unit.normalized, mention);
+    if (conceptDenied || durationNegated) denied.push(mention.years);
+    else stated.push(mention.years);
+    if (durationNegated) deniedDurations.push(mention.years);
+  }
+  return { stated, denied, deniedDurations };
+}
+
 function assessYears(
   requirement: Requirement<'years'>,
   units: CvUnit[],
   index: CatalogIndex,
 ): Assessment {
-  /*
-  Una frase declara años para el requisito si nombra todos sus conceptos o, cuando el
-  requisito no nombra ninguno, si habla de experiencia. Si hay varias declaraciones, se usa la
-  cifra mayor.
-  */
-  const statements = units.flatMap((unit) => {
-    const conceptIds = unit.conceptMatches().map((item) => item.id);
-    const related = requirement.conceptIds.length
-      ? requirement.conceptIds.every((id) => conceptIds.includes(id))
-      : mentionsExperience(unit.normalized);
-    return related ? findYears(unit.normalized).map((years) => ({ unit, years })) : [];
-  });
+  // Si hay varias declaraciones válidas, se usa la cifra mayor.
+  const declarations = units.map((unit) => ({ unit, ...yearsStatedFor(requirement, unit) }));
+  const statements = declarations.flatMap(({ unit, stated }) =>
+    stated.map((years) => ({ unit, years })),
+  );
+  const denials = declarations.filter(({ denied }) => denied.length > 0).map(({ unit }) => unit);
+  const deniedDurations = declarations.flatMap(({ deniedDurations }) => deniedDurations);
   const most = statements.reduce((max, item) => Math.max(max, item.years), 0);
 
   if (statements.length > 0) {
-    // Declarar menos años de los pedidos no cumple el requisito: no hay crédito parcial.
+    /*
+    Declarar menos años de los pedidos no cumple el requisito y suma 0 puntos: en los años no
+    hay crédito parcial. Un CV que no indica ninguna duración (más abajo) sí cuenta como
+    evidencia insuficiente, igual que una competencia solo mencionada.
+    */
     const supported = most >= requirement.years;
     return {
       status: supported ? 'supported' : 'missing',
@@ -467,6 +532,26 @@ function assessYears(
 
   // El CV no declara ninguna duración: el requisito se entiende, lo que falta es la evidencia.
   const notFromDates = 'JobRadar no calcula la duración a partir de las fechas.';
+  const labels = requirement.conceptIds
+    .map((id) => index.concepts.get(id)?.label ?? id)
+    .join(' y ');
+  /*
+  Los motivos distinguen tres situaciones. Negar una duración («No tengo 5 años…») no dice que
+  falte toda experiencia: puede haber menos años, pero el CV no indica cuántos. Mencionar la
+  tecnología solo para negarla se describe tal cual, sin afirmar nada más sobre el candidato. Y
+  si el CV la menciona sin negarla ni dar una duración, lo que falta es la evidencia (más abajo).
+  */
+  const deniedTechnology = `El CV solo menciona ${labels} en frases que lo niegan, así que no acredita los ${requirement.years} años que pide la oferta.`;
+  const denial: Assessment | null = denials.length
+    ? {
+        status: 'missing',
+        reason: deniedDurations.length
+          ? `El CV dice que no tienes ${Math.min(...deniedDurations)} años de experiencia${labels ? ` con ${labels}` : ''}, pero no indica cuántos tienes, así que no acredita los ${requirement.years} años que pide la oferta.`
+          : deniedTechnology,
+        evidence: denials.map((unit) => evidenceOf(unit, 'negation')),
+      }
+    : null;
+
   if (requirement.conceptIds.length === 0) {
     const hasExperience = units.some((unit) => unit.section === 'experience');
     return hasExperience
@@ -475,12 +560,9 @@ function assessYears(
           reason: `El CV tiene experiencia, pero no indica cuánto tiempo suma. ${notFromDates}`,
           evidence: [],
         }
-      : { status: 'missing', reason: 'El CV no muestra experiencia.', evidence: [] };
+      : (denial ?? { status: 'missing', reason: 'El CV no muestra experiencia.', evidence: [] });
   }
 
-  const labels = requirement.conceptIds
-    .map((id) => index.concepts.get(id)?.label ?? id)
-    .join(' y ');
   const related = units.filter((unit) => {
     const matches = unit.conceptMatches();
     return requirement.conceptIds.every((id) => {
@@ -489,7 +571,18 @@ function assessYears(
     });
   });
   if (related.length === 0) {
-    return { status: 'missing', reason: `El CV no menciona ${labels}.`, evidence: [] };
+    if (denial) return denial;
+    // Nombrar la tecnología solo para negarla no es lo mismo que no mencionarla.
+    const negatedOnly = units.filter((unit) =>
+      requirement.conceptIds.every((id) => unit.conceptMatches().some((item) => item.id === id)),
+    );
+    return negatedOnly.length
+      ? {
+          status: 'missing',
+          reason: deniedTechnology,
+          evidence: negatedOnly.map((unit) => evidenceOf(unit, 'negation')),
+        }
+      : { status: 'missing', reason: `El CV no menciona ${labels}.`, evidence: [] };
   }
   return {
     status: 'mentioned',

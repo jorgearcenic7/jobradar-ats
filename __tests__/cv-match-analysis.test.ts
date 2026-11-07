@@ -324,6 +324,150 @@ describe('years of experience', () => {
   });
 });
 
+// Una duración negada no prueba que se cumpla el requisito, pero tampoco cuántos años se tienen.
+describe('negated years of experience', () => {
+  const offer = `Requisitos
+- Mínimo 3 años de experiencia con React.
+- Mínimo 3 años de experiencia con Python.`;
+  const yearsOf = (experienceLine: string, id = 'years:3:react') =>
+    assessment(analyzeMatch(cvWith(experienceLine), offer), id);
+
+  it.each([
+    '- No tengo 5 años de experiencia con React.',
+    '- Nunca he trabajado 5 años con React.',
+  ])('does not take "%s" as evidence of the duration', (line) => {
+    const years = yearsOf(line);
+    expect(years.status).toBe('missing');
+    expect(years.contribution).toEqual({ points: 0, weight: 2 });
+    expect(years.evidence.map((item) => item.role)).toEqual(['negation']);
+    // Negar una cifra no es negar toda experiencia: el motivo no lo afirma.
+    expect(years.reason).toBe(
+      'El CV dice que no tienes 5 años de experiencia con React, pero no indica cuántos tienes, así que no acredita los 3 años que pide la oferta.',
+    );
+  });
+
+  it('still supports a duration stated without negation', () => {
+    expect(yearsOf('- Tengo 5 años de experiencia con React en comercio electrónico.').status).toBe(
+      'supported',
+    );
+  });
+
+  it('does not read "no solo" as a negation of the duration', () => {
+    const years = yearsOf('- No solo tengo 5 años de experiencia con React, también con Vue.');
+    expect(years.status).toBe('supported');
+    expect(years.reason).toMatch(/declara 5 años/);
+  });
+
+  it('evaluates each technology with the duration of its own clause', () => {
+    const line = '- No tengo 5 años con React, pero sí 6 años con Python.';
+    expect(yearsOf(line).status).toBe('missing');
+    const python = yearsOf(line, 'years:3:python');
+    expect(python.status).toBe('supported');
+    expect(python.reason).toMatch(/declara 6 años/);
+  });
+
+  it('does not lend a negated duration to the other clause when its number has no unit', () => {
+    // «sí 6» sin «años» no se reconoce como duración: Python queda sin una duración declarada.
+    const line = '- No tengo 5 años con React, pero sí 6 con Python.';
+    expect(yearsOf(line).status).toBe('missing');
+    expect(yearsOf(line, 'years:3:python').status).toBe('mentioned');
+  });
+
+  it('does not lend the duration of one technology to another one the CV denies', () => {
+    const line = '- Tengo 4 años de experiencia con Python, pero no con React.';
+    expect(yearsOf(line, 'years:3:python').status).toBe('supported');
+    expect(yearsOf(line).status).not.toBe('supported');
+  });
+
+  it('supports the requirement with a positive statement in another sentence', () => {
+    const years = yearsOf(
+      '- No tengo 5 años de experiencia con React.\n- Tengo 4 años de experiencia con React en comercio electrónico.',
+    );
+    expect(years.status).toBe('supported');
+    expect(years.reason).toMatch(/declara 4 años/);
+  });
+
+  it('keeps the earlier readings of statements without negation', () => {
+    expect(yearsOf('- Tengo 5 años de experiencia, sobre todo con React y Python.').status).toBe(
+      'supported',
+    );
+    expect(yearsOf('- Tengo 2 años de experiencia con React.').status).toBe('missing');
+    expect(yearsOf('- Desarrollé un panel con React para 3 clientes.').status).toBe('mentioned');
+  });
+
+  it('does not take a negated general duration as evidence', () => {
+    const general = 'Requisitos\n- Experiencia mínima de 2 años.';
+    const cv = 'PERFIL\nNo tengo 5 años de experiencia, pero sí formación en desarrollo web.';
+    const years = assessment(analyzeMatch(cv, general), 'years:2:general');
+    expect(years.status).toBe('missing');
+    expect(years.reason).toBe(
+      'El CV dice que no tienes 5 años de experiencia, pero no indica cuántos tienes, así que no acredita los 2 años que pide la oferta.',
+    );
+  });
+
+  // Tres situaciones distintas, con tres explicaciones distintas.
+  it('tells a denied duration apart from a denied technology and from a missing duration', () => {
+    expect(yearsOf('- No tengo 5 años de experiencia con React.').reason).toBe(
+      'El CV dice que no tienes 5 años de experiencia con React, pero no indica cuántos tienes, así que no acredita los 3 años que pide la oferta.',
+    );
+
+    const deniedTechnology = yearsOf('- Tengo 5 años de experiencia con Python y no con React.');
+    expect(deniedTechnology.status).toBe('missing');
+    expect(deniedTechnology.evidence.map((item) => item.role)).toEqual(['negation']);
+    expect(deniedTechnology.reason).toBe(
+      'El CV solo menciona React en frases que lo niegan, así que no acredita los 3 años que pide la oferta.',
+    );
+
+    const noDuration = yearsOf('- Desarrollé un panel con React para 3 clientes.');
+    expect(noDuration.status).toBe('mentioned');
+    expect(noDuration.reason).toBe(
+      'El CV menciona React, pero no indica cuánto tiempo lo has usado. JobRadar no calcula la duración a partir de las fechas.',
+    );
+  });
+});
+
+// Cada cifra de años cuenta solo para las tecnologías de su propio tramo de la frase.
+describe('years attributed to each clause', () => {
+  const offer = `Requisitos
+- Mínimo 5 años de experiencia con React.
+- Mínimo 5 años de experiencia con Python.`;
+  const statusFor = (experienceLine: string, id: string) =>
+    assessment(analyzeMatch(cvWith(experienceLine), offer), id).status;
+
+  it.each([
+    ['- Tengo 8 años de experiencia profesional, pero solo 2 años con Python.', 'years:5:python'],
+    ['- Tengo 8 años de experiencia profesional, aunque solo 2 años con React.', 'years:5:react'],
+  ])('does not lend general years to a technology: "%s"', (line, id) => {
+    const years = assessment(analyzeMatch(cvWith(line), offer), id);
+    expect(years.status).toBe('missing');
+    expect(years.reason).toMatch(/declara 2 años/);
+  });
+
+  it('gives each technology the years of its own clause', () => {
+    const line = '- Tengo 6 años con React, pero solo 2 años con Python.';
+    expect(statusFor(line, 'years:5:react')).toBe('supported');
+    expect(statusFor(line, 'years:5:python')).toBe('missing');
+  });
+
+  it('keeps an explicit statement in another sentence', () => {
+    const lines =
+      '- Tengo 8 años de experiencia profesional. Durante 6 años he trabajado con Python.';
+    expect(statusFor(lines, 'years:5:python')).toBe('supported');
+  });
+
+  it('does not say a technology is absent when the CV only mentions it to deny it', () => {
+    const years = assessment(
+      analyzeMatch(cvWith('- Tengo 4 años de experiencia con Python, pero no con React.'), offer),
+      'years:5:react',
+    );
+    expect(years.status).toBe('missing');
+    expect(years.reason).toBe(
+      'El CV solo menciona React en frases que lo niegan, así que no acredita los 5 años que pide la oferta.',
+    );
+    expect(years.evidence.map((item) => item.role)).toEqual(['negation']);
+  });
+});
+
 describe('theoretical or indirect knowledge', () => {
   const offer = 'Requisitos\n- Docker.\n- Kubernetes.';
 

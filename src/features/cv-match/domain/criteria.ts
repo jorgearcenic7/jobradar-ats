@@ -132,13 +132,24 @@ export function languageLevelAt(normalized: string, position: number): LanguageL
   return { level: null, levelText: word ?? null };
 }
 
+/** Una cifra de años del texto y la posición de la cifra, para saber qué la rodea. */
+export type YearMention = { years: number; start: number; end: number };
+
+/** Cifras de años de un texto normalizado, en orden de aparición, con su posición. */
+export function findYearMentions(normalized: string): YearMention[] {
+  const pattern = /(^|[^0-9])(\d{1,2})\s*\+?\s*(?:o mas\s+|or more\s+)?(?:anos|years)(?=$|[^a-z])/g;
+  const mentions: YearMention[] = [];
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(normalized))) {
+    const start = match.index + match[1].length;
+    mentions.push({ years: Number(match[2]), start, end: match.index + match[0].length });
+  }
+  return mentions;
+}
+
 /** Numbers of years stated in a text: "3 años", "+3 años", "5 years". */
 export function findYears(normalized: string): number[] {
-  const pattern = /(^|[^0-9])(\d{1,2})\s*\+?\s*(?:o mas\s+|or more\s+)?(?:anos|years)(?=$|[^a-z])/g;
-  const years: number[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = pattern.exec(normalized))) years.push(Number(match[2]));
-  return years;
+  return findYearMentions(normalized).map((mention) => mention.years);
 }
 
 export function mentionsExperience(normalized: string): boolean {
