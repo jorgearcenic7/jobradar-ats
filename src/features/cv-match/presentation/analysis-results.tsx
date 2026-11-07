@@ -4,6 +4,7 @@ import type { AnalysisComparison } from '@/features/cv-match/domain/compare';
 import type { AnalysisResult, RequirementStatus } from '@/features/cv-match/domain/types';
 import { space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
+import { EmptyState } from '@/shared/ui/empty-state';
 import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 import { AnalysisChanges } from './analysis-changes';
@@ -34,11 +35,14 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
       ) : null}
 
       {result.requirements.length === 0 ? (
+        // Ocupa el lugar de los grupos de requisitos, así que su título es también un `h3`.
         <Card>
-          <ThemedText step="callout">
-            No se ha reconocido ningún requisito en la oferta. Comprueba que el texto incluye sus
-            requisitos.
-          </ThemedText>
+          <EmptyState
+            icon="info"
+            level={3}
+            title="No se ha reconocido ningún requisito en la oferta"
+            description="Comprueba que el texto de la oferta incluye sus requisitos."
+          />
         </Card>
       ) : (
         groupOrder.map((status) => {

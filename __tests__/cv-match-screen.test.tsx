@@ -103,6 +103,34 @@ describe('CV match screen', () => {
     expect(screen.getByText(/La oferta ha cambiado/)).toBeOnTheScreen();
   });
 
+  it('explains with an empty state when the offer has no recognizable requirements', async () => {
+    const user = await renderScreen();
+    await user.press(screen.getByRole('button', { name: 'Cargar ejemplo ficticio' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Oferta de empleo'),
+      'Hola, buscamos a alguien con ganas.',
+    );
+
+    await user.press(analyzeButton());
+
+    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    // Ocupa el lugar de los grupos de requisitos, con un título del mismo nivel que ellos.
+    const emptyTitle = screen.getByRole('header', {
+      name: 'No se ha reconocido ningún requisito en la oferta',
+    });
+    expect(emptyTitle.props['aria-level']).toBe(3);
+    expect(
+      screen.getByText('Comprueba que el texto de la oferta incluye sus requisitos.'),
+    ).toBeOnTheScreen();
+    const sectionTitles = screen
+      .getAllByRole('header')
+      .filter((header) => header.props['aria-level'] === 3);
+    expect(sectionTitles).toEqual([emptyTitle]);
+    // Sin acción propia: el flujo del analizador no cambia y las recomendaciones siguen debajo.
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('header', { name: 'Recomendaciones' })).toBeOnTheScreen();
+  });
+
   it('shows requirement names with a capital letter', async () => {
     const user = await renderScreen();
     await user.press(screen.getByRole('button', { name: 'Cargar ejemplo ficticio' }));
