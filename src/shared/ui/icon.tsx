@@ -14,6 +14,7 @@ export const iconSymbols = {
   add: { ios: 'plus', android: 'add', web: 'add' },
   arrowForward: { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' },
   checkCircle: { ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' },
+  chevronDown: { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' },
   chevronRight: { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' },
   close: { ios: 'xmark', android: 'close', web: 'close' },
   error: { ios: 'exclamationmark.circle', android: 'error', web: 'error' },

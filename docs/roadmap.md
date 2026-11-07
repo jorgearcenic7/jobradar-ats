@@ -25,22 +25,24 @@ El orden entre las subfases pendientes de la Fase 2 y la Fase A se decide en cad
 
 ### Fase 2 — Sistema de diseño
 
-**En curso.** Los tokens, los componentes base y los componentes de estado están terminados; falta la consolidación.
+**En curso.** Los tokens, los componentes base y los componentes de estado están terminados. Faltan los componentes interactivos de la subfase 2c.3, que necesita el rediseño de Resultados, y la consolidación.
 
-| Subfase | Contenido                                                                                    | Estado     | Commit    |
-| ------- | -------------------------------------------------------------------------------------------- | ---------- | --------- |
-| 2a.1    | Colores, tipografía y temas claro y oscuro                                                   | Completada | `f1d702c` |
-| 2a.2    | Tipografía Sora en títulos y cifras                                                          | Completada | `a3b9df3` |
-| 2b.1a   | Componentes `Screen` y `Card`                                                                | Completada | `2022d3a` |
-| 2b.1b   | Integración de `Screen` y `Card` y accesibilidad de la pantalla inicial                      | Completada | `7d66eac` |
-| 2b.1c   | Corrección del salto visual durante la carga de estilos en web                               | Completada | `8dc2a98` |
-| 2b.2a   | Componente `Icon`                                                                            | Completada | `8d9895b` |
-| 2b.2b   | Componente `Button`                                                                          | Completada | `1b33c2b` |
-| 2c.1a   | `TextField` de una línea                                                                     | Completada | `0b85f00` |
-| 2c.1b   | `TextField` multilínea y contador opcional                                                   | Completada | `8db3fc3` |
-| 2c.2a   | `Badge` y `Notice`                                                                           | Completada | `8f41942` |
-| 2c.2b   | `EmptyState`                                                                                 | Completada | —         |
-| 2d      | Consolidación: VoiceOver, Dynamic Type, capturas finales, revisión de código y documentación | Próxima    | —         |
+| Subfase | Contenido                                                                                    | Estado                                       | Commit    |
+| ------- | -------------------------------------------------------------------------------------------- | -------------------------------------------- | --------- |
+| 2a.1    | Colores, tipografía y temas claro y oscuro                                                   | Completada                                   | `f1d702c` |
+| 2a.2    | Tipografía Sora en títulos y cifras                                                          | Completada                                   | `a3b9df3` |
+| 2b.1a   | Componentes `Screen` y `Card`                                                                | Completada                                   | `2022d3a` |
+| 2b.1b   | Integración de `Screen` y `Card` y accesibilidad de la pantalla inicial                      | Completada                                   | `7d66eac` |
+| 2b.1c   | Corrección del salto visual durante la carga de estilos en web                               | Completada                                   | `8dc2a98` |
+| 2b.2a   | Componente `Icon`                                                                            | Completada                                   | `8d9895b` |
+| 2b.2b   | Componente `Button`                                                                          | Completada                                   | `1b33c2b` |
+| 2c.1a   | `TextField` de una línea                                                                     | Completada                                   | `0b85f00` |
+| 2c.1b   | `TextField` multilínea y contador opcional                                                   | Completada                                   | `8db3fc3` |
+| 2c.2a   | `Badge` y `Notice`                                                                           | Completada                                   | `8f41942` |
+| 2c.2b   | `EmptyState`                                                                                 | Completada                                   | `23ef3c1` |
+| 2c.3a   | `Disclosure`                                                                                 | Implementada, pendiente de revisión y commit | —         |
+| 2c.3    | Resto de componentes interactivos: `SegmentedControl` y `CoverageBar`                        | Próxima                                      | —         |
+| 2d      | Consolidación: VoiceOver, Dynamic Type, capturas finales, revisión de código y documentación | Próxima                                      | —         |
 
 También queda pendiente, sin subfase asignada, la migración a `src/shared/` de los hooks heredados de la plantilla. El `ThemedText` de la plantilla y el adaptador `constants/theme.ts` se retiraron en la Fase A, sustituidos por `src/shared/ui/themed-text.tsx` (ver [architecture.md](architecture.md)).
 

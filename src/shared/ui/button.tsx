@@ -5,14 +5,13 @@ import {
   StyleSheet,
   Text,
   View,
-  type NativeSyntheticEvent,
   type StyleProp,
-  type TargetedEvent,
   type ViewStyle,
 } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { layout, radius, space, typography, type ThemeColor } from '@/shared/theme';
+import { focusRing, isKeyboardFocus } from '@/shared/ui/focus-ring';
 import { Icon, type IconName } from '@/shared/ui/icon';
 
 export type ButtonProps = {
@@ -60,12 +59,6 @@ const disabledColors: VariantColors = {
   content: 'textSecondary',
 };
 
-// Keyboard focus only: a mouse click focuses the button too, but must not show the ring.
-function isKeyboardFocus(event: NativeSyntheticEvent<TargetedEvent>) {
-  const target = event.target as unknown as { matches?: (selector: string) => boolean };
-  return target.matches?.(':focus-visible') ?? false;
-}
-
 export function Button({
   label,
   onPress,
@@ -100,7 +93,7 @@ export function Button({
             theme[pressed && !loading ? colors.pressedBackground : colors.background],
           borderColor: theme[colors.border],
         },
-        focusVisible && { ...styles.focusRing, outlineColor: theme.focusRing },
+        focusVisible && { ...focusRing, outlineColor: theme.focusRing },
         style,
       ]}>
       <View style={[styles.content, loading && styles.hidden]}>
@@ -160,10 +153,5 @@ const styles = StyleSheet.create({
     left: 0,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  focusRing: {
-    outlineStyle: 'solid',
-    outlineWidth: 2,
-    outlineOffset: 2,
   },
 });
