@@ -119,13 +119,13 @@ src/features/cv-match/presentation/
   cv-section.tsx           # Sección «Tu CV»: selector Archivo / Pegar texto y campo de cada modalidad
   offer-section.tsx        # Sección «La oferta»: texto de la oferta, estado y editor ampliable
   use-cv-match.ts          # Estado del análisis: validación, resultado, comparación y desactualización
-  analysis-results.tsx     # Bloque de resultados: cobertura, cambios, requisitos por estado y recomendaciones
-  coverage-summary.tsx     # Cobertura, puntos y recuentos por estado, con su explicación
+  analysis-results.tsx     # Bloque de resultados: resumen, cambios, qué mejorar primero y requisitos por estado
+  coverage-summary.tsx     # Resumen compacto: cobertura, barra, recuentos y aclaración ATS; el cálculo, plegado
   coverage-bar.tsx         # Puntos posibles y aportados por estado en una barra segmentada
   requirement-item.tsx     # Un requisito: estado, aportación, motivo y evidencias del CV y la oferta
   status-badge.tsx         # Estado con icono y texto, nunca solo color
-  analysis-changes.tsx     # Cambios respecto al análisis anterior
-  recommendation-list.tsx  # Recomendaciones
+  analysis-changes.tsx     # Cambios respecto al análisis anterior: cobertura visible y lista plegada
+  recommendation-list.tsx  # «Qué mejorar primero»: tres recomendaciones y «Ver todas»
   labels.ts                # Textos de estados, importancia, secciones y formatos de números
   sample-texts.ts          # CV y oferta ficticios para la demostración
 ```
@@ -143,6 +143,7 @@ src/features/cv-match/presentation/
 - **Vuelta al inicio provisional.** La pantalla recibe `onGoHome` de la ruta, que vuelve atrás o, si se abrió directamente, sustituye la ruta por la de inicio. Así `cv-match` no depende de Expo Router.
 - **Componentes compartidos.** El indicador de estado delega en `Badge` y los avisos usan `Notice` (Fase 2c.2a). Si la oferta no tiene requisitos reconocibles, Resultados muestra un `EmptyState` sin acción en el lugar de los grupos de requisitos, con un título `h3` como ellos (Fase 2c.2b).
 - **Barra de cobertura.** `CoverageBar` vive en la presentación de `cv-match`, porque conoce los estados del analizador. Recibe las evaluaciones y agrega exclusivamente los valores de `contribution` ya calculados por el dominio: no decide pesos, aportaciones ni porcentaje. `CoverageSummary` conserva el porcentaje, los recuentos y la explicación anteriores, y omite la barra cuando no hay requisitos evaluables.
+- **Resultados, primera pantalla (Fase 3c.1).** Orden: título (`h1`), resumen compacto, comparación (si existe), «Qué mejorar primero» (`h2`) y «Requisitos de la oferta» (`h2`, con sus grupos `h3`). Se quitó el `h2` «Resultados», redundante con el título. El resumen mantiene porcentaje, puntos, barra, recuentos y «No es una puntuación ATS ni una probabilidad de contratación»; la explicación del cálculo está en un `Disclosure` («Cómo se calcula la cobertura»). La comparación muestra la variación de cobertura y pliega la lista de requisitos cambiados. Las recomendaciones llegan ordenadas por el motor: se muestran las tres primeras y «Ver todas (N)» añade el resto sin repetir ninguna; los mensajes idénticos se muestran una vez. No se recalcula nada. Medición con datos ficticios en 390 × 844 px: la primera recomendación empieza a 635 px y cabe entera (110 px); con comparación empieza a 799 px y se ven 45 px de ella.
 
 ### Módulo `cv-import` (Fase A)
 

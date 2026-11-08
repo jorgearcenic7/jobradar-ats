@@ -39,7 +39,7 @@ describe('CV match screen in the native app', () => {
     await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), sampleOffer);
     await user.press(screen.getByRole('button', { name: 'Analizar' }));
 
-    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Resultados del análisis' })).toBeOnTheScreen();
   });
 
   it('offers the same offer section, with an editor that expands within the window', async () => {

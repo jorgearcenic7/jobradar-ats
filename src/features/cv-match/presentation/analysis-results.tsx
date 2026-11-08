@@ -24,7 +24,6 @@ type AnalysisResultsProps = {
 export function AnalysisResults({ result, comparison, offerChanged }: AnalysisResultsProps) {
   return (
     <View style={styles.results}>
-      <Heading level={2}>Resultados</Heading>
       <CoverageSummary coverage={result.coverage} assessments={result.requirements} />
       {comparison ? <AnalysisChanges comparison={comparison} /> : null}
       {offerChanged ? (
@@ -34,6 +33,10 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
         </ThemedText>
       ) : null}
 
+      {/* Lo accionable va primero: las recomendaciones, antes del detalle de cada requisito. */}
+      <RecommendationList recommendations={result.recommendations} />
+
+      <Heading level={2}>Requisitos de la oferta</Heading>
       {result.requirements.length === 0 ? (
         // Ocupa el lugar de los grupos de requisitos, así que su título es también un `h3`.
         <Card>
@@ -63,8 +66,6 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
           );
         })
       )}
-
-      <RecommendationList recommendations={result.recommendations} />
     </View>
   );
 }

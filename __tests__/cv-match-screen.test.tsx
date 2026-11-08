@@ -32,7 +32,7 @@ describe('CV match screen', () => {
 
     expect(screen.getByText('Selecciona tu CV o pega su texto para analizarlo.')).toBeOnTheScreen();
     expect(screen.getByText('Pega el texto de la oferta para analizarla.')).toBeOnTheScreen();
-    expect(screen.queryByRole('header', { name: 'Resultados' })).not.toBeOnTheScreen();
+    expect(screen.queryByRole('header', { name: 'Resultados del análisis' })).not.toBeOnTheScreen();
   });
 
   it('keeps the heading levels in order below the screen title', async () => {
@@ -68,7 +68,7 @@ describe('CV match screen', () => {
     await user.press(screen.getByRole('button', { name: 'Cargar ejemplo ficticio' }));
     await user.press(analyzeButton());
 
-    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Resultados del análisis' })).toBeOnTheScreen();
     expect(screen.getByText(`${expected.coverage.percentage} %`)).toBeOnTheScreen();
     expect(
       screen.getByText(/No es una puntuación ATS ni una probabilidad de contratación/),
@@ -89,7 +89,7 @@ describe('CV match screen', () => {
     expect(
       screen.getByRole('header', { name: /No evaluables, fuera del porcentaje/ }),
     ).toBeOnTheScreen();
-    expect(screen.getByRole('header', { name: 'Recomendaciones' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Qué mejorar primero' })).toBeOnTheScreen();
   });
 
   it('does not compare analyses of different offers', async () => {
@@ -120,7 +120,7 @@ describe('CV match screen', () => {
 
     await user.press(analyzeButton());
 
-    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Resultados del análisis' })).toBeOnTheScreen();
     // Ocupa el lugar de los grupos de requisitos, con un título del mismo nivel que ellos.
     const emptyTitle = screen.getByRole('header', {
       name: 'No se ha reconocido ningún requisito en la oferta',
@@ -135,7 +135,7 @@ describe('CV match screen', () => {
     expect(sectionTitles).toEqual([emptyTitle]);
     // Sin acción propia: el flujo del analizador no cambia y las recomendaciones siguen debajo.
     expect(screen.queryByRole('alert')).toBeNull();
-    expect(screen.getByRole('header', { name: 'Recomendaciones' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Qué mejorar primero' })).toBeOnTheScreen();
   });
 
   it('shows requirement names with a capital letter', async () => {
@@ -182,6 +182,8 @@ describe('CV match screen', () => {
     expect(
       screen.getByRole('header', { name: 'Cambios respecto al análisis anterior' }),
     ).toBeOnTheScreen();
+    // La lista de cambios está plegada hasta que se pide.
+    await user.press(screen.getByRole('button', { name: /de estado$/ }));
     expect(
       screen.getByText('3 años de experiencia con React: sin evidencia suficiente → respaldado'),
     ).toBeOnTheScreen();
@@ -207,7 +209,7 @@ describe('Offer section on the analysis screen', () => {
 
     await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     // Escribir la oferta no analiza nada por sí solo.
-    expect(screen.queryByRole('header', { name: 'Resultados' })).not.toBeOnTheScreen();
+    expect(screen.queryByRole('header', { name: 'Resultados del análisis' })).not.toBeOnTheScreen();
 
     await user.press(analyzeButton());
     expect(screen.getByRole('header', { name: 'Respaldados por tu CV (1)' })).toBeOnTheScreen();
@@ -234,7 +236,7 @@ describe('Offer section on the analysis screen', () => {
     ).not.toBeOnTheScreen();
     // Los resultados siguen siendo los del texto actual: se pueden volver a ver sin analizar.
     await user.press(screen.getByRole('button', { name: 'Ver resultados' }));
-    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Resultados del análisis' })).toBeOnTheScreen();
     expect(screen.queryByText(/Has cambiado el CV o la oferta/)).not.toBeOnTheScreen();
   });
 

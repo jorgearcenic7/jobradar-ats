@@ -111,7 +111,7 @@ describe('CV import on the analysis screen', () => {
 
     await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     await analyze(user);
-    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Resultados del análisis' })).toBeOnTheScreen();
     expect(screen.getByRole('header', { name: 'Respaldados por tu CV (2)' })).toBeOnTheScreen();
   });
 
@@ -137,7 +137,7 @@ describe('CV import on the analysis screen', () => {
     await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     await analyze(user);
     expect(screen.getByText(/No se ha podido leer este CV/)).toBeOnTheScreen();
-    expect(screen.queryByRole('header', { name: 'Resultados' })).not.toBeOnTheScreen();
+    expect(screen.queryByRole('header', { name: 'Resultados del análisis' })).not.toBeOnTheScreen();
   });
 
   it('explains that a PDF without text needs OCR and blocks the analysis', async () => {
@@ -150,7 +150,7 @@ describe('CV import on the analysis screen', () => {
     await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     await analyze(user);
     expect(screen.getByText(/Este CV no tiene texto que se pueda analizar/)).toBeOnTheScreen();
-    expect(screen.queryByRole('header', { name: 'Resultados' })).not.toBeOnTheScreen();
+    expect(screen.queryByRole('header', { name: 'Resultados del análisis' })).not.toBeOnTheScreen();
   });
 
   it('refuses files over 10 MB without reading them', async () => {
@@ -222,18 +222,18 @@ describe('CV import on the analysis screen', () => {
     await waitForImport('cv-ficticio.pdf');
     await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     await analyze(user);
-    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Resultados del análisis' })).toBeOnTheScreen();
 
     // «Cambiar archivo» en la tarjeta sustituye el documento.
     await editInputs(user);
     await selectCv(user, picked('cv-ficticio.docx', docxCv));
     await waitForImport('cv-ficticio.docx');
     expect(screen.queryByText('cv-ficticio.pdf')).not.toBeOnTheScreen();
-    expect(screen.queryByRole('header', { name: 'Resultados' })).not.toBeOnTheScreen();
+    expect(screen.queryByRole('header', { name: 'Resultados del análisis' })).not.toBeOnTheScreen();
     expect(screen.getByText(/Has cambiado de CV/)).toBeOnTheScreen();
 
     await analyze(user);
-    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Resultados del análisis' })).toBeOnTheScreen();
     expect(
       screen.getByRole('header', { name: 'Cambios respecto al análisis anterior' }),
     ).toBeOnTheScreen();
