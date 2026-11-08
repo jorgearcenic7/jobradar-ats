@@ -48,31 +48,36 @@ export function ResultsScreen({ onEdit }: ResultsScreenProps) {
     <Screen style={[styles.content, isWeb && styles.webContent]}>
       <ResultsPage>
         <AppNavigation section="analysis" />
-        {result || cvReplaced ? (
-          <Button
-            label="Editar CV u oferta"
-            variant="secondary"
-            onPress={onEdit}
-            style={styles.start}
-          />
-        ) : null}
-        {/* Destino del foco al abrir la pantalla; no es un control, así que no entra en la tabulación. */}
-        <View ref={titleRef} tabIndex={-1} style={styles.focusTarget}>
-          <ThemedText step="title" accessibilityRole="header">
-            Resultados del análisis
-          </ThemedText>
-        </View>
-
-        {/* Siempre montada, para anunciar que los resultados han quedado desactualizados. */}
-        <View aria-live="polite">
-          {result && isOutdated ? (
-            <Notice
-              tone="warning"
-              actions={<Button label="Volver a analizar" onPress={reanalyze} />}>
-              Has cambiado el CV o la oferta desde el último análisis. Estos resultados corresponden
-              a la versión anterior.
-            </Notice>
-          ) : null}
+        <View>
+          <View style={styles.titleRow}>
+            {/* El título conserva su destino de foco y queda antes de la acción contextual. */}
+            <View ref={titleRef} tabIndex={-1} style={styles.focusTarget}>
+              <ThemedText step="title" accessibilityRole="header">
+                Resultados del análisis
+              </ThemedText>
+            </View>
+            {result || cvReplaced ? (
+              <Button
+                label="Editar CV u oferta"
+                variant="secondary"
+                onPress={onEdit}
+                style={styles.edit}
+              />
+            ) : null}
+          </View>
+          {/* Siempre montada, pero sin reservar separaciones cuando no hay aviso. */}
+          <View aria-live="polite">
+            {result && isOutdated ? (
+              <View style={styles.notice}>
+                <Notice
+                  tone="warning"
+                  actions={<Button label="Volver a analizar" onPress={reanalyze} />}>
+                  Has cambiado el CV o la oferta desde el último análisis. Estos resultados
+                  corresponden a la versión anterior.
+                </Notice>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         {result ? (
@@ -103,11 +108,22 @@ const styles = StyleSheet.create({
   webContent: {
     maxWidth: '100%',
   },
-  start: {
-    alignSelf: 'flex-start',
+  titleRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space[2],
+  },
+  edit: {
+    paddingVertical: space[2],
+  },
+  notice: {
+    marginTop: space[3],
   },
   // El título recibe el foco por programa; no se dibuja un anillo porque no es interactivo.
   focusTarget: {
+    maxWidth: '100%',
     outlineStyle: 'solid',
     outlineWidth: 0,
   },

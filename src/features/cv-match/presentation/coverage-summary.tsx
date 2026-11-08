@@ -86,19 +86,21 @@ export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps)
 
 const styles = StyleSheet.create({
   card: {
-    gap: space[3],
+    gap: space[2],
+    borderWidth: 0,
   },
   figure: {
     gap: space[1],
   },
   figureRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'baseline',
+    // Los puntos se ajustan junto al porcentaje en lugar de añadir otra fila completa.
+    alignItems: 'center',
     columnGap: space[3],
   },
   points: {
-    flexShrink: 1,
+    flex: 1,
+    minWidth: 0,
   },
   counts: {
     flexDirection: 'row',

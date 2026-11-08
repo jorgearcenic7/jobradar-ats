@@ -55,9 +55,8 @@ export function CvMatchScreen({ onShowResults }: CvMatchScreenProps) {
           Analizar CV y oferta
         </ThemedText>
         <ThemedText step="callout" color="textSecondary">
-          Compara tu CV con una oferta requisito a requisito y comprueba qué respalda tu CV con
-          evidencias. El análisis se hace en este dispositivo: el texto no se guarda ni se envía a
-          ningún servicio.
+          Añade tu CV y la oferta para revisar sus requisitos. El análisis se hace en este
+          dispositivo: el texto no se guarda ni se envía a ningún servicio.
         </ThemedText>
       </View>
 
@@ -82,7 +81,7 @@ export function CvMatchScreen({ onShowResults }: CvMatchScreenProps) {
           fieldRef={session.offerRef}
         />
         <View style={styles.submit}>
-          <Button label="Analizar" icon="arrowForward" onPress={analyze} style={styles.analyze} />
+          <Button label="Analizar" icon="arrowForward" onPress={analyze} />
           {/* Siempre montada, para que los lectores de pantalla anuncien el estado del último análisis. */}
           <View aria-live="polite" style={styles.status}>
             {status ? (
@@ -146,6 +145,7 @@ const styles = StyleSheet.create({
     gap: space[2],
   },
   form: {
+    borderWidth: 0,
     // Wider than the label-to-field gap, so helper text never reads as the next field's.
     gap: space[6],
   },

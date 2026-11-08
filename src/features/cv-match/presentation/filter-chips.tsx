@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     gap: space[2],
     paddingHorizontal: space[3],
     paddingVertical: space[2],
-    borderWidth: 2,
+    borderWidth: 1,
     borderRadius: radius.full,
   },
   label: {

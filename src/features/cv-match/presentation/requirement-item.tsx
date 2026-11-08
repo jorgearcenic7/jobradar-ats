@@ -12,7 +12,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { RequirementAssessment } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
-import { space } from '@/shared/theme';
+import { radius, space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
 import { Disclosure } from '@/shared/ui/disclosure';
 import { ThemedText } from '@/shared/ui/themed-text';
@@ -106,7 +106,9 @@ export function RequirementItem({ assessment }: { assessment: RequirementAssessm
 const styles = StyleSheet.create({
   card: {
     gap: 0,
-    paddingVertical: space[1],
+    paddingVertical: 0,
+    borderWidth: 0,
+    borderRadius: radius.md,
   },
   header: {
     gap: space[1],

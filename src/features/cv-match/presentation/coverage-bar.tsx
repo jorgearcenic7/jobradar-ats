@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   legend: {
     marginTop: space[2],
-    gap: space[2],
+    gap: space[1],
   },
   legendItem: {
     flexDirection: 'row',

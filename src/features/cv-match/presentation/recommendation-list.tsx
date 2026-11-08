@@ -79,5 +79,6 @@ const styles = StyleSheet.create({
   },
   more: {
     alignSelf: 'flex-start',
+    paddingVertical: space[2],
   },
 });

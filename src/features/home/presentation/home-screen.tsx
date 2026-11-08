@@ -132,8 +132,9 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
 }
 
 const styles = StyleSheet.create({
-  content: { maxWidth: 1120, gap: space[8] },
+  content: { maxWidth: 1120, gap: space[6] },
   hero: {
+    borderWidth: 0,
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: space[6],
@@ -142,7 +143,7 @@ const styles = StyleSheet.create({
   },
   message: { flexBasis: 480, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[4] },
   actions: { flexBasis: 320, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[3] },
-  columns: { flexDirection: 'row', flexWrap: 'wrap', gap: space[8] },
+  columns: { flexDirection: 'row', flexWrap: 'wrap', gap: space[6] },
   steps: { flexBasis: 480, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[4] },
   stepList: { gap: space[6] },
   step: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
