@@ -42,6 +42,9 @@ describe('Analysis flow between Prepare and Results', () => {
     const headers = screen.getAllByRole('header');
     expect(headers[0]).toBe(resultsTitle());
     expect(screen.getByRole('header', { name: 'Respaldados por tu CV (1)' })).toBeOnTheScreen();
+    expect(screen.getByRole('link', { name: 'Analizar' }).props['aria-current']).toBe('page');
+    expect(screen.getAllByRole('link')).toHaveLength(2);
+    expect(screen.queryByRole('link', { name: 'Resultados' })).not.toBeOnTheScreen();
   });
 
   it('stays on Prepare with the errors when the analysis cannot start', async () => {
@@ -54,18 +57,22 @@ describe('Analysis flow between Prepare and Results', () => {
     expect(screen.getByText('Pega el texto de la oferta para analizarla.')).toBeOnTheScreen();
   });
 
-  it('goes back to Prepare keeping the mode, the CV and the offer', async () => {
-    const user = await start();
-    await fillAndAnalyze(user);
+  it.each(['context-action', 'main-navigation'] as const)(
+    'goes back to Prepare keeping the mode, the CV and the offer (%s)',
+    async (source) => {
+      const user = await start();
+      await fillAndAnalyze(user);
 
-    await editInputs(user);
+      if (source === 'context-action') await editInputs(user);
+      else await user.press(screen.getByRole('link', { name: 'Analizar' }));
 
-    expect(screen).toHavePathname('/analisis');
-    expect(screen.getByRole('radio', { name: 'Pegar texto', checked: true })).toBeOnTheScreen();
-    expect(screen.getByLabelText('Texto del CV').props.value).toBe(cv);
-    expect(screen.getByLabelText('Texto de la oferta').props.value).toBe(offer);
-    expect(screen.getByText(/^Último análisis: /)).toBeOnTheScreen();
-  });
+      expect(screen).toHavePathname('/analisis');
+      expect(screen.getByRole('radio', { name: 'Pegar texto', checked: true })).toBeOnTheScreen();
+      expect(screen.getByLabelText('Texto del CV').props.value).toBe(cv);
+      expect(screen.getByLabelText('Texto de la oferta').props.value).toBe(offer);
+      expect(screen.getByText(/^Último análisis: /)).toBeOnTheScreen();
+    },
+  );
 
   it('reopens the last results without analyzing again while they are current', async () => {
     const user = await start();

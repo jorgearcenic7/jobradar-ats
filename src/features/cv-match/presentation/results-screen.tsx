@@ -12,6 +12,7 @@ import { useEffect, useRef, type ComponentRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { space } from '@/shared/theme';
+import { AppNavigation } from '@/shared/navigation/app-navigation';
 import { Button } from '@/shared/ui/button';
 import { EmptyState } from '@/shared/ui/empty-state';
 import { Notice } from '@/shared/ui/notice';
@@ -46,6 +47,7 @@ export function ResultsScreen({ onEdit }: ResultsScreenProps) {
   return (
     <Screen style={[styles.content, isWeb && styles.webContent]}>
       <ResultsPage>
+        <AppNavigation section="analysis" />
         {result || cvReplaced ? (
           <Button
             label="Editar CV u oferta"

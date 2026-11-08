@@ -2,14 +2,15 @@
 Preparar análisis (`/analisis`): el CV, la oferta y la acción «Analizar».
 
 El estado vive en la sesión del analizador (`analysis-session.tsx`), compartida con Resultados.
-Esta pantalla no decide la navegación: la ruta le pasa qué hacer al terminar un análisis y cómo
-volver al inicio, así la presentación no depende de Expo Router.
+La ruta le pasa qué hacer al terminar un análisis. La cabecera compartida ofrece los destinos
+principales; la protección de salida se monta en el layout del analizador.
 */
 import { StyleSheet, View } from 'react-native';
 
 import type { AnalysisResult } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
 import { space } from '@/shared/theme';
+import { AppNavigation } from '@/shared/navigation/app-navigation';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Notice } from '@/shared/ui/notice';
@@ -31,13 +32,11 @@ function statusMessage(result: AnalysisResult | null, isOutdated: boolean) {
 }
 
 export type CvMatchScreenProps = {
-  /** Provisional way back until the tab navigation exists. */
-  onGoHome: () => void;
   /** Abre Resultados: tras un análisis correcto o para volver a ver el último. */
   onShowResults: () => void;
 };
 
-export function CvMatchScreen({ onGoHome, onShowResults }: CvMatchScreenProps) {
+export function CvMatchScreen({ onShowResults }: CvMatchScreenProps) {
   const theme = useTheme();
   const session = useAnalysisSession();
   const { cvImport, match } = session;
@@ -50,7 +49,7 @@ export function CvMatchScreen({ onGoHome, onShowResults }: CvMatchScreenProps) {
 
   return (
     <Screen style={styles.content}>
-      <Button label="Volver al inicio" variant="secondary" onPress={onGoHome} style={styles.back} />
+      <AppNavigation section="analysis" />
       <View style={styles.intro}>
         <ThemedText step="title" accessibilityRole="header">
           Analizar CV y oferta
@@ -149,9 +148,6 @@ const styles = StyleSheet.create({
   form: {
     // Wider than the label-to-field gap, so helper text never reads as the next field's.
     gap: space[6],
-  },
-  back: {
-    alignSelf: 'flex-start',
   },
   analyze: {
     alignSelf: 'flex-start',

@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { palettes, radius, space } from '@/shared/theme';
+import { AppNavigation } from '@/shared/navigation/app-navigation';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Disclosure } from '@/shared/ui/disclosure';
@@ -37,17 +38,7 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
 
   return (
     <Screen style={styles.content}>
-      <View style={styles.brand}>
-        <View style={[styles.brandMark, { backgroundColor: theme.accentSubtle }]}>
-          <Icon name="checkCircle" color="onAccentSubtle" />
-        </View>
-        <ThemedText step="heading">
-          JobRadar{' '}
-          <ThemedText step="heading" color="accentText">
-            ATS
-          </ThemedText>
-        </ThemedText>
-      </View>
+      <AppNavigation section="home" />
       <Card
         style={[
           styles.hero,
@@ -142,8 +133,6 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
 
 const styles = StyleSheet.create({
   content: { maxWidth: 1120, gap: space[8] },
-  brand: { flexDirection: 'row', alignItems: 'center', gap: space[3] },
-  brandMark: { padding: space[2], borderRadius: radius.md },
   hero: {
     flexDirection: 'row',
     flexWrap: 'wrap',

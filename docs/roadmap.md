@@ -60,7 +60,7 @@ Alcance:
 - Recomendaciones fundamentadas, sin inventar experiencia, titulaciones ni habilidades.
 - Comparación con el análisis anterior de la misma oferta.
 - Importación del CV en PDF y DOCX en la web, con avisos cuando la extracción puede estar incompleta.
-- Rutas `/analisis` (Preparar) y `/analisis/resultados` (Resultados), con acceso desde «Analizar mi CV» en Inicio; la navegación global sigue pendiente.
+- Rutas `/analisis` (Preparar) y `/analisis/resultados` (Resultados), con acceso desde «Analizar mi CV» en Inicio; la navegación principal Inicio / Analizar está disponible desde la Fase 4b.1.
 
 Límites:
 
@@ -107,11 +107,12 @@ La acción «Analizar», el diseño de Resultados y la navegación global mantie
 
 **En curso.** El Inicio explica el producto y da acceso inmediato al análisis, siguiendo el prototipo aprobado y el sistema visual existente.
 
-| Subfase | Contenido                                                                            | Estado                                       | Commit |
-| ------- | ------------------------------------------------------------------------------------ | -------------------------------------------- | ------ |
-| 4a.1    | Inicio responsive: identidad, «Analizar mi CV», tres pasos, privacidad y metodología | Implementada, pendiente de revisión y commit | —      |
+| Subfase | Contenido                                                                                 | Estado                                       | Commit    |
+| ------- | ----------------------------------------------------------------------------------------- | -------------------------------------------- | --------- |
+| 4a.1    | Inicio responsive: identidad, «Analizar mi CV», tres pasos, privacidad y metodología      | Completada                                   | `9a2890c` |
+| 4b.1    | Navegación principal compartida: Inicio y Analizar, con protección de salida de la sesión | Implementada, pendiente de revisión y commit | —         |
 
-La navegación global sigue pendiente. El Inicio no muestra estadísticas ni historial sin datos que los sustenten.
+La navegación principal ofrece los dos destinos existentes, Inicio y Analizar; Resultados pertenece al flujo de Analizar. Salir con datos pide confirmación y descarta la sesión como antes. El Inicio no muestra estadísticas ni historial sin datos que los sustenten. La ampliación de destinos de la Fase 3 sigue pendiente.
 
 ## Próximas fases
 
@@ -122,7 +123,7 @@ La navegación global sigue pendiente. El Inicio no muestra estadísticas ni his
 | 5b   | PWA instalable en iPhone, con alojamiento gratuito y HTTPS                       | Próxima |
 | 6    | Validación y consolidación: arquitectura, pruebas, seguridad y experiencia móvil | Próxima |
 
-El analizador de la Fase A ya se abre desde Inicio. Su integración en las pestañas y la navegación global sigue pendiente de autorización.
+El analizador de la Fase A ya se abre desde Inicio. La Fase 4b.1 unifica los dos destinos existentes; la ampliación a más secciones sigue pendiente de autorización.
 
 ### Fase 5b (PWA)
 
