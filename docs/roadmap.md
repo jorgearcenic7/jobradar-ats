@@ -60,7 +60,7 @@ Alcance:
 - Recomendaciones fundamentadas, sin inventar experiencia, titulaciones ni habilidades.
 - Comparación con el análisis anterior de la misma oferta.
 - Importación del CV en PDF y DOCX en la web, con avisos cuando la extracción puede estar incompleta.
-- Rutas `/analisis` (Preparar) y `/analisis/resultados` (Resultados), con un enlace provisional desde la pantalla de inicio hasta que existan las pestañas de navegación.
+- Rutas `/analisis` (Preparar) y `/analisis/resultados` (Resultados), con acceso desde «Analizar mi CV» en Inicio; la navegación global sigue pendiente.
 
 Límites:
 
@@ -89,31 +89,40 @@ Las skills de Replica y su documentación experimental no se trasladan.
 
 Rediseño del analizador según el prototipo visual aprobado, por subfases pequeñas:
 
-| Subfase | Contenido                                                                                                     | Estado                                       | Commit    |
-| ------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | --------- |
-| 3b.1    | Sección «Tu CV» de Preparar: selector Archivo / Pegar texto, `FileCard`, avisos y «Revisar el texto extraído» | Completada                                   | `965614a` |
-| 3b.2    | Sección «La oferta» de Preparar: título, campo, estado «Lista para analizar» y editor ampliable               | Completada                                   | `9ea167f` |
-| 3a.1    | Preparar (`/analisis`) y Resultados (`/analisis/resultados`) en rutas separadas, con la sesión en memoria     | Completada                                   | `faadc7c` |
-| 3c.1    | Resultados: resumen compacto y «Qué mejorar primero» con las tres recomendaciones principales                 | Completada                                   | `d560694` |
-| 3c.2a   | Resultados: requisitos desplegables con `Disclosure`                                                          | Completada                                   | `b0ae88b` |
-| 3c.2b   | Resultados: filtros visuales por estado con recuentos reales y no evaluables en su grupo                      | Completada                                   | `1ea613c` |
-| 3d.1    | Resultados responsive: dos columnas desde 1024 px en web, con más espacio para requisitos                     | Implementada, pendiente de revisión y commit | —         |
+| Subfase | Contenido                                                                                                     | Estado     | Commit    |
+| ------- | ------------------------------------------------------------------------------------------------------------- | ---------- | --------- |
+| 3b.1    | Sección «Tu CV» de Preparar: selector Archivo / Pegar texto, `FileCard`, avisos y «Revisar el texto extraído» | Completada | `965614a` |
+| 3b.2    | Sección «La oferta» de Preparar: título, campo, estado «Lista para analizar» y editor ampliable               | Completada | `9ea167f` |
+| 3a.1    | Preparar (`/analisis`) y Resultados (`/analisis/resultados`) en rutas separadas, con la sesión en memoria     | Completada | `faadc7c` |
+| 3c.1    | Resultados: resumen compacto y «Qué mejorar primero» con las tres recomendaciones principales                 | Completada | `d560694` |
+| 3c.2a   | Resultados: requisitos desplegables con `Disclosure`                                                          | Completada | `b0ae88b` |
+| 3c.2b   | Resultados: filtros visuales por estado con recuentos reales y no evaluables en su grupo                      | Completada | `1ea613c` |
+| 3d.1    | Resultados responsive: dos columnas desde 1024 px en web, con más espacio para requisitos                     | Completada | `463aa50` |
 
 La acción «Analizar», el diseño de Resultados y la navegación global mantienen su diseño actual hasta sus subfases.
 
 **Pendiente para completar la Fase A:** el recorrido en Safari del iPhone y la revisión final. La importación nativa, el OCR y la revisión con lectores de pantalla nativos quedan fuera de esta fase.
+
+### Fase 4 — Inicio de JobRadar ATS
+
+**En curso.** El Inicio explica el producto y da acceso inmediato al análisis, siguiendo el prototipo aprobado y el sistema visual existente.
+
+| Subfase | Contenido                                                                            | Estado                                       | Commit |
+| ------- | ------------------------------------------------------------------------------------ | -------------------------------------------- | ------ |
+| 4a.1    | Inicio responsive: identidad, «Analizar mi CV», tres pasos, privacidad y metodología | Implementada, pendiente de revisión y commit | —      |
+
+La navegación global sigue pendiente. El Inicio no muestra estadísticas ni historial sin datos que los sustenten.
 
 ## Próximas fases
 
 | Fase | Objetivo                                                                         | Estado  |
 | ---- | -------------------------------------------------------------------------------- | ------- |
 | 3    | Navegación móvil y cinco secciones principales                                   | Próxima |
-| 4    | Dashboard inicial de JobRadar ATS                                                | Próxima |
 | 5    | Introducción manual y gestión básica de ofertas laborales                        | Próxima |
 | 5b   | PWA instalable en iPhone, con alojamiento gratuito y HTTPS                       | Próxima |
 | 6    | Validación y consolidación: arquitectura, pruebas, seguridad y experiencia móvil | Próxima |
 
-Estas fases mantienen sus objetivos. El analizador de la Fase A se integrará en la navegación cuando existan las pestañas, y entonces sustituirá al enlace provisional.
+El analizador de la Fase A ya se abre desde Inicio. Su integración en las pestañas y la navegación global sigue pendiente de autorización.
 
 ### Fase 5b (PWA)
 

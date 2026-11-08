@@ -29,14 +29,16 @@ describe.each(['light', 'dark'] as const)('%s scheme', (scheme) => {
 
     // `screen.root` is the harness provider; the screen's own root is its first child.
     expect(screen.root?.children[0]).toHaveStyle({ backgroundColor: palette.background });
-    expect(screen.getByRole('header', { name: 'JobRadar ATS' })).toHaveStyle({
+    expect(screen.getByText('JobRadar ATS')).toHaveStyle({
       color: palette.text,
     });
-    const message = screen.getByText('Aplicación en construcción.');
-    expect(message).toHaveStyle({ color: palette.textSecondary });
-    expect(message.parent).toHaveStyle({
-      backgroundColor: palette.surface,
-      borderColor: palette.border,
+    const message = screen.getByText(
+      'Compara tu CV con una oferta, requisito a requisito, y descubre qué pruebas le faltan.',
+    );
+    expect(message).toHaveStyle({ color: palettes.dark.textSecondary });
+    expect(message.parent?.parent).toHaveStyle({
+      backgroundColor: scheme === 'dark' ? palette.accentSubtle : palettes.dark.surface,
+      borderColor: palettes.dark.border,
     });
   });
 
