@@ -1,8 +1,7 @@
 /*
 Resultados del análisis (`/analisis/resultados`).
 
-Muestra el último análisis de la sesión con los mismos componentes que antes (`AnalysisResults`);
-el rediseño de Resultados llegará en su propia fase. Sin análisis en esta sesión, por ejemplo al
+Muestra el último análisis de la sesión con `AnalysisResults`. Sin análisis en esta sesión, al
 abrir la dirección directamente o al recargar, muestra un estado vacío con la acción de prepararlo:
 nunca recupera datos de una sesión anterior.
 
@@ -21,6 +20,7 @@ import { ThemedText } from '@/shared/ui/themed-text';
 
 import { AnalysisResults } from './analysis-results';
 import { useAnalysisSession } from './analysis-session';
+import { ResultsPage } from './results-layout';
 
 const isWeb = process.env.EXPO_OS === 'web';
 
@@ -44,47 +44,51 @@ export function ResultsScreen({ onEdit }: ResultsScreenProps) {
   };
 
   return (
-    <Screen style={styles.content}>
-      {result || cvReplaced ? (
-        <Button
-          label="Editar CV u oferta"
-          variant="secondary"
-          onPress={onEdit}
-          style={styles.start}
-        />
-      ) : null}
-      {/* Destino del foco al abrir la pantalla; no es un control, así que no entra en la tabulación. */}
-      <View ref={titleRef} tabIndex={-1} style={styles.focusTarget}>
-        <ThemedText step="title" accessibilityRole="header">
-          Resultados del análisis
-        </ThemedText>
-      </View>
-
-      {/* Siempre montada, para anunciar que los resultados han quedado desactualizados. */}
-      <View aria-live="polite">
-        {result && isOutdated ? (
-          <Notice tone="warning" actions={<Button label="Volver a analizar" onPress={reanalyze} />}>
-            Has cambiado el CV o la oferta desde el último análisis. Estos resultados corresponden a
-            la versión anterior.
-          </Notice>
+    <Screen style={[styles.content, isWeb && styles.webContent]}>
+      <ResultsPage>
+        {result || cvReplaced ? (
+          <Button
+            label="Editar CV u oferta"
+            variant="secondary"
+            onPress={onEdit}
+            style={styles.start}
+          />
         ) : null}
-      </View>
+        {/* Destino del foco al abrir la pantalla; no es un control, así que no entra en la tabulación. */}
+        <View ref={titleRef} tabIndex={-1} style={styles.focusTarget}>
+          <ThemedText step="title" accessibilityRole="header">
+            Resultados del análisis
+          </ThemedText>
+        </View>
 
-      {result ? (
-        <AnalysisResults result={result} comparison={comparison} offerChanged={offerChanged} />
-      ) : cvReplaced ? (
-        <EmptyState
-          title="Has cambiado de CV"
-          description="Los resultados anteriores no corresponden al CV actual. Vuelve a analizar para ver los del nuevo."
-          action={{ label: 'Volver a analizar', onPress: reanalyze }}
-        />
-      ) : (
-        <EmptyState
-          title="Todavía no hay resultados"
-          description="Prepara un análisis con tu CV y una oferta para verlos aquí. Los datos solo se conservan mientras usas el analizador."
-          action={{ label: 'Preparar análisis', onPress: onEdit }}
-        />
-      )}
+        {/* Siempre montada, para anunciar que los resultados han quedado desactualizados. */}
+        <View aria-live="polite">
+          {result && isOutdated ? (
+            <Notice
+              tone="warning"
+              actions={<Button label="Volver a analizar" onPress={reanalyze} />}>
+              Has cambiado el CV o la oferta desde el último análisis. Estos resultados corresponden
+              a la versión anterior.
+            </Notice>
+          ) : null}
+        </View>
+
+        {result ? (
+          <AnalysisResults result={result} comparison={comparison} offerChanged={offerChanged} />
+        ) : cvReplaced ? (
+          <EmptyState
+            title="Has cambiado de CV"
+            description="Los resultados anteriores no corresponden al CV actual. Vuelve a analizar para ver los del nuevo."
+            action={{ label: 'Volver a analizar', onPress: reanalyze }}
+          />
+        ) : (
+          <EmptyState
+            title="Todavía no hay resultados"
+            description="Prepara un análisis con tu CV y una oferta para verlos aquí. Los datos solo se conservan mientras usas el analizador."
+            action={{ label: 'Preparar análisis', onPress: onEdit }}
+          />
+        )}
+      </ResultsPage>
     </Screen>
   );
 }
@@ -92,6 +96,10 @@ export function ResultsScreen({ onEdit }: ResultsScreenProps) {
 const styles = StyleSheet.create({
   content: {
     gap: space[6],
+  },
+  // ResultsPage aplica el límite responsive en web; Screen conserva márgenes y áreas seguras.
+  webContent: {
+    maxWidth: '100%',
   },
   start: {
     alignSelf: 'flex-start',

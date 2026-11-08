@@ -14,6 +14,7 @@ import { FilterChips, type RequirementFilter } from './filter-chips';
 import { statusGroupDescriptions, statusGroupTitles } from './labels';
 import { RecommendationList } from './recommendation-list';
 import { RequirementItem } from './requirement-item';
+import { ResultsColumns } from './results-layout';
 
 const groupOrder: RequirementStatus[] = ['supported', 'mentioned', 'missing', 'not-evaluable'];
 
@@ -32,79 +33,83 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
   }
 
   return (
-    <View style={styles.results}>
-      <CoverageSummary coverage={result.coverage} assessments={result.requirements} />
-      {comparison ? <AnalysisChanges comparison={comparison} /> : null}
-      {offerChanged ? (
-        <ThemedText step="footnote" color="textSecondary">
-          La oferta ha cambiado desde el análisis anterior, así que los resultados no se comparan
-          con él.
-        </ThemedText>
-      ) : null}
+    <ResultsColumns
+      summary={
+        <>
+          <CoverageSummary coverage={result.coverage} assessments={result.requirements} />
+          {comparison ? <AnalysisChanges comparison={comparison} /> : null}
+          {offerChanged ? (
+            <ThemedText step="footnote" color="textSecondary">
+              La oferta ha cambiado desde el análisis anterior, así que los resultados no se
+              comparan con él.
+            </ThemedText>
+          ) : null}
 
-      {/* Lo accionable va primero: las recomendaciones, antes del detalle de cada requisito. */}
-      <RecommendationList recommendations={result.recommendations} />
-
-      <Heading level={2}>Requisitos de la oferta</Heading>
-      <FilterChips counts={counts} value={filter} onChange={setFilter} allRef={allFilterRef} />
-      {filter !== 'all' && counts[filter] === 0 ? (
-        <Card>
-          <EmptyState
-            icon="info"
-            level={3}
-            title="No hay requisitos con este estado"
-            description="Selecciona otro filtro o vuelve a ver todos los requisitos."
-            action={{
-              label: 'Ver todos los requisitos',
-              onPress: () => {
-                setFilter('all');
-                allFilterRef.current?.focus();
-              },
-            }}
-          />
-        </Card>
-      ) : null}
-      {result.requirements.length === 0 ? (
-        // Ocupa el lugar de los grupos de requisitos, así que su título es también un `h3`.
-        filter === 'all' ? (
-          <Card>
-            <EmptyState
-              icon="info"
-              level={3}
-              title="No se ha reconocido ningún requisito en la oferta"
-              description="Comprueba que el texto de la oferta incluye sus requisitos."
-            />
-          </Card>
-        ) : null
-      ) : (
-        groupOrder.map((status) => {
-          // Los no evaluables conservan su grupo, incluso al filtrar los estados evaluables.
-          if (filter !== 'all' && status !== filter && status !== 'not-evaluable') return null;
-          const items = result.requirements.filter((item) => item.status === status);
-          if (items.length === 0) return null;
-          return (
-            <View key={status} style={styles.group}>
-              <Heading level={3}>{`${statusGroupTitles[status]} (${items.length})`}</Heading>
-              <ThemedText step="footnote" color="textSecondary">
-                {statusGroupDescriptions[status]}
-              </ThemedText>
-              <View role="list" style={styles.group}>
-                {items.map((item) => (
-                  <RequirementItem key={item.requirement.id} assessment={item} />
-                ))}
-              </View>
-            </View>
-          );
-        })
-      )}
-    </View>
+          {/* Lo accionable va primero: las recomendaciones, antes del detalle de cada requisito. */}
+          <RecommendationList recommendations={result.recommendations} />
+        </>
+      }
+      requirements={
+        <>
+          <Heading level={2}>Requisitos de la oferta</Heading>
+          <FilterChips counts={counts} value={filter} onChange={setFilter} allRef={allFilterRef} />
+          {filter !== 'all' && counts[filter] === 0 ? (
+            <Card>
+              <EmptyState
+                icon="info"
+                level={3}
+                title="No hay requisitos con este estado"
+                description="Selecciona otro filtro o vuelve a ver todos los requisitos."
+                action={{
+                  label: 'Ver todos los requisitos',
+                  onPress: () => {
+                    setFilter('all');
+                    allFilterRef.current?.focus();
+                  },
+                }}
+              />
+            </Card>
+          ) : null}
+          {result.requirements.length === 0 ? (
+            // Ocupa el lugar de los grupos de requisitos, así que su título es también un `h3`.
+            filter === 'all' ? (
+              <Card>
+                <EmptyState
+                  icon="info"
+                  level={3}
+                  title="No se ha reconocido ningún requisito en la oferta"
+                  description="Comprueba que el texto de la oferta incluye sus requisitos."
+                />
+              </Card>
+            ) : null
+          ) : (
+            groupOrder.map((status) => {
+              // Los no evaluables conservan su grupo, incluso al filtrar los estados evaluables.
+              if (filter !== 'all' && status !== filter && status !== 'not-evaluable') return null;
+              const items = result.requirements.filter((item) => item.status === status);
+              if (items.length === 0) return null;
+              return (
+                <View key={status} style={styles.group}>
+                  <Heading level={3}>{`${statusGroupTitles[status]} (${items.length})`}</Heading>
+                  <ThemedText step="footnote" color="textSecondary">
+                    {statusGroupDescriptions[status]}
+                  </ThemedText>
+                  <View role="list" style={styles.group}>
+                    {items.map((item) => (
+                      <RequirementItem key={item.requirement.id} assessment={item} />
+                    ))}
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </>
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  results: {
-    gap: space[4],
-  },
   group: {
     gap: space[3],
   },
