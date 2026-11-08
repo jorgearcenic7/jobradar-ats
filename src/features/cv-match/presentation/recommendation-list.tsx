@@ -31,7 +31,18 @@ function Item({ message, number }: { message: string; number: number }) {
         </ThemedText>
       </View>
       <ThemedText step="callout" style={styles.text}>
-        {message}
+        {/* Las citas destacan el requisito al recorrer la lista, sin reescribir el mensaje. */}
+        {message.includes('«')
+          ? message.split(/(«[^»]+»)/g).map((part, index) =>
+              part.startsWith('«') ? (
+                <ThemedText key={index} step="callout" style={styles.subject}>
+                  {part}
+                </ThemedText>
+              ) : (
+                part
+              ),
+            )
+          : message}
       </ThemedText>
     </View>
   );
@@ -101,6 +112,7 @@ const styles = StyleSheet.create({
   text: {
     flex: 1,
   },
+  subject: { fontWeight: 600 },
   more: {
     alignSelf: 'flex-start',
     paddingVertical: space[2],

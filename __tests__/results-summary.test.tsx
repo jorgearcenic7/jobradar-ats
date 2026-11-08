@@ -97,9 +97,7 @@ describe('Results summary', () => {
     await render(<AnalysisResults result={result} comparison={null} offerChanged={false} />);
 
     expect(screen.getByLabelText(/No evaluable: \d+ \(fuera del porcentaje\)/)).toBeOnTheScreen();
-    expect(
-      screen.getByRole('header', { name: /No evaluables, fuera del porcentaje/ }),
-    ).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: /^Otros elementos detectados/ })).toBeOnTheScreen();
   });
 });
 

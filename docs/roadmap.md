@@ -112,7 +112,8 @@ La acción «Analizar», el diseño de Resultados y la navegación global mantie
 | 4a.1    | Inicio responsive: identidad, «Analizar mi CV», tres pasos, privacidad y metodología      | Completada                                          | `9a2890c` |
 | 4b.1    | Navegación principal compartida: Inicio y Analizar, con protección de salida de la sesión | Completada                                          | `4b3764b` |
 | 4c      | Pulido visual conjunto de Inicio, Preparar y Resultados; capturas reales y mosaicos       | Completada                                          | `2a03556` |
-| 4d      | Acabado visual: Inicio compacto, selector de archivo reducido y resumen sin repetición    | Implementada, pendiente de revisión visual y commit | —         |
+| 4d      | Acabado visual: Inicio compacto, selector de archivo reducido y resumen sin repetición    | Completada                                          | `e92e081` |
+| 4e      | Inicio en escritorio, no evaluables plegados y diagnóstico del motor sin cambios          | Implementada, pendiente de revisión visual y commit | —         |
 
 La navegación principal ofrece los dos destinos existentes, Inicio y Analizar; Resultados pertenece al flujo de Analizar. Salir con datos pide confirmación y descarta la sesión como antes. El Inicio no muestra estadísticas ni historial sin datos que los sustenten. La ampliación de destinos de la Fase 3 sigue pendiente.
 

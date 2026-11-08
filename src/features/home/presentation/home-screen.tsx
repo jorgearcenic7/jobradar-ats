@@ -39,31 +39,31 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
   return (
     <Screen style={styles.content}>
       <AppNavigation section="home" />
-      <Card
-        style={[
-          styles.hero,
-          {
-            backgroundColor: theme === brand ? theme.accentSubtle : brand.surface,
-            borderColor: brand.border,
-          },
-        ]}>
-        <View style={styles.message}>
-          <ThemedText step="display" accessibilityRole="header" style={{ color: brand.text }}>
-            Comprueba qué respalda tu CV
-          </ThemedText>
-          <ThemedText step="callout" style={{ color: brand.textSecondary }}>
-            Compara tu CV con una oferta, requisito a requisito.
-          </ThemedText>
-        </View>
-        <View style={styles.actions}>
-          <Button label="Analizar mi CV" icon="arrowForward" onPress={onAnalyze} />
-          <ThemedText step="footnote" style={{ color: brand.textSecondary }}>
-            El análisis se hace en tu dispositivo. Tus textos no se envían ni se guardan de forma
-            permanente.
-          </ThemedText>
-        </View>
-      </Card>
-      <View style={styles.columns}>
+      <View style={styles.main}>
+        <Card
+          style={[
+            styles.hero,
+            {
+              backgroundColor: theme === brand ? theme.accentSubtle : brand.surface,
+              borderColor: brand.border,
+            },
+          ]}>
+          <View style={styles.message}>
+            <ThemedText step="display" accessibilityRole="header" style={{ color: brand.text }}>
+              Comprueba qué respalda tu CV
+            </ThemedText>
+            <ThemedText step="callout" style={{ color: brand.textSecondary }}>
+              Compara tu CV con una oferta, requisito a requisito.
+            </ThemedText>
+          </View>
+          <View style={styles.actions}>
+            <Button label="Analizar mi CV" icon="arrowForward" onPress={onAnalyze} />
+            <ThemedText step="footnote" style={{ color: brand.textSecondary }}>
+              El análisis se hace en tu dispositivo. Tus textos no se envían ni se guardan de forma
+              permanente.
+            </ThemedText>
+          </View>
+        </Card>
         <View style={styles.steps}>
           <Heading level={2}>Cómo funciona</Heading>
           <View role="list" style={styles.stepList}>
@@ -84,50 +84,54 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
             ))}
           </View>
         </View>
-        <View style={styles.expectations}>
-          <Heading level={2}>Qué puedes esperar</Heading>
-          <ThemedText step="callout">
-            Un recuento explicado de los requisitos que tu CV respalda con pruebas.
+      </View>
+      <View style={styles.expectations}>
+        <Heading level={2}>Qué puedes esperar</Heading>
+        <ThemedText step="callout">
+          Un recuento explicado de los requisitos que tu CV respalda con pruebas.
+        </ThemedText>
+        <View style={styles.benefit}>
+          <Icon name="info" color="textSecondary" />
+          <ThemedText step="callout" color="textSecondary" style={styles.flexText}>
+            No predice la decisión de un ATS ni de la empresa.
           </ThemedText>
-          <View style={styles.benefit}>
-            <Icon name="info" color="textSecondary" />
-            <ThemedText step="callout" color="textSecondary" style={styles.flexText}>
-              No predice la decisión de un ATS ni de la empresa.
+        </View>
+        <Disclosure
+          header="Cómo se calcula la cobertura"
+          expanded={methodOpen}
+          onToggle={setMethodOpen}>
+          <View style={styles.method}>
+            <ThemedText step="callout">
+              Recomendaciones que nunca inventan experiencia, titulaciones ni habilidades.
+            </ThemedText>
+            <ThemedText step="callout" color="textSecondary">
+              Cada requisito suma 1 punto si está respaldado, 0,5 si aparece sin evidencia
+              suficiente y 0 si no está acreditado. Los obligatorios cuentan el doble; los no
+              evaluables quedan fuera del porcentaje. Es una heurística, no una puntuación ATS ni
+              una probabilidad de contratación.
+            </ThemedText>
+            <ThemedText step="callout" color="textSecondary">
+              Solo se reconocen los requisitos que JobRadar sabe interpretar. No se leen PDF
+              escaneados: puedes pegar su texto.
+            </ThemedText>
+            <ThemedText step="callout" color="textSecondary">
+              Los textos y resultados viven solo en la sesión del analizador. Se pierden al salir
+              del analizador o recargar.
             </ThemedText>
           </View>
-          <Disclosure
-            header="Cómo se calcula la cobertura"
-            expanded={methodOpen}
-            onToggle={setMethodOpen}>
-            <View style={styles.method}>
-              <ThemedText step="callout">
-                Recomendaciones que nunca inventan experiencia, titulaciones ni habilidades.
-              </ThemedText>
-              <ThemedText step="callout" color="textSecondary">
-                Cada requisito suma 1 punto si está respaldado, 0,5 si aparece sin evidencia
-                suficiente y 0 si no está acreditado. Los obligatorios cuentan el doble; los no
-                evaluables quedan fuera del porcentaje. Es una heurística, no una puntuación ATS ni
-                una probabilidad de contratación.
-              </ThemedText>
-              <ThemedText step="callout" color="textSecondary">
-                Solo se reconocen los requisitos que JobRadar sabe interpretar. No se leen PDF
-                escaneados: puedes pegar su texto.
-              </ThemedText>
-              <ThemedText step="callout" color="textSecondary">
-                Los textos y resultados viven solo en la sesión del analizador. Se pierden al salir
-                del analizador o recargar.
-              </ThemedText>
-            </View>
-          </Disclosure>
-        </View>
+        </Disclosure>
       </View>
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { maxWidth: 1120, gap: space[6] },
+  content: { maxWidth: 1200, gap: space[6] },
+  main: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: space[6] },
   hero: {
+    flexBasis: 480,
+    flexGrow: 1,
+    maxWidth: '100%',
     borderWidth: 0,
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -137,15 +141,12 @@ const styles = StyleSheet.create({
   },
   message: { flexBasis: 480, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[4] },
   actions: { flexBasis: 320, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[3] },
-  columns: { gap: space[6] },
-  steps: { minWidth: 0, gap: space[4] },
-  stepList: { flexDirection: 'row', flexWrap: 'wrap', gap: space[4] },
+  steps: { flexBasis: 360, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[4] },
+  stepList: { gap: space[4] },
   step: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: space[2],
-    flexBasis: 200,
-    flexGrow: 1,
     maxWidth: '100%',
   },
   number: {

@@ -78,6 +78,7 @@ describe('CV match screen', () => {
       screen.queryByText('«Capacidad para organizar tu propio trabajo en remoto.»'),
     ).not.toBeOnTheScreen();
     await user.press(screen.getByRole('button', { name: /^React\. / }));
+    await user.press(screen.getByRole('button', { name: /^Otros elementos detectados/ }));
     await user.press(screen.getByRole('button', { name: /^Capacidad para organizar/ }));
     // Literal evidence from the CV and the unevaluable line of the offer.
     expect(

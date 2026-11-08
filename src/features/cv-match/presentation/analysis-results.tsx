@@ -5,6 +5,7 @@ import type { AnalysisComparison } from '@/features/cv-match/domain/compare';
 import type { AnalysisResult, RequirementStatus } from '@/features/cv-match/domain/types';
 import { space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
+import { Disclosure } from '@/shared/ui/disclosure';
 import { EmptyState } from '@/shared/ui/empty-state';
 import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
@@ -26,6 +27,7 @@ type AnalysisResultsProps = {
 
 export function AnalysisResults({ result, comparison, offerChanged }: AnalysisResultsProps) {
   const [filter, setFilter] = useState<RequirementFilter>('all');
+  const [otherExpanded, setOtherExpanded] = useState(false);
   const allFilterRef = useRef<ComponentRef<typeof View>>(null);
   const counts = { all: result.requirements.length, missing: 0, mentioned: 0, supported: 0 };
   for (const item of result.requirements) {
@@ -88,8 +90,8 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
               if (filter !== 'all' && status !== filter && status !== 'not-evaluable') return null;
               const items = result.requirements.filter((item) => item.status === status);
               if (items.length === 0) return null;
-              return (
-                <View key={status} style={styles.group}>
+              const content = (
+                <>
                   <Heading level={3}>{`${statusGroupTitles[status]} (${items.length})`}</Heading>
                   <ThemedText step="footnote" color="textSecondary">
                     {statusGroupDescriptions[status]}
@@ -99,6 +101,25 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
                       <RequirementItem key={item.requirement.id} assessment={item} />
                     ))}
                   </View>
+                </>
+              );
+              return (
+                <View key={status} style={styles.group}>
+                  {status === 'not-evaluable' ? (
+                    <>
+                      <Disclosure
+                        header={`Otros elementos detectados · ${items.length} ${items.length === 1 ? 'no evaluable' : 'no evaluables'}`}
+                        expanded={otherExpanded}
+                        onToggle={setOtherExpanded}>
+                        <View style={styles.group}>{content}</View>
+                      </Disclosure>
+                      <ThemedText step="footnote" color="textSecondary">
+                        Fuera del porcentaje de cobertura.
+                      </ThemedText>
+                    </>
+                  ) : (
+                    content
+                  )}
                 </View>
               );
             })

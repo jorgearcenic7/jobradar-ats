@@ -22,7 +22,12 @@ const chip = (label: string) => screen.getByRole('button', { name: new RegExp(`^
 const rows = () =>
   screen
     .queryAllByRole('button')
-    .filter((button) => button.props.accessibilityLabel?.includes(' · '));
+    .filter(
+      (button) =>
+        button.props.accessibilityLabel?.includes('. ') &&
+        button.props.accessibilityLabel.includes(' · '),
+    );
+const others = () => screen.getByRole('button', { name: /^Otros elementos detectados/ });
 const rowNames = () => rows().map((row) => row.props.accessibilityLabel);
 const nameFor = (item: (typeof result.requirements)[number]) =>
   `${displayLabel(item.requirement.label)}. `;
@@ -43,13 +48,15 @@ describe('Requirement filters', () => {
       expect(chip(label).props['aria-pressed']).toBe(value === 'all');
       expect(chip(label).props.accessibilityState.selected).toBe(value === 'all');
     }
-    expect(rows()).toHaveLength(result.requirements.length);
+    expect(others()).toBeCollapsed();
+    expect(rows()).toHaveLength(result.coverage.evaluated);
   });
 
   it.each(filters)(
     'shows the exact content for %s in the original group and requirement order',
     async (value, label) => {
       await renderResults();
+      await userEvent.setup().press(others());
       await userEvent.setup().press(chip(label));
       const expected = groupOrder.flatMap((status) =>
         result.requirements.filter(
@@ -69,6 +76,7 @@ describe('Requirement filters', () => {
   it('switches in both directions with only one active filter and recovers every requirement', async () => {
     await renderResults();
     const user = userEvent.setup();
+    await user.press(others());
     const initial = rowNames();
     for (const label of ['Respaldados', 'No acreditados', 'Sin evidencia suficiente', 'Todos']) {
       await user.press(chip(label));
@@ -83,6 +91,7 @@ describe('Requirement filters', () => {
     await renderResults();
     const item = result.requirements.find((r) => r.status === 'not-evaluable')!;
     const user = userEvent.setup();
+    await user.press(others());
     await user.press(screen.getByRole('button', { name: new RegExp(`^${nameFor(item)}`) }));
     for (const [, label] of filters) {
       await user.press(chip(label));
@@ -103,6 +112,9 @@ describe('Requirement filters', () => {
     await userEvent.setup().press(chip('Respaldados'));
     expect(chip('Respaldados')).toHaveAccessibleName('Respaldados (0)');
     expect(screen.getByText('No hay requisitos con este estado')).toBeOnTheScreen();
+    expect(others()).toBeCollapsed();
+    expect(rows()).toHaveLength(0);
+    await userEvent.setup().press(others());
     expect(rows()).toHaveLength(
       missingOnly.requirements.filter((r) => r.status === 'not-evaluable').length,
     );
@@ -121,6 +133,68 @@ describe('Requirement filters', () => {
       screen.queryByText('No se ha reconocido ningún requisito en la oferta'),
     ).not.toBeOnTheScreen();
     expect(screen.getByText('No hay requisitos con este estado')).toBeOnTheScreen();
+  });
+
+  it('collapses 28 unevaluable elements, exposes every original source on demand and keeps the score', async () => {
+    const known = [
+      'React',
+      'TypeScript',
+      'JavaScript',
+      'HTML',
+      'CSS',
+      'Git',
+      'Docker',
+      'Node.js',
+      'Python',
+    ];
+    const offer = [
+      'REQUISITOS',
+      ...known.map((name) => `- ${name}.`),
+      ...Array.from(
+        { length: 28 },
+        (_, i) => `- Dominio de la herramienta interna Lince-${i + 1}.`,
+      ),
+    ].join('\n');
+    const many = analyzeMatch(sampleCv, offer);
+    const before = JSON.stringify(many);
+    await renderResults(many);
+    const user = userEvent.setup();
+    expect(many.coverage.evaluated).toBe(9);
+    expect(others()).toHaveAccessibleName('Otros elementos detectados · 28 no evaluables');
+    expect(others()).toBeCollapsed();
+    expect(rows()).toHaveLength(9);
+    expect(screen.getByText('Fuera del porcentaje de cobertura.')).toBeOnTheScreen();
+    await user.press(others());
+    expect(rows()).toHaveLength(37);
+    const last = many.requirements.filter((r) => r.status === 'not-evaluable').at(-1)!;
+    const lastToggle = () => screen.getByRole('button', { name: new RegExp(`^${nameFor(last)}`) });
+    await user.press(lastToggle());
+    expect(screen.getByText(`«${last.requirement.sources[0]}»`)).toBeOnTheScreen();
+    expect(screen.getByText(last.reason)).toBeOnTheScreen();
+    await user.press(others());
+    expect(rows()).toHaveLength(9);
+    await user.press(others());
+    expect(lastToggle()).toBeCollapsed();
+    expect(screen.getByText(`${many.coverage.percentage} %`)).toBeOnTheScreen();
+    expect(JSON.stringify(many)).toBe(before);
+  });
+
+  it('keeps an offer with only unevaluable elements accessible alongside an empty status filter', async () => {
+    const onlyOthers = analyzeMatch('IDIOMAS\nInglés B2.', 'REQUISITOS\n- Inglés alto.');
+    await renderResults(onlyOthers);
+    expect(onlyOthers.coverage.percentage).toBeNull();
+    expect(others()).toBeCollapsed();
+    await userEvent.setup().press(chip('Respaldados'));
+    expect(screen.getByText('No hay requisitos con este estado')).toBeOnTheScreen();
+    await userEvent.setup().press(others());
+    expect(rows()).toHaveLength(1);
+    expect(others()).toBeExpanded();
+    await userEvent.setup().press(screen.getByRole('button', { name: /^Inglés/ }));
+    expect(onlyOthers.requirements[0].evidence.length).toBeGreaterThan(0);
+    expect(screen.getByText(onlyOthers.requirements[0].evidence[0].text)).toBeOnTheScreen();
+    expect(
+      screen.getByText('No se ha podido evaluar ningún requisito de esta oferta.'),
+    ).toBeOnTheScreen();
   });
 
   it('keeps an open visible requirement open, resets it when hidden, and restores its evidence on demand', async () => {
