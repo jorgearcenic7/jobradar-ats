@@ -95,7 +95,8 @@ Rediseño del analizador según el prototipo visual aprobado, por subfases peque
 | 3b.2    | Sección «La oferta» de Preparar: título, campo, estado «Lista para analizar» y editor ampliable               | Completada                                   | `9ea167f` |
 | 3a.1    | Preparar (`/analisis`) y Resultados (`/analisis/resultados`) en rutas separadas, con la sesión en memoria     | Completada                                   | `faadc7c` |
 | 3c.1    | Resultados: resumen compacto y «Qué mejorar primero» con las tres recomendaciones principales                 | Completada                                   | `d560694` |
-| 3c.2a   | Resultados: requisitos desplegables con `Disclosure`                                                          | Implementada, pendiente de revisión y commit | —         |
+| 3c.2a   | Resultados: requisitos desplegables con `Disclosure`                                                          | Completada                                   | `b0ae88b` |
+| 3c.2b   | Resultados: filtros visuales por estado con recuentos reales y no evaluables en su grupo                      | Implementada, pendiente de revisión y commit | —         |
 
 La acción «Analizar», el diseño de Resultados y la navegación global mantienen su diseño actual hasta sus subfases.
 

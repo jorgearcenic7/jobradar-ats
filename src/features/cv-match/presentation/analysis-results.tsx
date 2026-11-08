@@ -1,3 +1,4 @@
+import { useRef, useState, type ComponentRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { AnalysisComparison } from '@/features/cv-match/domain/compare';
@@ -9,6 +10,7 @@ import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 import { AnalysisChanges } from './analysis-changes';
 import { CoverageSummary } from './coverage-summary';
+import { FilterChips, type RequirementFilter } from './filter-chips';
 import { statusGroupDescriptions, statusGroupTitles } from './labels';
 import { RecommendationList } from './recommendation-list';
 import { RequirementItem } from './requirement-item';
@@ -22,6 +24,13 @@ type AnalysisResultsProps = {
 };
 
 export function AnalysisResults({ result, comparison, offerChanged }: AnalysisResultsProps) {
+  const [filter, setFilter] = useState<RequirementFilter>('all');
+  const allFilterRef = useRef<ComponentRef<typeof View>>(null);
+  const counts = { all: result.requirements.length, missing: 0, mentioned: 0, supported: 0 };
+  for (const item of result.requirements) {
+    if (item.status !== 'not-evaluable') counts[item.status] += 1;
+  }
+
   return (
     <View style={styles.results}>
       <CoverageSummary coverage={result.coverage} assessments={result.requirements} />
@@ -37,18 +46,40 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
       <RecommendationList recommendations={result.recommendations} />
 
       <Heading level={2}>Requisitos de la oferta</Heading>
-      {result.requirements.length === 0 ? (
-        // Ocupa el lugar de los grupos de requisitos, así que su título es también un `h3`.
+      <FilterChips counts={counts} value={filter} onChange={setFilter} allRef={allFilterRef} />
+      {filter !== 'all' && counts[filter] === 0 ? (
         <Card>
           <EmptyState
             icon="info"
             level={3}
-            title="No se ha reconocido ningún requisito en la oferta"
-            description="Comprueba que el texto de la oferta incluye sus requisitos."
+            title="No hay requisitos con este estado"
+            description="Selecciona otro filtro o vuelve a ver todos los requisitos."
+            action={{
+              label: 'Ver todos los requisitos',
+              onPress: () => {
+                setFilter('all');
+                allFilterRef.current?.focus();
+              },
+            }}
           />
         </Card>
+      ) : null}
+      {result.requirements.length === 0 ? (
+        // Ocupa el lugar de los grupos de requisitos, así que su título es también un `h3`.
+        filter === 'all' ? (
+          <Card>
+            <EmptyState
+              icon="info"
+              level={3}
+              title="No se ha reconocido ningún requisito en la oferta"
+              description="Comprueba que el texto de la oferta incluye sus requisitos."
+            />
+          </Card>
+        ) : null
       ) : (
         groupOrder.map((status) => {
+          // Los no evaluables conservan su grupo, incluso al filtrar los estados evaluables.
+          if (filter !== 'all' && status !== filter && status !== 'not-evaluable') return null;
           const items = result.requirements.filter((item) => item.status === status);
           if (items.length === 0) return null;
           return (
