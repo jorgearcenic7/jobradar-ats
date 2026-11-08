@@ -1,7 +1,12 @@
-import { useRef, useState } from 'react';
-import { StyleSheet, View, type TextInputInstance } from 'react-native';
+/*
+Preparar análisis (`/analisis`): el CV, la oferta y la acción «Analizar».
 
-import { useCvImport, type CvImport } from '@/features/cv-import';
+El estado vive en la sesión del analizador (`analysis-session.tsx`), compartida con Resultados.
+Esta pantalla no decide la navegación: la ruta le pasa qué hacer al terminar un análisis y cómo
+volver al inicio, así la presentación no depende de Expo Router.
+*/
+import { StyleSheet, View } from 'react-native';
+
 import type { AnalysisResult } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
 import { space } from '@/shared/theme';
@@ -11,66 +16,37 @@ import { Notice } from '@/shared/ui/notice';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { Screen } from '@/shared/ui/screen';
 
-import { AnalysisResults } from './analysis-results';
-import { CvSection, type CvMode } from './cv-section';
+import { useAnalysisSession } from './analysis-session';
+import { CvSection } from './cv-section';
 import { formatPercent } from './labels';
 import { OfferSection } from './offer-section';
-import { sampleCv } from './sample-texts';
-import { useCvMatch, type CvInput } from './use-cv-match';
-
-function fileCvInput(cvImport: CvImport): CvInput {
-  const input = cvImport.analysisInput;
-  return {
-    text: input?.canAnalyze ? input.text : null,
-    sourceKey: `file-${cvImport.documentId ?? 'none'}`,
-  };
-}
-
-/** Why the CV stops the analysis, worded for the way the CV is being provided. */
-function cvErrorMessage(mode: CvMode, cvImport: CvImport) {
-  if (mode === 'paste') return 'Pega el texto de tu CV para analizarlo.';
-  const { state } = cvImport;
-  if (state.kind !== 'imported') return 'Selecciona tu CV o pega su texto para analizarlo.';
-  if (state.cv.status === 'failed') {
-    return 'No se ha podido leer este CV. Selecciona otro archivo o pega el texto.';
-  }
-  return 'Este CV no tiene texto que se pueda analizar. Escríbelo en «Revisar el texto extraído», pégalo o selecciona otro archivo.';
-}
 
 function statusMessage(result: AnalysisResult | null, isOutdated: boolean) {
   if (!result) return '';
   if (isOutdated) return '';
   const { percentage, evaluated } = result.coverage;
   return percentage === null
-    ? 'Análisis listo. Ningún requisito se ha podido evaluar; los detalles están debajo.'
-    : `Análisis listo: ${formatPercent(percentage)} de cobertura en ${evaluated} requisitos evaluados. Los detalles están debajo.`;
+    ? 'Último análisis: ningún requisito se ha podido evaluar.'
+    : `Último análisis: ${formatPercent(percentage)} de cobertura en ${evaluated} requisitos evaluados.`;
 }
 
 export type CvMatchScreenProps = {
   /** Provisional way back until the tab navigation exists. */
   onGoHome: () => void;
+  /** Abre Resultados: tras un análisis correcto o para volver a ver el último. */
+  onShowResults: () => void;
 };
 
-export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
+export function CvMatchScreen({ onGoHome, onShowResults }: CvMatchScreenProps) {
   const theme = useTheme();
-  const cvRef = useRef<TextInputInstance>(null);
-  const offerRef = useRef<TextInputInstance>(null);
-  const cvImport = useCvImport();
-  // Uploading a PDF or DOCX is the main way in; pasting the text is the alternative, and the
-  // only way where files cannot be imported yet (the native app).
-  const [cvMode, setCvMode] = useState<CvMode>(cvImport.canPickFile ? 'file' : 'paste');
-  const [pastedCv, setPastedCv] = useState('');
-  const cv: CvInput =
-    cvMode === 'paste' ? { text: pastedCv, sourceKey: 'paste' } : fileCvInput(cvImport);
-  const match = useCvMatch(cv, (field) => (field === 'cv' ? cvRef : offerRef).current?.focus());
-  const { result, comparison, offerChanged, isOutdated } = match;
-  const cvError = match.errors.includes('cv') ? cvErrorMessage(cvMode, cvImport) : undefined;
-
-  const loadSample = () => {
-    setCvMode('paste');
-    setPastedCv(sampleCv);
-    match.loadSampleOffer();
+  const session = useAnalysisSession();
+  const { cvImport, match } = session;
+  const { result, isOutdated } = match;
+  // Si la validación falla, `analyze` marca los errores y lleva el foco al campo: no se navega.
+  const analyze = () => {
+    if (match.analyze()) onShowResults();
   };
+  const status = statusMessage(result, isOutdated);
 
   return (
     <Screen style={styles.content}>
@@ -88,13 +64,13 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
 
       <Card style={styles.form}>
         <CvSection
-          mode={cvMode}
-          onModeChange={setCvMode}
+          mode={session.cvMode}
+          onModeChange={session.setCvMode}
           cvImport={cvImport}
-          pastedCv={pastedCv}
-          onPastedCvChange={setPastedCv}
-          error={cvError}
-          pastedRef={cvRef}
+          pastedCv={session.pastedCv}
+          onPastedCvChange={session.setPastedCv}
+          error={session.cvError}
+          pastedRef={session.cvRef}
         />
         <OfferSection
           value={match.offerText}
@@ -104,21 +80,25 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
               ? 'Pega el texto de la oferta para analizarla.'
               : undefined
           }
-          fieldRef={offerRef}
+          fieldRef={session.offerRef}
         />
         <View style={styles.submit}>
-          <Button
-            label="Analizar"
-            icon="arrowForward"
-            onPress={match.analyze}
-            style={styles.analyze}
-          />
-          {/* Always mounted, so screen readers announce the result when it appears. */}
-          <View aria-live="polite">
-            {statusMessage(result, isOutdated) ? (
-              <ThemedText step="callout" color="textSecondary">
-                {statusMessage(result, isOutdated)}
-              </ThemedText>
+          <Button label="Analizar" icon="arrowForward" onPress={analyze} style={styles.analyze} />
+          {/* Siempre montada, para que los lectores de pantalla anuncien el estado del último análisis. */}
+          <View aria-live="polite" style={styles.status}>
+            {status ? (
+              <>
+                <ThemedText step="callout" color="textSecondary">
+                  {status}
+                </ThemedText>
+                {/* Vuelve al último análisis cuando sigue correspondiendo a los datos. */}
+                <Button
+                  label="Ver resultados"
+                  variant="secondary"
+                  onPress={onShowResults}
+                  style={styles.analyze}
+                />
+              </>
             ) : null}
           </View>
         </View>
@@ -132,7 +112,7 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
             <Button
               label="Cargar ejemplo ficticio"
               variant="secondary"
-              onPress={loadSample}
+              onPress={session.loadSample}
               style={styles.analyze}
             />
           </View>
@@ -154,10 +134,6 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
             resultados.
           </Notice>
         </View>
-      ) : null}
-
-      {result ? (
-        <AnalysisResults result={result} comparison={comparison} offerChanged={offerChanged} />
       ) : null}
     </Screen>
   );
@@ -181,6 +157,9 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   submit: {
+    gap: space[3],
+  },
+  status: {
     gap: space[3],
   },
   demo: {

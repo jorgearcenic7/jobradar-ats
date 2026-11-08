@@ -1,12 +1,11 @@
-import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, screen, userEvent } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
-import AnalysisRoute from '@/app/analisis';
 import { analyzeMatch } from '@/features/cv-match/domain/analyze-match';
 import { sampleCv, sampleOffer } from '@/features/cv-match/presentation/sample-texts';
 import { palettes } from '@/shared/theme';
 
-import { SafeArea } from '../jest/safe-area';
+import { renderAnalysis } from '../jest/render-analysis';
 
 // The screen as on web, where CV files can be picked. The native app has its own test.
 jest.mock('@/features/cv-import/infrastructure/pick-cv-file', () => ({
@@ -15,11 +14,15 @@ jest.mock('@/features/cv-import/infrastructure/pick-cv-file', () => ({
 }));
 
 async function renderScreen() {
-  await render(<AnalysisRoute />, { wrapper: SafeArea });
+  await renderAnalysis();
   return userEvent.setup();
 }
 
 const analyzeButton = () => screen.getByRole('button', { name: 'Analizar' });
+
+// Tras analizar se está en Resultados: para cambiar el CV o la oferta hay que volver a Preparar.
+const editInputs = (user: ReturnType<typeof userEvent.setup>) =>
+  user.press(screen.getByRole('button', { name: 'Editar CV u oferta' }));
 
 describe('CV match screen', () => {
   it('asks for a CV and an offer, and shows no results without them', async () => {
@@ -93,6 +96,7 @@ describe('CV match screen', () => {
     const user = await renderScreen();
     await user.press(screen.getByRole('button', { name: 'Cargar ejemplo ficticio' }));
     await user.press(analyzeButton());
+    await editInputs(user);
 
     await fireEvent.changeText(
       screen.getByLabelText('Texto de la oferta'),
@@ -147,6 +151,7 @@ describe('CV match screen', () => {
     const user = await renderScreen();
     await user.press(screen.getByRole('button', { name: 'Cargar ejemplo ficticio' }));
     await user.press(analyzeButton());
+    await editInputs(user);
 
     await fireEvent.changeText(
       screen.getByLabelText('Texto del CV'),
@@ -206,6 +211,8 @@ describe('Offer section on the analysis screen', () => {
 
     await user.press(analyzeButton());
     expect(screen.getByRole('header', { name: 'Respaldados por tu CV (1)' })).toBeOnTheScreen();
+    // De vuelta en Preparar, la oferta sigue entera.
+    await editInputs(user);
     expect(screen.getByLabelText('Texto de la oferta').props.value).toBe(offer);
   });
 
@@ -217,14 +224,18 @@ describe('Offer section on the analysis screen', () => {
       'Requisitos\n- Experiencia con Python.',
     );
     await user.press(analyzeButton());
+    await editInputs(user);
 
     await user.press(screen.getByRole('button', { name: 'Ampliar el editor' }));
     await user.press(screen.getByRole('button', { name: 'Reducir el editor' }));
 
-    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
     expect(
       screen.queryByText(/Has cambiado el texto desde el último análisis/),
     ).not.toBeOnTheScreen();
+    // Los resultados siguen siendo los del texto actual: se pueden volver a ver sin analizar.
+    await user.press(screen.getByRole('button', { name: 'Ver resultados' }));
+    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(screen.queryByText(/Has cambiado el CV o la oferta/)).not.toBeOnTheScreen();
   });
 
   it('marks the results as outdated after editing the offer in the expanded editor', async () => {
@@ -235,6 +246,7 @@ describe('Offer section on the analysis screen', () => {
       'Requisitos\n- Experiencia con Python.',
     );
     await user.press(analyzeButton());
+    await editInputs(user);
 
     await user.press(screen.getByRole('button', { name: 'Ampliar el editor' }));
     await fireEvent.changeText(

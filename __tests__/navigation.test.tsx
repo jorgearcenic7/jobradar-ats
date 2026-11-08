@@ -1,11 +1,7 @@
 import { screen, userEvent } from '@testing-library/react-native';
 import { renderRouter } from 'expo-router/testing-library';
 
-import AnalysisRoute from '@/app/analisis';
-import HomeScreen from '@/app/index';
-
-// The two routes in a stack, as the provisional root layout renders them.
-const routes = { index: HomeScreen, analisis: AnalysisRoute };
+import { analysisRoutes as routes } from '../jest/render-analysis';
 
 describe('Provisional navigation to the analysis', () => {
   it('opens the analysis from the home screen and goes back to it', async () => {

@@ -1,7 +1,6 @@
-import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, screen, userEvent } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
-import AnalysisRoute from '@/app/analisis';
 import type { PickResult } from '@/features/cv-import/domain/readers';
 import { pickCvFile } from '@/features/cv-import/infrastructure/pick-cv-file';
 import { palettes } from '@/shared/theme';
@@ -15,7 +14,7 @@ import {
   type PdfLine,
 } from '../jest/cv-fixtures';
 import { pickedFile } from '../jest/real-cv-readers';
-import { SafeArea } from '../jest/safe-area';
+import { renderAnalysis } from '../jest/render-analysis';
 
 // The whole flow on the analysis screen with the real PDF.js and mammoth on fictional
 // documents. Only the system file picker is simulated: Jest has no browser.
@@ -59,7 +58,7 @@ const picked = (name: string, bytes: Uint8Array, size?: number): PickResult => (
 });
 
 async function renderScreen() {
-  await render(<AnalysisRoute />, { wrapper: SafeArea });
+  await renderAnalysis();
   return userEvent.setup();
 }
 
@@ -76,7 +75,8 @@ async function selectCv(user: User, result: PickResult) {
 // El nombre aparece ya mientras se lee; el recuento de caracteres, solo cuando termina.
 async function waitForImport(name: string) {
   await screen.findByText(name);
-  await screen.findByText(/ caracteres$/);
+  // Detalles de la tarjeta del archivo; la línea de la oferta también termina en «caracteres».
+  await screen.findByText(/^(PDF|Word) · .*caracteres?$/);
 }
 
 // Abre «Revisar el texto extraído» si está plegado y devuelve el campo con el texto del CV.
@@ -88,6 +88,10 @@ async function reviewField(user: User) {
 
 const analyze = (user: ReturnType<typeof userEvent.setup>) =>
   user.press(screen.getByRole('button', { name: 'Analizar' }));
+
+// Tras analizar se está en Resultados: para cambiar el CV o la oferta hay que volver a Preparar.
+const editInputs = (user: ReturnType<typeof userEvent.setup>) =>
+  user.press(screen.getByRole('button', { name: 'Editar CV u oferta' }));
 
 describe('CV import on the analysis screen', () => {
   beforeEach(() => pick.mockReset());
@@ -205,6 +209,9 @@ describe('CV import on the analysis screen', () => {
     await analyze(user);
     expect(screen.getByRole('header', { name: 'Respaldados por tu CV (1)' })).toBeOnTheScreen();
 
+    // De vuelta en Preparar, la corrección sigue y se puede restaurar.
+    await editInputs(user);
+    expect((await reviewField(user)).props.value).toContain('PROYECTOS');
     await user.press(screen.getByRole('button', { name: 'Restaurar el texto extraído' }));
     expect(screen.getByLabelText('Texto del CV').props.value).toBe(extracted);
   });
@@ -218,6 +225,7 @@ describe('CV import on the analysis screen', () => {
     expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
 
     // «Cambiar archivo» en la tarjeta sustituye el documento.
+    await editInputs(user);
     await selectCv(user, picked('cv-ficticio.docx', docxCv));
     await waitForImport('cv-ficticio.docx');
     expect(screen.queryByText('cv-ficticio.pdf')).not.toBeOnTheScreen();
@@ -331,6 +339,7 @@ describe('CV section on the analysis screen', () => {
     expect(screen.getByRole('header', { name: 'Respaldados por tu CV (1)' })).toBeOnTheScreen();
     expect(screen.getByRole('header', { name: 'No acreditados (1)' })).toBeOnTheScreen();
 
+    await editInputs(user);
     await user.press(screen.getByRole('radio', { name: 'Archivo' }));
     expect(
       screen.getByText(

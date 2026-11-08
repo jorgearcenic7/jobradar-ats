@@ -33,11 +33,12 @@ export function useCvMatch(cv: CvInput, focusField: (field: InputField) => void)
 
   const missing = missingInputs(cv.text ?? '', offerText);
 
-  const analyze = () => {
+  // Devuelve si se ha analizado, para que la pantalla decida si muestra los resultados.
+  const analyze = (): boolean => {
     setAttempted(true);
     if (missing.length > 0 || cv.text === null) {
       focusField(missing[0] ?? 'cv');
-      return;
+      return false;
     }
     setAttempted(false);
     const result = analyzeMatch(cv.text, offerText);
@@ -46,6 +47,7 @@ export function useCvMatch(cv: CvInput, focusField: (field: InputField) => void)
     setComparison(analysis && sameOffer ? compareAnalyses(analysis.result, result) : null);
     setOfferChanged(analysis !== null && !sameOffer);
     setAnalysis({ result, cvText: cv.text, offerText, sourceKey: cv.sourceKey });
+    return true;
   };
 
   // Results of another CV are hidden until the new one is analyzed.

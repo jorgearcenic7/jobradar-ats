@@ -1,17 +1,16 @@
-import { fireEvent, render, screen, userEvent } from '@testing-library/react-native';
+import { fireEvent, screen, userEvent } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
-import AnalysisRoute from '@/app/analisis';
 import { sampleCv, sampleOffer } from '@/features/cv-match/presentation/sample-texts';
 import { palettes } from '@/shared/theme';
 
-import { SafeArea } from '../jest/safe-area';
+import { renderAnalysis } from '../jest/render-analysis';
 
 // Jest resolves the iOS files, so nothing is mocked here: this is the screen of the native
 // app, where importing CV files is not implemented yet.
 describe('CV match screen in the native app', () => {
   it('starts with the pasted CV and says that importing files is still pending', async () => {
-    await render(<AnalysisRoute />, { wrapper: SafeArea });
+    await renderAnalysis();
 
     expect(screen.getByLabelText('Texto del CV')).toBeOnTheScreen();
     expect(
@@ -33,7 +32,7 @@ describe('CV match screen in the native app', () => {
   });
 
   it('analyzes a pasted CV', async () => {
-    await render(<AnalysisRoute />, { wrapper: SafeArea });
+    await renderAnalysis();
     const user = userEvent.setup();
 
     await fireEvent.changeText(screen.getByLabelText('Texto del CV'), sampleCv);
@@ -44,7 +43,7 @@ describe('CV match screen in the native app', () => {
   });
 
   it('offers the same offer section, with an editor that expands within the window', async () => {
-    await render(<AnalysisRoute />, { wrapper: SafeArea });
+    await renderAnalysis();
     const user = userEvent.setup();
 
     expect(screen.getByRole('header', { name: 'La oferta' })).toBeOnTheScreen();

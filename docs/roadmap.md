@@ -60,7 +60,7 @@ Alcance:
 - Recomendaciones fundamentadas, sin inventar experiencia, titulaciones ni habilidades.
 - Comparación con el análisis anterior de la misma oferta.
 - Importación del CV en PDF y DOCX en la web, con avisos cuando la extracción puede estar incompleta.
-- Ruta `/analisis`, con un enlace provisional desde la pantalla de inicio hasta que existan las pestañas de navegación.
+- Rutas `/analisis` (Preparar) y `/analisis/resultados` (Resultados), con un enlace provisional desde la pantalla de inicio hasta que existan las pestañas de navegación.
 
 Límites:
 
@@ -92,9 +92,10 @@ Rediseño del analizador según el prototipo visual aprobado, por subfases peque
 | Subfase | Contenido                                                                                                     | Estado                                       | Commit    |
 | ------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | --------- |
 | 3b.1    | Sección «Tu CV» de Preparar: selector Archivo / Pegar texto, `FileCard`, avisos y «Revisar el texto extraído» | Completada                                   | `965614a` |
-| 3b.2    | Sección «La oferta» de Preparar: título, campo, estado «Lista para analizar» y editor ampliable               | Implementada, pendiente de revisión y commit | —         |
+| 3b.2    | Sección «La oferta» de Preparar: título, campo, estado «Lista para analizar» y editor ampliable               | Completada                                   | `9ea167f` |
+| 3a.1    | Preparar (`/analisis`) y Resultados (`/analisis/resultados`) en rutas separadas, con la sesión en memoria     | Implementada, pendiente de revisión y commit | —         |
 
-La acción «Analizar», los resultados, la navegación y las rutas mantienen su diseño actual hasta sus subfases.
+La acción «Analizar», el diseño de Resultados y la navegación global mantienen su diseño actual hasta sus subfases.
 
 **Pendiente para completar la Fase A:** el recorrido en Safari del iPhone y la revisión final. La importación nativa, el OCR y la revisión con lectores de pantalla nativos quedan fuera de esta fase.
 

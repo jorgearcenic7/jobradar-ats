@@ -9,6 +9,11 @@ function goHome() {
   else router.replace('/');
 }
 
-export default function AnalysisRoute() {
-  return <CvMatchScreen onGoHome={goHome} />;
+// Cada análisis correcto abre Resultados como una pantalla nueva, para que Atrás vuelva a Preparar.
+function showResults() {
+  router.push('/analisis/resultados');
+}
+
+export default function PrepareRoute() {
+  return <CvMatchScreen onGoHome={goHome} onShowResults={showResults} />;
 }
