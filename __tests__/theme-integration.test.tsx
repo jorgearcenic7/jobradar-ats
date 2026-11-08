@@ -32,9 +32,7 @@ describe.each(['light', 'dark'] as const)('%s scheme', (scheme) => {
     expect(screen.getByText('JobRadar ATS')).toHaveStyle({
       color: palette.text,
     });
-    const message = screen.getByText(
-      'Compara tu CV con una oferta, requisito a requisito, y descubre qué pruebas le faltan.',
-    );
+    const message = screen.getByText('Compara tu CV con una oferta, requisito a requisito.');
     expect(message).toHaveStyle({ color: palettes.dark.textSecondary });
     expect(message.parent?.parent).toHaveStyle({
       backgroundColor: scheme === 'dark' ? palette.accentSubtle : palettes.dark.surface,

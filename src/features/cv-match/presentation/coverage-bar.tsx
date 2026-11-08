@@ -27,6 +27,7 @@ type CoverageSegment = {
 
 export type CoverageBarProps = {
   assessments: readonly RequirementAssessment[];
+  showLegend?: boolean;
 };
 
 function segmentsOf(assessments: readonly RequirementAssessment[]): CoverageSegment[] {
@@ -65,7 +66,7 @@ function accessibilityDescription(segments: CoverageSegment[]) {
 }
 
 /** Barra segmentada: anchura posible por estado y relleno interior con su aportaciÃ³n real. */
-export function CoverageBar({ assessments }: CoverageBarProps) {
+export function CoverageBar({ assessments, showLegend = true }: CoverageBarProps) {
   const theme = useTheme();
   const segments = segmentsOf(assessments);
   const hasEvaluablePoints = segments.some((segment) => segment.possible > 0);
@@ -113,20 +114,27 @@ export function CoverageBar({ assessments }: CoverageBarProps) {
             : null}
         </View>
 
-        <View style={styles.legend}>
-          {segments.map(({ status, earned, possible }) => {
-            const tone = statusTones[status];
-            return (
-              <View key={status} style={styles.legendItem}>
-                <Icon name={tone.icon} size="sm" color={tone.color} />
-                <ThemedText step="footnote" style={styles.legendText}>
-                  {statusLabels[status]}: {pointsLabel(earned, possible)}
-                </ThemedText>
-              </View>
-            );
-          })}
-        </View>
+        {showLegend ? <CoverageLegend assessments={assessments} /> : null}
       </View>
+    </View>
+  );
+}
+
+// El mismo desglose se reutiliza en la explicación plegada, sin duplicar sus cálculos.
+export function CoverageLegend({ assessments }: Pick<CoverageBarProps, 'assessments'>) {
+  return (
+    <View style={styles.legend}>
+      {segmentsOf(assessments).map(({ status, earned, possible }) => {
+        const tone = statusTones[status];
+        return (
+          <View key={status} style={styles.legendItem}>
+            <Icon name={tone.icon} size="sm" color={tone.color} />
+            <ThemedText step="footnote" style={styles.legendText}>
+              {statusLabels[status]}: {pointsLabel(earned, possible)}
+            </ThemedText>
+          </View>
+        );
+      })}
     </View>
   );
 }

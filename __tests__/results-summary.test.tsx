@@ -24,14 +24,16 @@ describe('Results summary', () => {
 
     expect(screen.getByText(`${result.coverage.percentage} %`)).toBeOnTheScreen();
     expect(screen.getByRole('image', { name: /Respaldado: / })).toBeOnTheScreen();
-    expect(screen.getByText(/^Respaldado: \d/)).toBeOnTheScreen();
+    expect(screen.getByLabelText(/^Respaldado: \d/)).toBeOnTheScreen();
     expect(screen.getByText(/No es una puntuación ATS ni una probabilidad/)).toBeOnTheScreen();
     expect(screen.queryByText(/Cada requisito suma 1 punto/)).not.toBeOnTheScreen();
+    expect(screen.queryByText(/^Respaldado: \d+ de/)).not.toBeOnTheScreen();
 
     const method = screen.getByRole('button', { name: 'Cómo se calcula la cobertura' });
     expect(method).toBeCollapsed();
     await userEvent.setup().press(method);
     expect(screen.getByText(/Cada requisito suma 1 punto/)).toBeOnTheScreen();
+    expect(screen.getByText(/^Respaldado: \d+ de/)).toBeOnTheScreen();
   });
 
   it('orders the sections: summary, what to improve first, then the requirements', async () => {
@@ -94,7 +96,7 @@ describe('Results summary', () => {
   it('keeps the unevaluable requirements out of the percentage but listed', async () => {
     await render(<AnalysisResults result={result} comparison={null} offerChanged={false} />);
 
-    expect(screen.getByText(/No evaluable: \d+ \(fuera del porcentaje\)/)).toBeOnTheScreen();
+    expect(screen.getByLabelText(/No evaluable: \d+ \(fuera del porcentaje\)/)).toBeOnTheScreen();
     expect(
       screen.getByRole('header', { name: /No evaluables, fuera del porcentaje/ }),
     ).toBeOnTheScreen();

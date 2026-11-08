@@ -232,8 +232,8 @@ describe('CoverageSummary integration', () => {
 
     expect(screen.getByText('60\u00a0%')).toBeOnTheScreen();
     expect(screen.getByRole('image', { name: /Respaldado: 2 de 2 puntos/ })).toBeOnTheScreen();
-    expect(screen.getByText('Respaldado: 1')).toBeOnTheScreen();
-    expect(screen.getByText('No evaluable: 1 (fuera del porcentaje)')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Respaldado: 1')).toBeOnTheScreen();
+    expect(screen.getByLabelText('No evaluable: 1 (fuera del porcentaje)')).toBeOnTheScreen();
     expect(
       screen.getByText(/No es una puntuaci.n ATS ni una probabilidad de contrataci.n/),
     ).toBeOnTheScreen();

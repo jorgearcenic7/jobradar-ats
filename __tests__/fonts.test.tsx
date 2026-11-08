@@ -76,15 +76,11 @@ describe('ThemedText with Sora available', () => {
   it('sets the home screen title in Sora and its message in the system font', async () => {
     await render(<HomeScreen />, { wrapper: withDisplayFont(true) });
 
-    expect(
-      screen.getByRole('header', { name: 'Comprueba qué respalda tu CV antes de enviarlo' }),
-    ).toHaveStyle({
+    expect(screen.getByRole('header', { name: 'Comprueba qué respalda tu CV' })).toHaveStyle({
       fontFamily: 'Sora',
     });
     expect(
-      screen.getByText(
-        'Compara tu CV con una oferta, requisito a requisito, y descubre qué pruebas le faltan.',
-      ),
+      screen.getByText('Compara tu CV con una oferta, requisito a requisito.'),
     ).not.toHaveStyle({
       fontFamily: 'Sora',
     });

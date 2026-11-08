@@ -81,6 +81,7 @@ function Dropzone({
         variant="secondary"
         disabled={pickDisabled}
         onPress={onPick}
+        style={styles.pick}
       />
       <ThemedText step="footnote" color="textSecondary" style={styles.centered}>
         PDF con texto o Word (.docx), hasta 10 MB. Se lee en este dispositivo y no se guarda ni se
@@ -277,25 +278,28 @@ const styles = StyleSheet.create({
     marginTop: space[3],
   },
   dropzone: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
-    gap: space[3],
-    padding: space[5],
-    borderWidth: 1.5,
-    borderStyle: 'dashed',
+    gap: space[2],
+    padding: space[3],
+    borderWidth: 1,
     borderRadius: radius.md,
     borderCurve: 'continuous',
   },
   tile: {
-    width: 40,
-    height: 40,
+    width: space[8],
+    height: space[8],
     borderRadius: radius.sm,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
   },
   centered: {
-    textAlign: 'center',
+    flexBasis: '100%',
+    textAlign: 'left',
   },
+  pick: { flex: 1 },
   review: {
     gap: space[3],
     paddingBottom: space[1],

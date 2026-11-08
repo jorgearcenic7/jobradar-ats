@@ -49,10 +49,10 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
         ]}>
         <View style={styles.message}>
           <ThemedText step="display" accessibilityRole="header" style={{ color: brand.text }}>
-            Comprueba qué respalda tu CV antes de enviarlo
+            Comprueba qué respalda tu CV
           </ThemedText>
           <ThemedText step="callout" style={{ color: brand.textSecondary }}>
-            Compara tu CV con una oferta, requisito a requisito, y descubre qué pruebas le faltan.
+            Compara tu CV con una oferta, requisito a requisito.
           </ThemedText>
         </View>
         <View style={styles.actions}>
@@ -70,13 +70,13 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
             {steps.map((step, index) => (
               <View role="listitem" key={step.title} style={styles.step}>
                 <View style={[styles.number, { backgroundColor: theme.accentSubtle }]}>
-                  <ThemedText step="headline" color="onAccentSubtle">
+                  <ThemedText step="caption" color="onAccentSubtle">
                     {index + 1}
                   </ThemedText>
                 </View>
                 <View style={styles.stepText}>
                   <ThemedText step="headline">{step.title}</ThemedText>
-                  <ThemedText step="callout" color="textSecondary">
+                  <ThemedText step="footnote" color="textSecondary">
                     {step.description}
                   </ThemedText>
                 </View>
@@ -86,18 +86,9 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
         </View>
         <View style={styles.expectations}>
           <Heading level={2}>Qué puedes esperar</Heading>
-          <View style={styles.benefit}>
-            <Icon name="checkCircle" color="accentText" />
-            <ThemedText step="callout" style={styles.flexText}>
-              Un recuento explicado de los requisitos que tu CV respalda con pruebas.
-            </ThemedText>
-          </View>
-          <View style={styles.benefit}>
-            <Icon name="checkCircle" color="accentText" />
-            <ThemedText step="callout" style={styles.flexText}>
-              Recomendaciones que nunca inventan experiencia, titulaciones ni habilidades.
-            </ThemedText>
-          </View>
+          <ThemedText step="callout">
+            Un recuento explicado de los requisitos que tu CV respalda con pruebas.
+          </ThemedText>
           <View style={styles.benefit}>
             <Icon name="info" color="textSecondary" />
             <ThemedText step="callout" color="textSecondary" style={styles.flexText}>
@@ -109,6 +100,9 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
             expanded={methodOpen}
             onToggle={setMethodOpen}>
             <View style={styles.method}>
+              <ThemedText step="callout">
+                Recomendaciones que nunca inventan experiencia, titulaciones ni habilidades.
+              </ThemedText>
               <ThemedText step="callout" color="textSecondary">
                 Cada requisito suma 1 punto si está respaldado, 0,5 si aparece sin evidencia
                 suficiente y 0 si no está acreditado. Los obligatorios cuentan el doble; los no
@@ -143,20 +137,27 @@ const styles = StyleSheet.create({
   },
   message: { flexBasis: 480, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[4] },
   actions: { flexBasis: 320, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[3] },
-  columns: { flexDirection: 'row', flexWrap: 'wrap', gap: space[6] },
-  steps: { flexBasis: 480, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[4] },
-  stepList: { gap: space[6] },
-  step: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
+  columns: { gap: space[6] },
+  steps: { minWidth: 0, gap: space[4] },
+  stepList: { flexDirection: 'row', flexWrap: 'wrap', gap: space[4] },
+  step: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: space[2],
+    flexBasis: 200,
+    flexGrow: 1,
+    maxWidth: '100%',
+  },
   number: {
-    minWidth: space[8],
-    minHeight: space[8],
+    minWidth: space[6],
+    minHeight: space[6],
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
     padding: space[1],
   },
   stepText: { flex: 1, minWidth: 0, gap: space[1] },
-  expectations: { flexBasis: 320, flexGrow: 1, maxWidth: '100%', minWidth: 0, gap: space[3] },
+  expectations: { minWidth: 0, gap: space[3] },
   benefit: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
   flexText: { flex: 1, minWidth: 0 },
   method: { gap: space[3] },

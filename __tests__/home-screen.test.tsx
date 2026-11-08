@@ -4,7 +4,7 @@ import HomeScreen from '@/app/index';
 
 import { SafeArea } from '../jest/safe-area';
 
-const title = 'Comprueba qué respalda tu CV antes de enviarlo';
+const title = 'Comprueba qué respalda tu CV';
 
 describe('HomeScreen', () => {
   it('introduces the product with one main heading and its identity', async () => {
@@ -50,6 +50,11 @@ describe('HomeScreen', () => {
     expect(screen.queryByText(/Cada requisito suma 1 punto/)).not.toBeOnTheScreen();
     await user.press(toggle);
     expect(toggle).toBeExpanded();
+    expect(
+      screen.getByText(
+        'Recomendaciones que nunca inventan experiencia, titulaciones ni habilidades.',
+      ),
+    ).toBeOnTheScreen();
     expect(
       screen.getByText(/Los obligatorios cuentan el doble; los no evaluables quedan fuera/),
     ).toBeOnTheScreen();

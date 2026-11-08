@@ -17,7 +17,7 @@ import { Disclosure } from '@/shared/ui/disclosure';
 import { Icon } from '@/shared/ui/icon';
 import { ThemedText } from '@/shared/ui/themed-text';
 
-import { CoverageBar } from './coverage-bar';
+import { CoverageBar, CoverageLegend } from './coverage-bar';
 import { formatNumber, formatPercent, statusLabels } from './labels';
 import { statusTones } from './status-badge';
 
@@ -53,15 +53,25 @@ export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps)
         </View>
       )}
 
-      {coverage.percentage === null ? null : <CoverageBar assessments={assessments} />}
+      {coverage.percentage === null ? null : (
+        <CoverageBar assessments={assessments} showLegend={false} />
+      )}
 
       <View role="list" style={styles.counts}>
         {order.map((status) => (
-          <View key={status} role="listitem" style={styles.count}>
+          <View
+            key={status}
+            role="listitem"
+            accessible
+            accessibilityLabel={`${statusLabels[status]}: ${coverage.counts[status]}${status === 'not-evaluable' ? ' (fuera del porcentaje)' : ''}`}
+            style={styles.count}>
             <Icon name={statusTones[status].icon} size="sm" color={statusTones[status].color} />
-            <ThemedText step="footnote">
-              {statusLabels[status]}: {coverage.counts[status]}
+            <ThemedText step="footnote" color="textSecondary" style={styles.countLabel}>
+              {statusLabels[status]}
               {status === 'not-evaluable' ? ' (fuera del porcentaje)' : ''}
+            </ThemedText>
+            <ThemedText step="headline" style={styles.countValue}>
+              {coverage.counts[status]}
             </ThemedText>
           </View>
         ))}
@@ -79,6 +89,7 @@ export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps)
           0 si no está acreditado; los obligatorios cuentan el doble. Indica qué parte de los
           requisitos reconocidos encuentra JobRadar en tu CV.
         </ThemedText>
+        {coverage.percentage === null ? null : <CoverageLegend assessments={assessments} />}
       </Disclosure>
     </Card>
   );
@@ -103,14 +114,13 @@ const styles = StyleSheet.create({
     minWidth: 0,
   },
   counts: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    columnGap: space[4],
-    rowGap: space[1],
+    gap: space[1],
   },
   count: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space[1],
+    gap: space[2],
   },
+  countLabel: { flex: 1, minWidth: 0 },
+  countValue: { fontVariant: ['tabular-nums'] },
 });

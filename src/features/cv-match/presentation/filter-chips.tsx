@@ -86,6 +86,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
   },
   label: {
+    fontVariant: ['tabular-nums'],
     flexShrink: 1,
     fontWeight: 600,
   },

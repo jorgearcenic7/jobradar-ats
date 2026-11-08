@@ -480,11 +480,7 @@ describe('import and validation messages on the analysis screen', () => {
     const offerError = screen.getByText('Pega el texto de la oferta para analizarla.');
     expect(cvError).toHaveStyle({ color: palettes.light.danger });
     // La zona para elegir el archivo también se marca con el color del error.
-    const dropzone = allNodes().find(
-      (node) =>
-        StyleSheet.flatten(node.props.style)?.borderStyle === 'dashed' &&
-        textIn(node, /^PDF con texto o Word/),
-    );
+    const dropzone = screen.getByRole('button', { name: 'Seleccionar PDF o Word' }).parent!;
     expect(dropzone).toHaveStyle({ borderColor: palettes.light.danger });
     expect(offerError).toHaveStyle({ color: palettes.light.danger });
     // Ninguno de los dos va en un recuadro: los recuadros quedan para los avisos.

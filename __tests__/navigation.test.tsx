@@ -27,9 +27,7 @@ describe('Home navigation to the analysis', () => {
 
     await user.press(screen.getByRole('link', { name: 'Volver al inicio' }));
     expect(screen).toHavePathname('/');
-    expect(
-      screen.getByRole('header', { name: 'Comprueba qué respalda tu CV antes de enviarlo' }),
-    ).toBeOnTheScreen();
+    expect(screen.getByRole('header', { name: 'Comprueba qué respalda tu CV' })).toBeOnTheScreen();
   });
 
   it.each(['prepare-link', 'results-link', 'prepare-back'] as const)(

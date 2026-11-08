@@ -9,18 +9,27 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { Recommendation } from '@/features/cv-match/domain/types';
-import { space } from '@/shared/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { radius, space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
-import { Icon } from '@/shared/ui/icon';
 import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 /** Cuántas recomendaciones se ven sin pedir más. */
 export const PRIORITY_RECOMMENDATIONS = 3;
 
-function Item({ message }: { message: string }) {
+function Item({ message, number }: { message: string; number: number }) {
+  const theme = useTheme();
   return (
     <View role="listitem" style={styles.item}>
-      <Icon name="info" size="sm" color="accentText" />
+      <View
+        style={[styles.number, { backgroundColor: theme.accentSubtle }]}
+        aria-hidden
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants">
+        <ThemedText step="caption" color="onAccentSubtle">
+          {number}
+        </ThemedText>
+      </View>
       <ThemedText step="callout" style={styles.text}>
         {message}
       </ThemedText>
@@ -41,10 +50,18 @@ export function RecommendationList({ recommendations }: { recommendations: Recom
         <ThemedText step="callout">No hay recomendaciones para esta oferta.</ThemedText>
       ) : (
         <View role="list" style={styles.list}>
-          {priority.map((message) => (
-            <Item key={message} message={message} />
+          {priority.map((message, index) => (
+            <Item key={message} message={message} number={index + 1} />
           ))}
-          {showAll ? rest.map((message) => <Item key={message} message={message} />) : null}
+          {showAll
+            ? rest.map((message, index) => (
+                <Item
+                  key={message}
+                  message={message}
+                  number={index + PRIORITY_RECOMMENDATIONS + 1}
+                />
+              ))
+            : null}
         </View>
       )}
       {rest.length > 0 ? (
@@ -73,6 +90,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: space[2],
+  },
+  number: {
+    minWidth: space[6],
+    minHeight: space[6],
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   text: {
     flex: 1,
