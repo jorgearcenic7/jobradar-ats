@@ -57,6 +57,8 @@ const controlPairs: Pair[] = [
   ['danger', 'surface'],
   ['focusRing', 'background'],
   ['focusRing', 'surface'],
+  // Borde de la opción activa de `SegmentedControl` sobre el fondo del grupo.
+  ['primary', 'neutralSubtle'],
 ];
 
 // Purely decorative separators are exempt from 1.4.11 and must never be the only cue.

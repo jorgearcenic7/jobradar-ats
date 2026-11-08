@@ -1,14 +1,27 @@
+/*
+Modalidad «Archivo» de la sección del CV: elegir un PDF o un Word, ver qué se ha leído y revisar
+el texto extraído.
+
+El documento, su texto y las correcciones del usuario viven en `useCvImport`, fuera de este
+componente. Por eso plegar «Revisar el texto extraído», que desmonta el campo, o cambiar a «Pegar
+texto», que desmonta todo el componente, no pierde nada: al volver se muestra el mismo estado.
+Aquí solo se guarda si el bloque de revisión está abierto.
+*/
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { formatCount } from '@/shared/format';
-import { space } from '@/shared/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { radius, space } from '@/shared/theme';
+import type { BadgeTone } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
+import { Disclosure } from '@/shared/ui/disclosure';
 import { Icon } from '@/shared/ui/icon';
-import { Notice, type NoticeTone } from '@/shared/ui/notice';
+import { Notice } from '@/shared/ui/notice';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { TextField } from '@/shared/ui/text-field';
 
 import type { ImportedCv } from '../domain/types';
+import { FileCard } from './file-card';
 import {
   extractionCaution,
   failureMessage,
@@ -19,8 +32,8 @@ import {
 import { useHydrated, type CvImport } from './use-cv-import';
 
 /*
-Error de validación del CV, con el mismo aspecto que el error de un `TextField`: va junto a los
-botones que lo resuelven y no en un recuadro, que queda para los avisos sobre el documento.
+Error de validación del CV, con el mismo aspecto que el error de un `TextField`: va junto a la
+zona que lo resuelve y no en un recuadro, que queda para los avisos sobre el documento.
 */
 function FieldError({ children }: { children: string }) {
   return (
@@ -35,20 +48,72 @@ function FieldError({ children }: { children: string }) {
   );
 }
 
-function describeDocument(cv: ImportedCv) {
-  const { fileName, format, pageCount } = cv.source;
-  const kind = format === 'pdf' ? 'PDF' : format === 'docx' ? 'Word' : null;
-  const pages = pageCount ? `${pageCount} ${pageCount === 1 ? 'página' : 'páginas'}` : null;
-  return [fileName, kind, pages].filter(Boolean).join(' · ');
+// Etiqueta del estado de la lectura en la tarjeta; el detalle de cada problema va en los avisos.
+const statusBadges: Record<ImportedCv['status'], { tone: BadgeTone; label: string }> = {
+  ready: { tone: 'success', label: 'Texto extraído' },
+  'needs-review': { tone: 'warning', label: 'Revisa el texto' },
+  blocked: { tone: 'danger', label: 'Sin texto que analizar' },
+  failed: { tone: 'danger', label: 'No se ha podido leer' },
+};
+
+type FieldActions = { onPick: () => void; pickDisabled: boolean; onPasteInstead: () => void };
+
+/** Zona para elegir un archivo cuando todavía no hay ninguno que mostrar. */
+function Dropzone({
+  onPick,
+  pickDisabled,
+  invalid,
+}: Omit<FieldActions, 'onPasteInstead'> & {
+  invalid: boolean;
+}) {
+  const theme = useTheme();
+  return (
+    <View
+      style={[
+        styles.dropzone,
+        { borderColor: theme[invalid ? 'danger' : 'borderStrong'], backgroundColor: theme.surface },
+      ]}>
+      <View style={[styles.tile, { backgroundColor: theme.accentSubtle }]}>
+        <Icon name="uploadFile" size="lg" color="onAccentSubtle" />
+      </View>
+      <Button
+        label="Seleccionar PDF o Word"
+        variant="secondary"
+        disabled={pickDisabled}
+        onPress={onPick}
+      />
+      <ThemedText step="footnote" color="textSecondary" style={styles.centered}>
+        PDF con texto o Word (.docx), hasta 10 MB. Se lee en este dispositivo y no se guarda ni se
+        envía a ningún servicio.
+      </ThemedText>
+    </View>
+  );
 }
 
-function DocumentStatus({ cvImport }: { cvImport: CvImport }) {
+function DocumentStatus({
+  cvImport,
+  onPick,
+  pickDisabled,
+  onPasteInstead,
+}: FieldActions & { cvImport: CvImport }) {
   const { state } = cvImport;
+  const pasteInstead = (
+    <Button label="Pegar texto en su lugar" variant="secondary" onPress={onPasteInstead} />
+  );
   switch (state.kind) {
     case 'empty':
       return null;
     case 'reading':
-      return <Notice tone="info">{`Leyendo «${state.fileName}» en este dispositivo…`}</Notice>;
+      return (
+        <FileCard
+          fileName={state.fileName}
+          format={null}
+          pageCount={null}
+          characterCount={null}
+          status={null}
+          onReplace={onPick}
+        />
+      );
     case 'unavailable':
       return (
         <Notice tone="info">
@@ -81,30 +146,37 @@ function DocumentStatus({ cvImport }: { cvImport: CvImport }) {
       );
     case 'imported': {
       const { cv } = state;
-      // El nombre del documento encabeza el aviso de su estado, que es lo que describe.
+      const card = (
+        <FileCard
+          fileName={cv.source.fileName}
+          format={cv.source.format}
+          pageCount={cv.source.pageCount}
+          characterCount={cv.status === 'failed' ? null : cv.extractedText.length}
+          status={statusBadges[cv.status]}
+          corrected={cv.status !== 'failed' && cv.correctedText !== null}
+          onReplace={onPick}
+          replaceDisabled={pickDisabled}
+        />
+      );
       if (cv.status === 'failed') {
         return (
-          <Notice tone="danger" title={describeDocument(cv)}>
-            {failureMessage(cv.failure)}
-          </Notice>
+          <View style={styles.block}>
+            {card}
+            <Notice tone="danger" actions={pasteInstead}>
+              {failureMessage(cv.failure)}
+            </Notice>
+          </View>
         );
       }
-      const summary: { tone: NoticeTone; text: string } =
-        cv.status === 'blocked'
-          ? { tone: 'danger', text: 'No hay texto que se pueda analizar.' }
-          : cv.status === 'needs-review'
-            ? { tone: 'warning', text: 'Texto extraído con avisos: revísalo antes de analizar.' }
-            : {
-                tone: 'success',
-                text: `Texto extraído: ${formatCount(cv.extractedText.length)} caracteres.`,
-              };
       return (
         <View style={styles.block}>
-          <Notice tone={summary.tone} title={describeDocument(cv)}>
-            {summary.text}
-          </Notice>
+          {card}
+          {/* Un error impide analizar el texto: el aviso ofrece la alternativa de pegarlo. */}
           {cv.issues.map((issue, index) => (
-            <Notice key={index} tone={issueTones[issue.level]}>
+            <Notice
+              key={index}
+              tone={issueTones[issue.level]}
+              actions={issue.level === 'error' ? pasteInstead : undefined}>
               {issueMessage(issue)}
             </Notice>
           ))}
@@ -124,82 +196,112 @@ export type CvFileFieldProps = {
 /** Picks a PDF or DOCX, shows how its text was read and lets the user review that text. */
 export function CvFileField({ cvImport, error, onPasteInstead }: CvFileFieldProps) {
   const hydrated = useHydrated();
-  const { state } = cvImport;
+  const { state, documentId } = cvImport;
   const cv = state.kind === 'imported' && state.cv.status !== 'failed' ? state.cv : null;
+  // Antes de hidratar el botón no respondería, así que no se presenta como disponible.
+  const pickDisabled = !hydrated || state.kind === 'needs-confirmation';
+  const showDropzone =
+    state.kind === 'empty' || state.kind === 'unavailable' || state.kind === 'too-large';
+  // La región de anuncios está siempre montada; solo separa cuando tiene algo debajo de la zona.
+  const statusBelowDropzone = showDropzone && (state.kind !== 'empty' || Boolean(error));
+
+  /*
+  El bloque de revisión empieza plegado tras una lectura correcta y abierto cuando hay avisos que
+  revisar, como en el prototipo. Lo que decide el usuario se recuerda solo para ese documento:
+  con un archivo nuevo vuelve a valer el estado inicial.
+  */
+  const [review, setReview] = useState<{ documentId: number; expanded: boolean } | null>(null);
+  const reviewExpanded =
+    cv !== null && documentId !== null && review?.documentId === documentId
+      ? review.expanded
+      : cv?.status === 'needs-review';
 
   return (
-    <View style={styles.field}>
-      <View style={styles.block}>
-        {/* Second level: the screen title is the only heading above it. */}
-        <ThemedText step="headline" accessibilityRole="header" aria-level={2}>
-          Tu CV
-        </ThemedText>
-        <ThemedText step="callout" color="textSecondary">
-          PDF con texto o Word (.docx), hasta 10 MB. Se lee en este dispositivo y no se guarda ni se
-          envía a ningún servicio.
-        </ThemedText>
-      </View>
+    <View>
+      {showDropzone ? (
+        <Dropzone onPick={cvImport.pick} pickDisabled={pickDisabled} invalid={Boolean(error)} />
+      ) : null}
 
-      <View style={styles.actions}>
-        <Button
-          label={state.kind === 'imported' ? 'Sustituir CV' : 'Seleccionar CV'}
-          icon="add"
-          variant="secondary"
-          // Before hydration the button would not respond, so it does not look ready.
-          disabled={!hydrated || state.kind === 'needs-confirmation'}
-          loading={state.kind === 'reading'}
-          onPress={cvImport.pick}
+      {/* Siempre montada, para que los lectores de pantalla anuncien cada cambio del documento. */}
+      <View aria-live="polite" style={[styles.block, statusBelowDropzone && styles.belowDropzone]}>
+        <DocumentStatus
+          cvImport={cvImport}
+          onPick={cvImport.pick}
+          pickDisabled={pickDisabled}
+          onPasteInstead={onPasteInstead}
         />
-        <Button label="Pegar texto en su lugar" variant="secondary" onPress={onPasteInstead} />
-      </View>
-
-      {/* Always mounted, so screen readers announce each change of the document status. */}
-      <View aria-live="polite" style={styles.block}>
-        <DocumentStatus cvImport={cvImport} />
         {error ? <FieldError>{error}</FieldError> : null}
       </View>
 
-      {cv ? (
-        <View style={styles.block}>
-          <TextField
-            label="Texto del CV"
-            helperText={
-              cv.correctedText !== null
-                ? 'Has corregido el texto. Se analizará esta versión; el archivo original no cambia.'
-                : 'Puedes corregir errores de lectura. El archivo original no cambia.'
-            }
-            value={cv.correctedText ?? cv.extractedText}
-            onChangeText={cvImport.reviseText}
-            multiline
-            autoCorrect={false}
-          />
-          {cv.correctedText !== null ? (
-            <Button
-              label="Restaurar el texto extraído"
-              variant="secondary"
-              onPress={cvImport.discardCorrection}
+      {cv && documentId !== null ? (
+        <Disclosure
+          header="Revisar el texto extraído"
+          expanded={reviewExpanded}
+          onToggle={(expanded) => setReview({ documentId, expanded })}>
+          <View style={styles.review}>
+            <TextField
+              label="Texto del CV"
+              helperText={
+                cv.correctedText !== null
+                  ? 'Has corregido el texto. Se analizará esta versión; el archivo original no cambia.'
+                  : 'Puedes corregir errores de lectura. El archivo original no cambia.'
+              }
+              value={cv.correctedText ?? cv.extractedText}
+              onChangeText={cvImport.reviseText}
+              multiline
+              autoCorrect={false}
             />
-          ) : null}
-          <ThemedText step="footnote" color="textSecondary">
-            {extractionCaution}
-          </ThemedText>
-        </View>
+            {cv.correctedText !== null ? (
+              <Button
+                label="Restaurar el texto extraído"
+                variant="secondary"
+                onPress={cvImport.discardCorrection}
+                style={styles.restore}
+              />
+            ) : null}
+            <ThemedText step="footnote" color="textSecondary">
+              {extractionCaution}
+            </ThemedText>
+          </View>
+        </Disclosure>
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  field: {
-    gap: space[4],
-  },
   block: {
-    gap: space[2],
-  },
-  actions: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: space[3],
+  },
+  belowDropzone: {
+    marginTop: space[3],
+  },
+  dropzone: {
+    alignItems: 'center',
+    gap: space[3],
+    padding: space[5],
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderRadius: radius.md,
+    borderCurve: 'continuous',
+  },
+  tile: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centered: {
+    textAlign: 'center',
+  },
+  review: {
+    gap: space[3],
+    paddingBottom: space[1],
+  },
+  restore: {
+    alignSelf: 'flex-start',
   },
   // Mismas medidas que el error de `TextField`.
   fieldError: {

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { StyleSheet, View, type TextInputInstance } from 'react-native';
 
-import { CvFileField, useCvImport, type CvImport } from '@/features/cv-import';
+import { useCvImport, type CvImport } from '@/features/cv-import';
 import type { AnalysisResult } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
 import { space } from '@/shared/theme';
@@ -13,11 +13,10 @@ import { Screen } from '@/shared/ui/screen';
 import { TextField } from '@/shared/ui/text-field';
 
 import { AnalysisResults } from './analysis-results';
+import { CvSection, type CvMode } from './cv-section';
 import { formatPercent } from './labels';
 import { sampleCv } from './sample-texts';
 import { useCvMatch, type CvInput } from './use-cv-match';
-
-type CvMode = 'file' | 'paste';
 
 function fileCvInput(cvImport: CvImport): CvInput {
   const input = cvImport.analysisInput;
@@ -35,7 +34,7 @@ function cvErrorMessage(mode: CvMode, cvImport: CvImport) {
   if (state.cv.status === 'failed') {
     return 'No se ha podido leer este CV. Selecciona otro archivo o pega el texto.';
   }
-  return 'Este CV no tiene texto que se pueda analizar. Escribe el texto en el campo de revisión, pégalo o selecciona otro archivo.';
+  return 'Este CV no tiene texto que se pueda analizar. Escríbelo en «Revisar el texto extraído», pégalo o selecciona otro archivo.';
 }
 
 function statusMessage(result: AnalysisResult | null, isOutdated: boolean) {
@@ -88,38 +87,15 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
       </View>
 
       <Card style={styles.form}>
-        {cvMode === 'file' ? (
-          <CvFileField
-            cvImport={cvImport}
-            error={cvError}
-            onPasteInstead={() => setCvMode('paste')}
-          />
-        ) : (
-          <View style={styles.pasted}>
-            <TextField
-              ref={cvRef}
-              label="Tu CV"
-              helperText="Pega el texto completo de tu CV."
-              error={cvError}
-              value={pastedCv}
-              onChangeText={setPastedCv}
-              multiline
-              autoCorrect={false}
-            />
-            {cvImport.canPickFile ? (
-              <Button
-                label="Seleccionar un archivo en su lugar"
-                variant="secondary"
-                onPress={() => setCvMode('file')}
-              />
-            ) : (
-              <Notice tone="info">
-                Importar un PDF o un Word todavía no está disponible en la app para iOS y Android.
-                Por ahora, pega el texto de tu CV.
-              </Notice>
-            )}
-          </View>
-        )}
+        <CvSection
+          mode={cvMode}
+          onModeChange={setCvMode}
+          cvImport={cvImport}
+          pastedCv={pastedCv}
+          onPastedCvChange={setPastedCv}
+          error={cvError}
+          pastedRef={cvRef}
+        />
         <TextField
           ref={offerRef}
           label="Oferta de empleo"
@@ -197,9 +173,6 @@ const styles = StyleSheet.create({
   },
   intro: {
     gap: space[2],
-  },
-  pasted: {
-    gap: space[3],
   },
   form: {
     // Wider than the label-to-field gap, so helper text never reads as the next field's.

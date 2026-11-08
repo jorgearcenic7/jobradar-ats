@@ -49,10 +49,10 @@ describe('CV match screen', () => {
   it('clears an error once the pasted CV has text', async () => {
     const user = await renderScreen();
     await user.press(analyzeButton());
-    await user.press(screen.getByRole('button', { name: 'Pegar texto en su lugar' }));
+    await user.press(screen.getByRole('radio', { name: 'Pegar texto' }));
     expect(screen.getByText('Pega el texto de tu CV para analizarlo.')).toBeOnTheScreen();
 
-    await fireEvent.changeText(screen.getByLabelText('Tu CV'), 'Texto de un CV ficticio');
+    await fireEvent.changeText(screen.getByLabelText('Texto del CV'), 'Texto de un CV ficticio');
 
     expect(screen.queryByText('Pega el texto de tu CV para analizarlo.')).not.toBeOnTheScreen();
     expect(screen.getByText('Pega el texto de la oferta para analizarla.')).toBeOnTheScreen();
@@ -146,7 +146,7 @@ describe('CV match screen', () => {
     await user.press(analyzeButton());
 
     await fireEvent.changeText(
-      screen.getByLabelText('Tu CV'),
+      screen.getByLabelText('Texto del CV'),
       `${sampleCv}\n\nPERFIL\nTengo 4 años de experiencia con React en comercio electrónico.`,
     );
     expect(screen.getByText(/Has cambiado el texto desde el último análisis/)).toBeOnTheScreen();

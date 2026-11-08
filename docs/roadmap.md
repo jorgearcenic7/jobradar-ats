@@ -25,7 +25,7 @@ El orden entre las subfases pendientes de la Fase 2 y la Fase A se decide en cad
 
 ### Fase 2 — Sistema de diseño
 
-**En curso.** Los tokens, los componentes base y los componentes de estado están terminados. `CoverageBar` está implementado, pendiente de revisión y commit; todavía faltan `SegmentedControl` y la consolidación.
+**En curso.** Los tokens, los componentes base, los componentes de estado, `Disclosure` y `CoverageBar` están terminados. `SegmentedControl` se ha implementado con su primer uso real en la Fase 3b.1, pendiente de revisión y commit; todavía falta la consolidación.
 
 | Subfase | Contenido                                                                                    | Estado                                       | Commit    |
 | ------- | -------------------------------------------------------------------------------------------- | -------------------------------------------- | --------- |
@@ -41,8 +41,8 @@ El orden entre las subfases pendientes de la Fase 2 y la Fase A se decide en cad
 | 2c.2a   | `Badge` y `Notice`                                                                           | Completada                                   | `8f41942` |
 | 2c.2b   | `EmptyState`                                                                                 | Completada                                   | `23ef3c1` |
 | 2c.3a   | `Disclosure`                                                                                 | Completada                                   | `f3ec5b6` |
-| 2c.3b   | `CoverageBar` e integración limitada en el resumen de cobertura                              | Implementada, pendiente de revisión y commit | —         |
-| 2c.3    | Componente interactivo pendiente: `SegmentedControl`                                         | Próxima                                      | —         |
+| 2c.3b   | `CoverageBar` e integración limitada en el resumen de cobertura                              | Completada                                   | `e201262` |
+| 2c.3    | `SegmentedControl`, creado en la Fase 3b.1 junto a su primer uso                             | Implementada, pendiente de revisión y commit | —         |
 | 2d      | Consolidación: VoiceOver, Dynamic Type, capturas finales, revisión de código y documentación | Próxima                                      | —         |
 
 También queda pendiente, sin subfase asignada, la migración a `src/shared/` de los hooks heredados de la plantilla. El `ThemedText` de la plantilla y el adaptador `constants/theme.ts` se retiraron en la Fase A, sustituidos por `src/shared/ui/themed-text.tsx` (ver [architecture.md](architecture.md)).
@@ -86,6 +86,14 @@ Migración: los bloques 0 a 6 están hechos.
 - **Bloque 6:** interfaz y `ThemedText` compartido, pendiente de tu revisión y commit.
 
 Las skills de Replica y su documentación experimental no se trasladan.
+
+Rediseño del analizador según el prototipo visual aprobado, por subfases pequeñas:
+
+| Subfase | Contenido                                                                                                     | Estado                                       | Commit |
+| ------- | ------------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------ |
+| 3b.1    | Sección «Tu CV» de Preparar: selector Archivo / Pegar texto, `FileCard`, avisos y «Revisar el texto extraído» | Implementada, pendiente de revisión y commit | —      |
+
+La oferta, la acción «Analizar», los resultados, la navegación y las rutas mantienen su diseño actual hasta sus subfases.
 
 **Pendiente para completar la Fase A:** el recorrido en Safari del iPhone y la revisión final. La importación nativa, el OCR y la revisión con lectores de pantalla nativos quedan fuera de esta fase.
 

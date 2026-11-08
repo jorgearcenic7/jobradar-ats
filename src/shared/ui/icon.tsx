@@ -17,8 +17,11 @@ export const iconSymbols = {
   chevronDown: { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' },
   chevronRight: { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' },
   close: { ios: 'xmark', android: 'close', web: 'close' },
+  contentPaste: { ios: 'doc.on.clipboard', android: 'content_paste', web: 'content_paste' },
+  document: { ios: 'doc.text', android: 'description', web: 'description' },
   error: { ios: 'exclamationmark.circle', android: 'error', web: 'error' },
   info: { ios: 'info.circle', android: 'info', web: 'info' },
+  uploadFile: { ios: 'doc.badge.arrow.up', android: 'upload_file', web: 'upload_file' },
   warning: { ios: 'exclamationmark.triangle', android: 'warning', web: 'warning' },
 } as const satisfies Record<string, PlatformSymbols>;
 
