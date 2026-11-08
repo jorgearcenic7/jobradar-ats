@@ -170,7 +170,7 @@ Limitaciones:
 - **Español.** Las reglas de importancia, negación y matización están escritas para textos en español; algunos encabezados del CV se reconocen también en inglés.
 - **Solo texto.** Analiza texto ya escrito o pegado; no lee archivos (eso lo hace `cv-import`).
 
-#### Fiabilidad del motor (Fase 5a)
+#### Fiabilidad del motor (Fase 5a, `4e5951a`)
 
 Base: Fase 4e, `894a807`, con 689 pruebas. Se comparan veinte pares de CV/oferta ficticios antes y después, incluidos los casos del diagnóstico de 4e; doce conservan exactamente requisitos, estados, motivos, fuentes, evidencias, cobertura y recomendaciones. No se dispone de la oferta real del usuario, por lo que no se atribuye una causa a sus 28 no evaluables.
 
@@ -199,6 +199,29 @@ Las subidas y bajadas proceden de recuperar un criterio explícito o corregir su
 **Diagnóstico que requiere decisión, sin implementar:** IEC 62443 y TwinCAT siguen fuera del catálogo (oportunidades de ampliación con casos negativos específicos, sin lista masiva); «Dominio de Lince» y «Conocimientos de Lince» no se fusionan por inferencia. Las tareas sin criterios conocidos se omiten bajo Funciones, pero se conservan como no reconocidas bajo Requisitos; una tarea con React aún puede producir un concepto evaluable sin importancia declarada. Separar sistemáticamente responsabilidades y exigencias requiere acordar reglas de producto. Una mención «Usamos Docker» queda para revisión, no acredita una exigencia; los encabezados ambiguos mantienen su tratamiento conservador. Tres frases independientes de perfil, disponibilidad y contrato siguen generando tres elementos, sin unirlas arbitrariamente. «Inglés alto» sigue siendo no evaluable si hay mención en el CV y no acreditado si no la hay: cambiar esa política alteraría estados y denominador. La coordinación sin niveles propios para cada idioma, las alternativas y las abreviaturas distintas de la corregida necesitan estudio separado.
 
 **Regresión:** quince casos nuevos en las pruebas existentes de extracción y análisis, con negativos de contexto, significado, frases independientes, experiencia insuficiente y niveles compartidos. No se elimina ninguna prueba ni se modifican interfaz, catálogo, cobertura, generadores de recomendaciones, importadores o dependencias.
+
+#### Negaciones de exigencia e importancia por cláusula (Fase 5c)
+
+Base: `4e5951a`, 704 pruebas. La auditoría 5b fue de solo lectura. Esta fase modifica únicamente extracción, el tipo de causa de revisión y su explicación en la evaluación; no cambia cobertura, catálogo, evidencias del CV, presentación ni generadores de recomendaciones.
+
+- **Exigencias negadas.** «No se requiere Docker», «Docker no es obligatorio» y «No es necesario tener experiencia con Docker» se conservan como `review` con causa `requirement-wording`, estado no evaluable y aportación nula. No se descartan ni se convierten en requisitos satisfechos. El motivo explica que la frase niega una exigencia o no permite asignarla con seguridad. Se reutilizan el grupo desplegable y la revisión manual existentes.
+- **Contrastes explícitos.** «No se requiere Docker, pero se valorará» produce Docker deseable, incluso dentro de Requisitos; la elipsis solo se resuelve si la negación anterior contiene un único criterio conocido. «No se requiere Docker, pero sí Kubernetes» conserva la parte negada para revisión y extrae Kubernetes obligatorio. Una negación sin contraste inequívoco no se propaga como obligación al siguiente concepto.
+- **Cláusulas marcadas.** `demandClauses`, privado de `offer-requirements.ts`, separa construcciones con «y» o «pero» cuando cada parte tiene un marcador inicial explícito: «Imprescindible SQL y valorable Docker» asigna obligatorio/deseable, también bajo Requisitos. No divide listas comunes como «Imprescindible SQL y Python». Si una cláusula obligatoria contradice un encabezado deseable, queda para revisión sin puntuar. Mantiene el tratamiento anterior de un marcador aislado que contradice un encabezado («Docker (valorable)» bajo Requisitos). Los dos marcadores sin destinatario claro, las contradicciones sobre un mismo criterio o las negaciones adicionales sin alcance claro quedan para revisión. No se aplica la separación nueva a alternativas con «o».
+- **Trazabilidad.** Cada cláusula conserva en `sources` la frase literal completa. Las filas de revisión pueden usar como etiqueta su fragmento literal; el detalle permite consultar también el contexto completo. La evidencia de los criterios puntuados sigue saliendo de las frases literales del CV, con las negaciones del candidato como evidencia negativa, nunca como respaldo.
+
+Comparación de los mismos once casos ficticios antes/después; cuatro permanecen exactamente iguales (conflicto previo de encabezado, mención contextual, reconocimiento parcial y alternativas). Se repiten además las tres ofertas de Data Engineer, Analytics Engineer y Software Engineer de 5b y las nueve comprobaciones de tecnologías: sus resultados no cambian. De los catorce contrastes mínimos de esa auditoría solo cambian los dos fallos autorizados, negación explícita e importancia compartida incorrectamente.
+
+| Caso                                                                        | Antes                                                     | Después                                                                     |
+| --------------------------------------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Cada una de las tres negaciones, sin Docker en el CV                        | 1 evaluado, no acreditado; 0/1 puntos, 0 %                | 0 evaluados, 1 no evaluable; 0/0 puntos, sin porcentaje                     |
+| «No se requiere Docker, pero se valorará», sin Docker                       | Ambiguo, no acreditado; 0/1 puntos                        | Deseable, no acreditado; 0/1 puntos; misma cobertura                        |
+| «No se requiere Docker, pero sí Kubernetes», CV que respalda Kubernetes     | Ambos puntuaban con importancia ambigua; 1/2 puntos, 50 % | Docker para revisión y Kubernetes obligatorio respaldado; 2/2 puntos, 100 % |
+| «Imprescindible SQL y valorable Docker», CV que respalda SQL y niega Docker | Ambos ambiguos; 1/2 puntos, 50 %                          | SQL obligatorio y Docker deseable no acreditado; 2/3 puntos, 67 %           |
+| «Imprescindible y valorable Docker», CV que solo lo menciona                | Ambiguo pero puntuable; 0,5/1 puntos, 50 %                | Revisión; sin porcentaje                                                    |
+
+Se añaden quince regresiones en los archivos existentes de extracción y análisis, incluyendo controles de no propagación, contradicciones, negaciones en el CV, trazabilidad y cobertura. Se adapta la prueba previa de una exigencia negada para proteger su tratamiento corregido; no se elimina ninguna prueba.
+
+**Límites y riesgos pendientes:** se trata de patrones explícitos, no de un analizador sintáctico general. Las construcciones no cubiertas se conservan con las reglas anteriores o, si contienen las negaciones/marcadores contradictorios detectados, se envían a revisión. La contradicción entre exigencias en frases o secciones distintas mantiene su tratamiento anterior y requiere un estudio separado. El reconocimiento parcial, las alternativas, los encabezados ambiguos, el catálogo y las responsabilidades no se corrigen en esta fase. No se generaliza la elipsis a varios criterios ni se interpreta una mera proximidad como obligatoriedad.
 
 #### Presentación
 

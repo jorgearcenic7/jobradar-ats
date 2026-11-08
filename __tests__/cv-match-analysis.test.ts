@@ -198,6 +198,94 @@ describe('evidence in the CV', () => {
   });
 });
 
+describe('offer demand scope', () => {
+  it.each([
+    'No se requiere Docker.',
+    'Docker no es obligatorio.',
+    'No es necesario tener experiencia con Docker.',
+  ])('does not penalize an explicitly unnecessary skill: %s', (sentence) => {
+    const result = analyzeMatch('HABILIDADES\nSQL.', `Requisitos\n- ${sentence}`);
+    expect(result.coverage).toMatchObject({
+      evaluated: 0,
+      notEvaluated: 1,
+      possible: 0,
+      percentage: null,
+    });
+    expect(result.requirements[0]).toMatchObject({
+      status: 'not-evaluable',
+      contribution: null,
+      evidence: [],
+      requirement: { kind: 'review', cause: 'requirement-wording', sources: [sentence] },
+    });
+    expect(result.requirements[0].reason).toMatch(/niega.*exigencia/);
+  });
+
+  it('keeps an elliptical preference for the same skill evaluable and preferred', () => {
+    const sentence = 'No se requiere Docker, pero se valorará.';
+    const result = analyzeMatch('HABILIDADES\nSQL.', `Requisitos\n- ${sentence}`);
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0]).toMatchObject({
+      status: 'missing',
+      requirement: { id: 'concept:docker', importance: 'preferred', sources: [sentence] },
+    });
+    expect(result.coverage).toMatchObject({
+      evaluated: 1,
+      notEvaluated: 0,
+      possible: 1,
+      percentage: 0,
+    });
+  });
+
+  it('keeps an explicit positive contrast required without transferring the negation', () => {
+    const sentence = 'No se requiere Docker, pero sí Kubernetes.';
+    const cv = 'EXPERIENCIA\nAdministré Kubernetes en una empresa ficticia durante un proyecto.';
+    const result = analyzeMatch(cv, `Requisitos\n- ${sentence}`);
+    const kubernetes = assessment(result, 'concept:kubernetes');
+    expect(kubernetes).toMatchObject({
+      status: 'supported',
+      requirement: { importance: 'required', sources: [sentence] },
+    });
+    expect(kubernetes.evidence[0].text).toBe(cv.split('\n')[1]);
+    expect(result.requirements.find((i) => i.requirement.id === 'concept:docker')).toBeUndefined();
+    expect(result.coverage).toMatchObject({
+      evaluated: 1,
+      notEvaluated: 1,
+      earned: 2,
+      possible: 2,
+      percentage: 100,
+    });
+  });
+
+  it('keeps CV negations negative and calculates coverage using the two explicit clause weights', () => {
+    const cv =
+      'EXPERIENCIA\nDesarrollé consultas con SQL para una empresa ficticia.\nNo tengo experiencia con Docker.';
+    const result = analyzeMatch(cv, 'Requisitos\n- Imprescindible SQL y valorable Docker.');
+    expect(assessment(result, 'concept:sql').requirement.importance).toBe('required');
+    const docker = assessment(result, 'concept:docker');
+    expect(docker).toMatchObject({ status: 'missing', requirement: { importance: 'preferred' } });
+    expect(docker.evidence[0]).toMatchObject({
+      text: 'No tengo experiencia con Docker.',
+      role: 'negation',
+    });
+    expect(result.coverage).toMatchObject({ earned: 2, possible: 3, percentage: 67 });
+  });
+
+  it('keeps contextual mentions for review and a shared explicit requirement intact', () => {
+    const result = analyzeMatch(
+      'HABILIDADES\nSQL, Python.',
+      'Usamos Docker para el producto.\nPerfil\n- Imprescindible SQL y Python.',
+    );
+    expect(
+      result.requirements.map((i) => [i.requirement.kind, i.requirement.importance, i.status]),
+    ).toEqual([
+      ['review', 'unclassified', 'not-evaluable'],
+      ['concept', 'required', 'mentioned'],
+      ['concept', 'required', 'mentioned'],
+    ]);
+    expect(result.coverage).toMatchObject({ evaluated: 2, notEvaluated: 1, percentage: 50 });
+  });
+});
+
 describe('abbreviated minimum experience', () => {
   it.each([
     [

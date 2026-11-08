@@ -665,9 +665,11 @@ export function assessRequirement(
       return {
         status: 'not-evaluable',
         reason:
-          requirement.cause === 'unknown-section'
-            ? `Esta frase está en el apartado «${requirement.heading}», que JobRadar no sabe clasificar: puede ser un requisito o información sobre la empresa. No se puntúa; revisa tú si te la piden.`
-            : 'Esta frase describe cómo trabaja la empresa, pero no lo pide expresamente. No se puntúa; revisa tú si el puesto lo exige.',
+          requirement.cause === 'requirement-wording'
+            ? 'Esta frase niega una exigencia o no permite asignarla con seguridad a cada criterio. No se puntúa; comprueba su alcance en la oferta.'
+            : requirement.cause === 'unknown-section'
+              ? `Esta frase está en el apartado «${requirement.heading}», que JobRadar no sabe clasificar: puede ser un requisito o información sobre la empresa. No se puntúa; revisa tú si te la piden.`
+              : 'Esta frase describe cómo trabaja la empresa, pero no lo pide expresamente. No se puntúa; revisa tú si el puesto lo exige.',
         evidence: [],
       };
   }

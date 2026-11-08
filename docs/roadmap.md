@@ -119,9 +119,15 @@ La navegación principal ofrece los dos destinos existentes, Inicio y Analizar; 
 
 ### Fase 5a — Fiabilidad del análisis CV–oferta
 
-**Implementada, pendiente de revisión y commit.** Base: 4e (`894a807`), 689 pruebas. Se corrigen únicamente fallos reproducidos con datos ficticios: duplicados evidentes no evaluables en el mismo contexto, segmentación de «experiencia mín. de 3 años» y préstamo de niveles entre idiomas coordinados con niveles propios explícitos. Quince regresiones nuevas, sin eliminar las anteriores. Comparación antes/después sobre veinte casos; se conservan fórmula, pesos y semántica de estados. El ejemplo largo sigue en 9 evaluados, 28 no evaluables y 44 %.
+**Completada: `4e5951a`.** Base: 4e (`894a807`), 689 pruebas. Se corrigen únicamente fallos reproducidos con datos ficticios: duplicados evidentes no evaluables en el mismo contexto, segmentación de «experiencia mín. de 3 años» y préstamo de niveles entre idiomas coordinados con niveles propios explícitos. Quince regresiones nuevas, sin eliminar las anteriores. Comparación antes/después sobre veinte casos; se conservan fórmula, pesos y semántica de estados. El ejemplo largo sigue en 9 evaluados, 28 no evaluables y 44 %.
 
 La ampliación del catálogo, la separación sistemática de responsabilidades y requisitos, los encabezados ambiguos y la política de niveles no MCER quedan como propuestas documentadas en arquitectura. No se modifica la interfaz ni se adelanta la gestión de ofertas de la Fase 5. La causa de los 28 elementos de la oferta real sigue sin determinarse sin disponer de ese texto.
+
+### Fase 5c — Negaciones e importancia por cláusula
+
+**Implementada, pendiente de revisión y commit.** Tras la auditoría 5b de solo lectura, sobre `4e5951a` (704 pruebas), se corrigen exigencias negadas y la importancia de cláusulas con marcadores explícitos. Se conserva la frase original mediante el mecanismo de revisión para las negaciones o alcances inseguros; «pero se valorará» y «pero sí Kubernetes» reciben su interpretación explícita sin propagar la negación. Fórmula, pesos, estados y evidencia del CV mantienen su significado. Quince regresiones nuevas y ninguna eliminada; comparación de once casos y controles de las ofertas técnicas de 5b.
+
+No se adelantan alternativas, reconocimiento parcial, ampliaciones del catálogo ni cambios visuales. La política general de responsabilidades y los conflictos entre frases distintas siguen pendientes. El diagnóstico y sus límites quedan en arquitectura.
 
 ## Próximas fases
 

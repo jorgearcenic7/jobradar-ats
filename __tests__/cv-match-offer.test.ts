@@ -44,9 +44,43 @@ describe('offer requirement importance', () => {
     expect(requirement(offer, 'concept:docker')?.importance).toBe('preferred');
   });
 
-  it('treats a negated requirement inside a requirements section as ambiguous', () => {
+  it('retains a negated demand for review instead of scoring it as a requirement', () => {
     const offer = 'Requisitos\n- No es necesario saber Java.';
-    expect(requirement(offer, 'concept:java')?.importance).toBe('ambiguous');
+    expect(requirement(offer, 'concept:java')).toBeUndefined();
+    expect(requirement(offer, 'review:1')).toMatchObject({
+      kind: 'review',
+      cause: 'requirement-wording',
+      sources: ['No es necesario saber Java.'],
+    });
+  });
+
+  it.each(['Perfil', 'Requisitos'])(
+    'reads explicit importance per clause under %s without changing the literal source',
+    (heading) => {
+      const sentence = 'Imprescindible SQL y valorable Docker.';
+      const result = requirementsOf(`${heading}\n- ${sentence}`);
+      expect(result.map((item) => [item.id, item.importance])).toEqual([
+        ['concept:sql', 'required'],
+        ['concept:docker', 'preferred'],
+      ]);
+      expect(result.every((item) => item.sources[0] === sentence)).toBe(true);
+    },
+  );
+
+  it.each([
+    'Imprescindible y valorable Docker.',
+    'No se requiere Docker, pero Kubernetes.',
+    'Imprescindible Docker y valorable Docker.',
+    'No se requiere Docker, pero sí Docker.',
+    'Imprescindible SQL y valorable Docker, pero no Git.',
+  ])('does not invent a score when the demand cannot be assigned safely: %s', (sentence) => {
+    const result = requirementsOf(`Requisitos\n- ${sentence}`);
+    expect(result).toHaveLength(1);
+    expect(result[0]).toMatchObject({
+      kind: 'review',
+      cause: 'requirement-wording',
+      sources: [sentence],
+    });
   });
 
   it('marks a concept required in one section and desirable in another as ambiguous', () => {
@@ -95,6 +129,20 @@ describe('offer requirement extraction', () => {
       expect(items[0].label).toBe(sentence);
     },
   );
+
+  it('does not turn a required clause under a preferred heading into a scored obligation', () => {
+    const sentence = 'Imprescindible SQL y valorable Docker.';
+    const result = requirementsOf(`Se valorará\n- ${sentence}`);
+    expect(result.map((item) => [item.kind, item.importance])).toEqual([
+      ['review', 'ambiguous'],
+      ['concept', 'preferred'],
+    ]);
+    expect(result[0]).toMatchObject({
+      cause: 'requirement-wording',
+      label: 'Imprescindible SQL',
+      sources: [sentence],
+    });
+  });
 
   it('keeps different unknown meanings, importance and review headings separate', () => {
     const result = requirementsOf(`Requisitos

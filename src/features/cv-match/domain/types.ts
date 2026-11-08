@@ -34,8 +34,9 @@ export type OfferRequirement =
       /**
        * - `unknown-section`: it sits under a heading JobRadar cannot classify.
        * - `company-practice`: it describes how the company works without asking for it.
+       * - `requirement-wording`: niega una exigencia o su alcance necesita revisión.
        */
-      cause: 'unknown-section' | 'company-practice';
+      cause: 'unknown-section' | 'company-practice' | 'requirement-wording';
       /** The unclassified heading, for `unknown-section`. */
       heading: string | null;
     });

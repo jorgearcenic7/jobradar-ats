@@ -549,6 +549,100 @@ function recognize(normalized: string, index: CatalogIndex): Candidate[] {
   return candidates;
 }
 
+type DemandClause = {
+  source: string;
+  text: string;
+  importance?: Importance;
+  review?: boolean;
+};
+
+/**
+ * Aísla solo demandas con marcadores propios. Cada fragmento conserva la frase de origen;
+ * si no podemos atribuir la negación o la importancia, se conserva para revisión sin puntuar.
+ */
+function demandClauses(source: string, index: CatalogIndex): DemandClause[] {
+  const normalized = normalize(source);
+  const negated = containsAny(normalized, negatedRequiredWords);
+  const mixed = containsAny(normalized, requiredWords) && containsAny(normalized, preferredWords);
+  if (!negated && !mixed) return [{ source, text: source }];
+  // Las alternativas siguen fuera del alcance: no las reinterpretamos como conjunciones.
+  if (containsAny(normalized, ['o'])) {
+    return [{ source, text: source, review: negated }];
+  }
+  // Una negación sin el patrón de exigencia reconocido no se propaga al siguiente concepto.
+  if (!negated && containsAny(normalized, ['no'])) return [{ source, text: source, review: true }];
+
+  const explicitStart =
+    /^(?:imprescindible|obligatorio|necesario|se requiere|valorable|deseable|opcional|se valorara|se valora)\b/;
+  const negativeStart = (text: string) =>
+    negatedRequiredWords.some((phrase) => text === phrase || text.startsWith(`${phrase} `));
+  const parts: string[] = [];
+  let start = 0;
+  for (const match of normalized.matchAll(/\s*(?:,\s*)?\b(y|pero)\s+/g)) {
+    const end = match.index + match[0].length;
+    const right = normalized.slice(end);
+    if (!explicitStart.test(right) && !negativeStart(right) && !(negated && match[1] === 'pero'))
+      continue;
+    parts.push(source.slice(start, match.index).trim());
+    start = end;
+  }
+  parts.push(source.slice(start).trim());
+  const uncertain = (): DemandClause[] => [{ source, text: source, review: true }];
+  if (parts.length === 1) return uncertain();
+
+  const clauses: DemandClause[] = [];
+  for (const [position, text] of parts.entries()) {
+    const value = normalize(text);
+    const candidates = recognize(value, index);
+    if (containsAny(value, negatedRequiredWords)) {
+      // «No es imprescindible, pero se valorará Docker» no nombra un criterio en su primera
+      // parte. La fuente completa queda en la demanda positiva; no añadimos una fila vacía.
+      if (position === 0 && negatedRequiredWords.includes(value.replace(/[,.:]+$/, ''))) continue;
+      clauses.push({ source, text, review: true });
+      continue;
+    }
+    const importance = statedImportance(value);
+    if (explicitStart.test(value) && (importance === 'required' || importance === 'preferred')) {
+      if (candidates.length > 0) {
+        clauses.push({ source, text, importance });
+        continue;
+      }
+      // La elipsis solo retoma un criterio inequívoco de la negación inmediatamente anterior.
+      if (
+        parts.length === 2 &&
+        position === 1 &&
+        importance === 'preferred' &&
+        containsAny(normalize(parts[0]), negatedRequiredWords) &&
+        recognize(normalize(parts[0]), index).length === 1
+      ) {
+        return [{ source, text: source, importance: 'preferred' }];
+      }
+    }
+    if (
+      position > 0 &&
+      /^si\s+/.test(value) &&
+      importance === null &&
+      candidates.length > 0 &&
+      containsAny(normalize(parts[position - 1]), negatedRequiredWords)
+    ) {
+      clauses.push({ source, text, importance: 'required' });
+      continue;
+    }
+    return uncertain();
+  }
+  // Dos cláusulas no pueden asignar exigencias incompatibles al mismo criterio. La excepción
+  // «no requerido, pero valorable» declara precisamente que se prefiere sin exigirlo.
+  const assigned = new Map<string, DemandClause>();
+  for (const clause of clauses) {
+    for (const candidate of recognize(normalize(clause.text), index)) {
+      const previous = assigned.get(candidate.id);
+      if (previous && !(previous.review && clause.importance === 'preferred')) return uncertain();
+      assigned.set(candidate.id, clause);
+    }
+  }
+  return clauses.length ? clauses : uncertain();
+}
+
 /**
  * Extrae los requisitos de una oferta con el catálogo indicado (por defecto, el de la app).
  *
@@ -585,23 +679,36 @@ export function extractOfferRequirementsFromIndex(
     }
     if (section.role === 'excluded') continue;
 
-    for (const sentence of splitSentences(line.text)) {
-      const normalized = normalize(sentence);
-      const stated = statedImportance(normalized);
-      const role = sentenceRole(normalized, section, stated);
+    for (const clause of splitSentences(line.text).flatMap((text) => demandClauses(text, index))) {
+      const sentence = clause.source;
+      const normalized = normalize(clause.text);
+      const stated = clause.importance ?? statedImportance(normalized);
+      // Un marcador local no hace obligatoria una cláusula que contradice un apartado deseable.
+      const wordingReview =
+        clause.review ||
+        (clause.importance === 'required' && sectionImportance(section) === 'preferred');
+      const role = wordingReview ? 'review' : sentenceRole(normalized, section, stated);
       if (role === 'excluded') continue;
 
-      const importance = combineImportance(sectionImportance(section), stated);
+      const importance = wordingReview
+        ? combineImportance(sectionImportance(section), stated)
+        : (clause.importance ?? combineImportance(sectionImportance(section), stated));
       const candidates = recognize(normalized, index);
 
       // Una práctica de la empresa que no nombra nada conocido no deja nada que revisar.
-      if (role === 'review' && candidates.length === 0 && !reportsEveryLine(section)) continue;
+      if (
+        role === 'review' &&
+        !wordingReview &&
+        candidates.length === 0 &&
+        !reportsEveryLine(section)
+      )
+        continue;
 
       if (role === 'review' || (candidates.length === 0 && reportsEveryLine(section))) {
         // Solo unificamos repeticiones literales del mismo tipo y contexto. No inferimos
         // equivalencias entre frases desconocidas ni mezclamos obligaciones con preferencias.
-        const text = sentence.toLowerCase().replace(/\s+/g, ' ').replace(/\.$/, '').trim();
-        const key = JSON.stringify([role, section, importance, text]);
+        const text = clause.text.toLowerCase().replace(/\s+/g, ' ').replace(/\.$/, '').trim();
+        const key = JSON.stringify([role, section, importance, text, Boolean(wordingReview)]);
         const existing = unscored.get(key);
         if (existing) {
           if (!existing.sources.includes(sentence)) existing.sources.push(sentence);
@@ -612,11 +719,15 @@ export function extractOfferRequirementsFromIndex(
             ? {
                 kind: 'review',
                 id: `review:${++review}`,
-                label: sentence,
+                label: clause.text,
                 importance,
                 sources: [sentence],
-                cause: section.role === 'doubtful' ? 'unknown-section' : 'company-practice',
-                heading: section.role === 'doubtful' ? section.heading : null,
+                cause: wordingReview
+                  ? 'requirement-wording'
+                  : section.role === 'doubtful'
+                    ? 'unknown-section'
+                    : 'company-practice',
+                heading: !wordingReview && section.role === 'doubtful' ? section.heading : null,
               }
             : {
                 kind: 'unrecognized',
