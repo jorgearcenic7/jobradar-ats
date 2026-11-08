@@ -198,7 +198,43 @@ describe('evidence in the CV', () => {
   });
 });
 
+describe('abbreviated minimum experience', () => {
+  it.each([
+    [
+      'Tengo experiencia de 2 años con React.',
+      'Experiencia mín. de 3 años con React.',
+      'missing',
+      50,
+    ],
+    [
+      'Tengo experiencia mín. de 4 años con React.',
+      '3 años de experiencia con React.',
+      'supported',
+      100,
+    ],
+  ])('evaluates the literal years in CV %j against %j', (cv, offer, status, percentage) => {
+    const result = analyzeMatch(`EXPERIENCIA\n${cv}`, `Requisitos\n- ${offer}`);
+    const years = assessment(result, 'years:3:react');
+    expect(years.status).toBe(status);
+    expect(years.evidence.map((item) => item.text)).toEqual([cv]);
+    expect(result.coverage).toMatchObject({ evaluated: 2, notEvaluated: 0, percentage });
+  });
+});
+
 describe('languages', () => {
+  it.each([
+    ['Inglés C1 y francés B1.', 'B1'],
+    ['C1 de inglés y B1 de francés.', 'B1'],
+    ['Inglés nativo y francés básico.', null],
+  ])('never credits French B2 using the English level in %s', (sentence, frenchLevel) => {
+    const result = analyzeMatch(`IDIOMAS\n${sentence}`, 'Requisitos\n- Francés B2.');
+    const french = assessment(result, 'language:fr:B2');
+    expect(french.status).toBe(frenchLevel ? 'missing' : 'mentioned');
+    expect(french.evidence.map((item) => item.text)).toEqual([sentence]);
+    expect(french.reason).toContain(frenchLevel ? 'nivel B1' : 'sin indicar el nivel');
+    expect(result.coverage).toMatchObject({ percentage: frenchLevel ? 0 : 50, possible: 2 });
+  });
+
   const offer = 'Requisitos\n- Inglés B2.';
 
   it('does not give partial credit for a declared level below the requested one', () => {

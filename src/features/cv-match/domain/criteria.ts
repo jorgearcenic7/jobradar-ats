@@ -1,4 +1,4 @@
-import { containsPhrase, removePhrases } from './text';
+import { containsPhrase, removePhrases, type TermMatch } from './text';
 import type { CefrLevel, EducationLevel } from './types';
 
 // Rules shared by the offer and the CV: education levels, language levels and years.
@@ -114,22 +114,43 @@ function clauseAround(text: string, position: number) {
   while (start > 0 && !clauseMark.test(text[start - 1])) start--;
   let end = position;
   while (end < text.length && !clauseMark.test(text[end])) end++;
-  return text.slice(start, end);
+  return { start, end };
 }
 
-/**
- * Level stated next to a language mention: a CEFR code, a native-speaker word (read as C2)
- * or a level word outside the CEFR scale. Only the clause of the mention is read, so in
- * "inglés C1, francés básico" French does not take English's level.
- */
-export function languageLevelAt(normalized: string, position: number): LanguageLevel {
-  const clause = clauseAround(normalized, position);
+function readLanguageLevel(clause: string): LanguageLevel {
   const code = /(^|[^a-z0-9])(a1|a2|b1|b2|c1|c2)(?=$|[^a-z0-9])/.exec(clause);
   if (code) return { level: code[2].toUpperCase() as CefrLevel, levelText: null };
   if (nativeWords.some((word) => containsPhrase(clause, word)))
     return { level: 'C2', levelText: null };
   const word = textualLevelWords.find((candidate) => containsPhrase(clause, candidate));
   return { level: null, levelText: word ?? null };
+}
+
+/** Separa niveles propios de idiomas coordinados y conserva las demás lecturas existentes. */
+export function languageLevelAt(
+  normalized: string,
+  position: number,
+  languageMatches: readonly TermMatch[],
+): LanguageLevel {
+  const { start, end } = clauseAround(normalized, position);
+  const mentions = languageMatches.filter((match) => match.start >= start && match.end <= end);
+  const boundaries = [start];
+  for (let i = 1; i < mentions.length; i++) {
+    const between = normalized.slice(mentions[i - 1].end, mentions[i].start);
+    const connectors = [...between.matchAll(/\s+(?:y|e|and)\s+/g)];
+    if (connectors.length !== 1) return readLanguageLevel(normalized.slice(start, end));
+    boundaries.push(mentions[i - 1].end + connectors[0].index + connectors[0][0].length);
+  }
+  boundaries.push(end);
+  const levels = mentions.map((_, i) =>
+    readLanguageLevel(normalized.slice(boundaries[i], boundaries[i + 1])),
+  );
+  // Solo separamos cuando cada idioma tiene un nivel propio explícito. «Inglés y
+  // francés B2» conserva su lectura conjunta; «oral y escrito» no separa un solo idioma.
+  if (levels.length > 1 && levels.every(({ level, levelText }) => level || levelText)) {
+    return levels[mentions.findIndex((match) => match.start === position)];
+  }
+  return readLanguageLevel(normalized.slice(start, end));
 }
 
 /** Una cifra de años del texto y la posición de la cifra, para saber qué la rodea. */

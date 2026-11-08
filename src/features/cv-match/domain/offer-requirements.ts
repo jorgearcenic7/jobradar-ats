@@ -498,9 +498,10 @@ function recognize(normalized: string, index: CatalogIndex): Candidate[] {
     });
   }
 
-  for (const match of findTerms(normalized, index.languageTerms)) {
+  const languageMatches = findTerms(normalized, index.languageTerms);
+  for (const match of languageMatches) {
     const language = index.languages.get(match.id)!;
-    const { level, levelText } = languageLevelAt(normalized, match.start);
+    const { level, levelText } = languageLevelAt(normalized, match.start, languageMatches);
     candidates.push({
       kind: 'language',
       id: level ? `language:${match.id}:${level}` : `language:${match.id}`,
@@ -569,6 +570,7 @@ export function extractOfferRequirementsFromIndex(
   index: CatalogIndex,
 ): OfferRequirement[] {
   const requirements = new Map<string, OfferRequirement>();
+  const unscored = new Map<string, OfferRequirement>();
   const lines = splitLines(offerText);
   let section: Section = { role: 'preamble' };
   let unrecognized = 0;
@@ -592,36 +594,40 @@ export function extractOfferRequirementsFromIndex(
       const importance = combineImportance(sectionImportance(section), stated);
       const candidates = recognize(normalized, index);
 
-      // Se conserva tal cual, sin puntuarla, para que el usuario decida si le afecta.
-      if (role === 'review') {
-        // Una práctica de la empresa que no nombra nada conocido no deja nada que revisar.
-        if (candidates.length === 0 && !reportsEveryLine(section)) continue;
-        review += 1;
-        const id = `review:${review}`;
-        requirements.set(id, {
-          kind: 'review',
-          id,
-          label: sentence,
-          importance,
-          sources: [sentence],
-          cause: section.role === 'doubtful' ? 'unknown-section' : 'company-practice',
-          heading: section.role === 'doubtful' ? section.heading : null,
-        });
-        continue;
-      }
+      // Una práctica de la empresa que no nombra nada conocido no deja nada que revisar.
+      if (role === 'review' && candidates.length === 0 && !reportsEveryLine(section)) continue;
 
-      // Las líneas de una lista de requisitos o de una sección desconocida que no nombran nada
-      // conocido se muestran como tales, en lugar de descartarlas o adivinar qué piden.
-      if (candidates.length === 0 && reportsEveryLine(section)) {
-        unrecognized += 1;
-        const id = `unrecognized:${unrecognized}`;
-        requirements.set(id, {
-          kind: 'unrecognized',
-          id,
-          label: sentence,
-          importance,
-          sources: [sentence],
-        });
+      if (role === 'review' || (candidates.length === 0 && reportsEveryLine(section))) {
+        // Solo unificamos repeticiones literales del mismo tipo y contexto. No inferimos
+        // equivalencias entre frases desconocidas ni mezclamos obligaciones con preferencias.
+        const text = sentence.toLowerCase().replace(/\s+/g, ' ').replace(/\.$/, '').trim();
+        const key = JSON.stringify([role, section, importance, text]);
+        const existing = unscored.get(key);
+        if (existing) {
+          if (!existing.sources.includes(sentence)) existing.sources.push(sentence);
+          continue;
+        }
+        const item: OfferRequirement =
+          role === 'review'
+            ? {
+                kind: 'review',
+                id: `review:${++review}`,
+                label: sentence,
+                importance,
+                sources: [sentence],
+                cause: section.role === 'doubtful' ? 'unknown-section' : 'company-practice',
+                heading: section.role === 'doubtful' ? section.heading : null,
+              }
+            : {
+                kind: 'unrecognized',
+                id: `unrecognized:${++unrecognized}`,
+                label: sentence,
+                importance,
+                sources: [sentence],
+              };
+        requirements.set(item.id, item);
+        unscored.set(key, item);
+        continue;
       }
 
       for (const candidate of candidates) {

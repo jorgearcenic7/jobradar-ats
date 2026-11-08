@@ -104,7 +104,7 @@ Se revisan Inicio, Preparar y Resultados conjuntamente con capturas reales a 390
 - **Resultados.** La primera vista conserva porcentaje, puntos, barra y cuatro recuentos reales, con etiquetas alineadas y cifras destacadas. El desglose de puntos por estado se traslada a «Cómo se calcula la cobertura»: se reutiliza la leyenda del componente de barra sin cambiar sus cálculos; el nombre accesible de la barra sigue describiendo el desglose completo. Los recuentos tienen un nombre accesible que une estado y cifra, incluido «fuera del porcentaje». Se elimina así la repetición visual inicial entre estados de la leyenda y recuentos. Las recomendaciones se numeran en su orden original, sin cambiar ni recortar mensajes. Los filtros usan cifras tabulares; requisitos, evidencias y distribución 40/60 no cambian.
 - **Verificación y revisión.** Se adaptan únicamente pruebas existentes afectadas por textos, nombres accesibles y el detalle plegado; no se añaden casos por estilo. Se conserva la suite de 687 pruebas. Playwright valida las tres pantallas, navegación e historial, formulario y errores, editor, recomendaciones y detalle de cobertura, filtros, estado vacío, requisitos, teclado, contraste y objetivos táctiles en 390 × 844 y 1440 × 1000 px, claro y oscuro. Fuera del repositorio se guardan 12 capturas previas, 12 finales, mosaicos móvil/escritorio y cuatro comparativas antes/después, compuestos solo con capturas reales. Se espera la revisión visual del usuario. Safari, lectores de pantalla y dispositivos nativos siguen pendientes.
 
-### Ajustes de UX y diagnóstico (Fase 4e)
+### Ajustes de UX y diagnóstico (Fase 4e, `894a807`)
 
 - **Inicio en escritorio.** El bloque principal y los tres pasos comparten una fila flexible, dentro de un máximo de 1200 px incluidos los márgenes. El mensaje y el CTA quedan junto a los pasos; en móvil se apilan. Se conservan identidad, textos, privacidad y destinos, sin añadir contenido decorativo.
 - **Anchura de Resultados.** Se mide la aplicación real a 1440 px: ya utiliza 1240 px útiles, con columnas de unos 486/730 px en proporción 40/60. No se reproduce una limitación a 800 px en esta ruta. Se conserva el ancho existente, cercano al rango solicitado, en vez de reducirlo o ampliar por obligación. Preparar mantiene su anchura de formulario.
@@ -169,6 +169,36 @@ Limitaciones:
 - **Sin predicciones.** La cobertura mide los requisitos detectados en la oferta. No es la decisión de ningún ATS real ni una probabilidad de contratación.
 - **Español.** Las reglas de importancia, negación y matización están escritas para textos en español; algunos encabezados del CV se reconocen también en inglés.
 - **Solo texto.** Analiza texto ya escrito o pegado; no lee archivos (eso lo hace `cv-import`).
+
+#### Fiabilidad del motor (Fase 5a)
+
+Base: Fase 4e, `894a807`, con 689 pruebas. Se comparan veinte pares de CV/oferta ficticios antes y después, incluidos los casos del diagnóstico de 4e; doce conservan exactamente requisitos, estados, motivos, fuentes, evidencias, cobertura y recomendaciones. No se dispone de la oferta real del usuario, por lo que no se atribuye una causa a sus 28 no evaluables.
+
+Correcciones focalizadas:
+
+- **Duplicados evidentes.** `offer-requirements.ts` unifica `unrecognized` y `review` repetidos con el mismo tipo, sección e importancia, tolerando mayúsculas, espacios y punto final. Conserva la primera etiqueta, el orden de primera aparición y cada variante literal en `sources`. Las repeticiones idénticas no añaden la misma fuente dos veces. No elimina acentos ni infiere equivalencias semánticas entre frases desconocidas. Diferentes encabezados desconocidos o importancias permanecen separados; no se cambian pesos ni se convierten estos elementos en evaluables.
+- **Segmentación mínima.** `text.ts` mantiene unido «Experiencia mín. de 3 años con React», también sin «de». La excepción exige «experiencia mín.» seguido de una cifra y «años»; no amplía de forma general la lectura de abreviaturas. Se aplica a la oferta y al CV, conserva la frase literal y evita perder la asociación entre experiencia, años y tecnología. Las frases independientes siguen separadas.
+- **Niveles propios de idiomas coordinados.** `criteria.ts`, usado tanto por extracción como por `assess.ts`, recibe las posiciones de los idiomas ya reconocidos. Si están coordinados por «y», «e» o «and» y cada tramo declara un nivel propio, lee cada uno por separado: «Inglés C1 y francés B1» ya no asigna C1 al francés. Funciona también con el nivel delante del idioma y con «nativo»/«básico», sin convertir niveles textuales a MCER. No cambia la lectura de un nivel compartido («Inglés y francés B2») ni de «oral y escrito» para un solo idioma. No interpreta construcciones nuevas sin separadores claros.
+
+Comparativa de los mismos textos ficticios (E/NE: evaluados/no evaluables):
+
+| Caso                                                              | Antes                                        | Después                                                             |
+| ----------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------- |
+| Tres repeticiones de una herramienta desconocida                  | 0 E / 3 NE; sin porcentaje                   | 0 E / 1 NE; sin porcentaje, fuentes conservadas                     |
+| Práctica de empresa repetida dos veces                            | 0 E / 2 NE; sin porcentaje                   | 0 E / 1 NE; sin porcentaje                                          |
+| Oferta «Experiencia mín. de 3 años con React», CV con 4 años      | 1 E / 1 NE; 2/2 puntos, 100 %                | 2 E / 0 NE; 4/4 puntos, 100 %                                       |
+| Misma oferta, CV con solo 2 años                                  | 1 E / 1 NE; 2/2 puntos, 100 %                | 2 E / 0 NE; 2/4 puntos, 50 %; años no acreditados                   |
+| CV «Tengo experiencia mín. de 4 años con React», oferta de 3 años | 2 E / 0 NE; 3/4 puntos, 75 %                 | 2 E / 0 NE; 4/4 puntos, 100 %; frase completa como evidencia        |
+| Oferta «Inglés C1 y francés B1», CV con esos mismos niveles       | 2 E / 0 NE; 100 %, pero ambos leídos como C1 | 2 E / 0 NE; 100 %, cada idioma con su nivel y fuente original       |
+| CV «Inglés C1 y francés B1», oferta C1 de inglés y B2 de francés  | 2 E / 0 NE; 4/4 puntos, 100 %                | 2 E / 0 NE; 2/4 puntos, 50 %; francés B1 no cumple B2               |
+| CV «Inglés nativo y francés básico», oferta francés B2            | 1 E / 0 NE; 100 %, francés recibía C2        | 1 E / 0 NE; 50 %, francés solo mencionado sin nivel MCER comparable |
+| Caso largo ficticio de 4e                                         | 9 E / 28 NE; 8/18 puntos, 44 %               | Idéntico; los 28 elementos son distintos                            |
+
+Las subidas y bajadas proceden de recuperar un criterio explícito o corregir su evidencia, con la fórmula y los pesos existentes. Se eliminan los falsos respaldos del francés en los casos anteriores; se recupera el requisito de años y su evidencia perdida por segmentación. La deduplicación no cambia la cobertura. Las recomendaciones siguen derivándose de los requisitos corregidos con los generadores existentes; sus avisos de revisión cuentan los elementos únicos tras deduplicar. Los informes completos antes/después, incluidos motivos y evidencias, quedan fuera del repositorio en `jobradar-engine-5a` dentro del directorio temporal.
+
+**Diagnóstico que requiere decisión, sin implementar:** IEC 62443 y TwinCAT siguen fuera del catálogo (oportunidades de ampliación con casos negativos específicos, sin lista masiva); «Dominio de Lince» y «Conocimientos de Lince» no se fusionan por inferencia. Las tareas sin criterios conocidos se omiten bajo Funciones, pero se conservan como no reconocidas bajo Requisitos; una tarea con React aún puede producir un concepto evaluable sin importancia declarada. Separar sistemáticamente responsabilidades y exigencias requiere acordar reglas de producto. Una mención «Usamos Docker» queda para revisión, no acredita una exigencia; los encabezados ambiguos mantienen su tratamiento conservador. Tres frases independientes de perfil, disponibilidad y contrato siguen generando tres elementos, sin unirlas arbitrariamente. «Inglés alto» sigue siendo no evaluable si hay mención en el CV y no acreditado si no la hay: cambiar esa política alteraría estados y denominador. La coordinación sin niveles propios para cada idioma, las alternativas y las abreviaturas distintas de la corregida necesitan estudio separado.
+
+**Regresión:** quince casos nuevos en las pruebas existentes de extracción y análisis, con negativos de contexto, significado, frases independientes, experiencia insuficiente y niveles compartidos. No se elimina ninguna prueba ni se modifican interfaz, catálogo, cobertura, generadores de recomendaciones, importadores o dependencias.
 
 #### Presentación
 

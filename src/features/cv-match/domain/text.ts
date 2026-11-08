@@ -61,6 +61,13 @@ export function splitSentences(text: string): string[] {
   let start = 0;
   let match: RegExpExecArray | null;
   while ((match = boundary.exec(text))) {
+    // «Experiencia mín. de 3 años» es un único criterio, no una frase sin tecnología
+    // seguida de otra sin experiencia. Solo protegemos esta abreviatura ante años explícitos.
+    if (
+      /\bexperiencia\s+min\.$/.test(normalize(text.slice(start, match.index + 1))) &&
+      /^(?:de\s+)?\d{1,2}\s*\+?\s*anos\b/.test(normalize(text.slice(boundary.lastIndex)))
+    )
+      continue;
     sentences.push(text.slice(start, match.index + 1).trim());
     start = match.index + match[0].length;
   }

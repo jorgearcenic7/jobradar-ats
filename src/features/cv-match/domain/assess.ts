@@ -369,10 +369,15 @@ function assessLanguage(
 
   // Un idioma cuenta en cualquier sección del CV, no solo en «Idiomas».
   for (const unit of units) {
-    const match = unit.languageMatches().find((item) => item.id === requirement.languageId);
+    const languageMatches = unit.languageMatches();
+    const match = languageMatches.find((item) => item.id === requirement.languageId);
     if (!match) continue;
     if (isNegated(unit.normalized, match)) negations.push(unit);
-    else mentions.push({ unit, level: languageLevelAt(unit.normalized, match.start).level });
+    else
+      mentions.push({
+        unit,
+        level: languageLevelAt(unit.normalized, match.start, languageMatches).level,
+      });
   }
 
   const negationEvidence = negations.map((unit) => evidenceOf(unit, 'negation'));

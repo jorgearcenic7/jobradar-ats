@@ -80,6 +80,76 @@ describe('offer requirement importance', () => {
 });
 
 describe('offer requirement extraction', () => {
+  it.each([
+    ['Requisitos', 'Dominio de la herramienta Lince.', 'unrecognized'],
+    ['Requisitos\n- React.\nTu próximo reto:', 'Docker.', 'review'],
+    ['', 'Usamos React para las aplicaciones.', 'review'],
+  ])(
+    'deduplicates repeated unscored sentences under %j and retains literal sources',
+    (heading, sentence, kind) => {
+      const variant = sentence.toUpperCase().replace(/ /g, '  ').replace(/\.$/, '');
+      const result = requirementsOf(`${heading}\n- ${sentence}\n- ${sentence}\n- ${variant}`);
+      const items = result.filter((item) => item.kind === kind);
+      expect(items).toHaveLength(1);
+      expect(items[0].sources).toEqual([sentence, variant]);
+      expect(items[0].label).toBe(sentence);
+    },
+  );
+
+  it('keeps different unknown meanings, importance and review headings separate', () => {
+    const result = requirementsOf(`Requisitos
+- Dominio de Lince.
+- Conocimientos de Lince.
+Se valorará
+- Dominio de Lince.
+Tu próximo reto:
+- Docker.
+Nuestro entorno futuro:
+- Docker.`);
+    expect(result.map((item) => [item.kind, item.importance])).toEqual([
+      ['unrecognized', 'required'],
+      ['unrecognized', 'required'],
+      ['unrecognized', 'preferred'],
+      ['review', 'unclassified'],
+      ['review', 'unclassified'],
+    ]);
+    expect(result.filter((item) => item.kind === 'review').map((item) => item.heading)).toEqual([
+      'Tu próximo reto',
+      'Nuestro entorno futuro',
+    ]);
+  });
+
+  it('keeps a minimum-years abbreviation in the requirement and preserves its source', () => {
+    const sentence = 'Experiencia mín. de 3 años con React.';
+    const result = requirementsOf(`Requisitos\n- ${sentence}`);
+    expect(result.map((item) => item.id)).toEqual(['concept:react', 'years:3:react']);
+    expect(result.every((item) => item.sources[0] === sentence)).toBe(true);
+  });
+
+  it('still separates independent sentences rather than borrowing experience from another one', () => {
+    const result = requirementsOf(
+      'Requisitos\n- Experiencia con React. 3 años en una empresa ficticia.',
+    );
+    expect(result.map((item) => item.id)).toEqual(['concept:react', 'unrecognized:1']);
+    expect(result[0].sources).toEqual(['Experiencia con React.']);
+  });
+
+  it.each(['Inglés C1 y francés B1.', 'C1 de inglés y B1 de francés.'])(
+    'assigns each explicit coordinated language level to its own language: %s',
+    (sentence) => {
+      const result = requirementsOf(`Requisitos\n- ${sentence}`);
+      expect(result.map((item) => item.id)).toEqual(['language:en:C1', 'language:fr:B1']);
+      expect(result.every((item) => item.sources[0] === sentence)).toBe(true);
+    },
+  );
+
+  it.each([
+    ['Inglés y francés B2.', ['language:en:B2', 'language:fr:B2']],
+    ['Inglés oral y escrito B2.', ['language:en:B2']],
+  ])('does not split a shared level or skills within one language: %s', (sentence, ids) => {
+    expect(requirementsOf(`Requisitos\n- ${sentence}`).map((item) => item.id)).toEqual(ids);
+  });
+
   it('keeps the original sentence of the offer as the source', () => {
     const offer = 'Requisitos\n- Experiencia con React y TypeScript.\n- Otra cosa.';
     const react = requirement(offer, 'concept:react');

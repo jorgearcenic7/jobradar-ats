@@ -107,15 +107,21 @@ La acción «Analizar», el diseño de Resultados y la navegación global mantie
 
 **En curso.** El Inicio explica el producto y da acceso inmediato al análisis, siguiendo el prototipo aprobado y el sistema visual existente.
 
-| Subfase | Contenido                                                                                 | Estado                                              | Commit    |
-| ------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------- | --------- |
-| 4a.1    | Inicio responsive: identidad, «Analizar mi CV», tres pasos, privacidad y metodología      | Completada                                          | `9a2890c` |
-| 4b.1    | Navegación principal compartida: Inicio y Analizar, con protección de salida de la sesión | Completada                                          | `4b3764b` |
-| 4c      | Pulido visual conjunto de Inicio, Preparar y Resultados; capturas reales y mosaicos       | Completada                                          | `2a03556` |
-| 4d      | Acabado visual: Inicio compacto, selector de archivo reducido y resumen sin repetición    | Completada                                          | `e92e081` |
-| 4e      | Inicio en escritorio, no evaluables plegados y diagnóstico del motor sin cambios          | Implementada, pendiente de revisión visual y commit | —         |
+| Subfase | Contenido                                                                                 | Estado     | Commit    |
+| ------- | ----------------------------------------------------------------------------------------- | ---------- | --------- |
+| 4a.1    | Inicio responsive: identidad, «Analizar mi CV», tres pasos, privacidad y metodología      | Completada | `9a2890c` |
+| 4b.1    | Navegación principal compartida: Inicio y Analizar, con protección de salida de la sesión | Completada | `4b3764b` |
+| 4c      | Pulido visual conjunto de Inicio, Preparar y Resultados; capturas reales y mosaicos       | Completada | `2a03556` |
+| 4d      | Acabado visual: Inicio compacto, selector de archivo reducido y resumen sin repetición    | Completada | `e92e081` |
+| 4e      | Inicio en escritorio, no evaluables plegados y diagnóstico del motor sin cambios          | Completada | `894a807` |
 
 La navegación principal ofrece los dos destinos existentes, Inicio y Analizar; Resultados pertenece al flujo de Analizar. Salir con datos pide confirmación y descarta la sesión como antes. El Inicio no muestra estadísticas ni historial sin datos que los sustenten. La ampliación de destinos de la Fase 3 sigue pendiente.
+
+### Fase 5a — Fiabilidad del análisis CV–oferta
+
+**Implementada, pendiente de revisión y commit.** Base: 4e (`894a807`), 689 pruebas. Se corrigen únicamente fallos reproducidos con datos ficticios: duplicados evidentes no evaluables en el mismo contexto, segmentación de «experiencia mín. de 3 años» y préstamo de niveles entre idiomas coordinados con niveles propios explícitos. Quince regresiones nuevas, sin eliminar las anteriores. Comparación antes/después sobre veinte casos; se conservan fórmula, pesos y semántica de estados. El ejemplo largo sigue en 9 evaluados, 28 no evaluables y 44 %.
+
+La ampliación del catálogo, la separación sistemática de responsabilidades y requisitos, los encabezados ambiguos y la política de niveles no MCER quedan como propuestas documentadas en arquitectura. No se modifica la interfaz ni se adelanta la gestión de ofertas de la Fase 5. La causa de los 28 elementos de la oferta real sigue sin determinarse sin disponer de ese texto.
 
 ## Próximas fases
 
