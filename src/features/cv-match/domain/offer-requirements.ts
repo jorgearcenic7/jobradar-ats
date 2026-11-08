@@ -554,7 +554,116 @@ type DemandClause = {
   text: string;
   importance?: Importance;
   review?: boolean;
+  reviewCause?: 'alternative' | 'partial-recognition';
 };
+
+/** Solo listas técnicas delimitadas: no intenta adivinar competencias dentro de prosa. */
+function technicalList(text: string, index: CatalogIndex) {
+  const prefix =
+    /^(?:(?:experiencia|conocimientos?|dominio|manejo)\s+(?:con|en|de)\s+|(?:imprescindible|valorable|deseable|obligatorio|se requiere|se valorara)\s*:?\s+)/.exec(
+      normalize(text),
+    );
+  const body = text
+    .slice(prefix?.[0].length ?? 0)
+    .trim()
+    .replace(/[.;!?]+$/, '')
+    .trim();
+  const parts = body.split(/\s+(?:y|o|u)\s+|,\s*/i);
+  if (parts.length < 2) return null;
+  const items: { text: string; known: boolean }[] = [];
+  for (const part of parts) {
+    const value = part.trim();
+    const normalized = normalize(value);
+    const matches = findTerms(normalized, index.conceptTerms);
+    const known = matches.length === 1 && matches[0].start === 0 && matches[0].end === value.length;
+    // Los nombres desconocidos deben ser elementos breves con mayúscula inicial. Idiomas,
+    // años, negaciones y calificativos de conceptos conocidos no se tratan como tecnología nueva.
+    if (
+      !known &&
+      (recognize(normalized, index).length > 0 ||
+        !/^\p{Lu}[\p{L}\p{N}.+#-]*(?:\s+\p{Lu}[\p{L}\p{N}.+#-]*)?$/u.test(value))
+    )
+      return null;
+    items.push({ text: value, known });
+  }
+  return items.some((item) => item.known) ? items : null;
+}
+
+function hasAlternative(text: string, index: CatalogIndex): boolean {
+  const normalized = normalize(text);
+  const matches = findTerms(normalized, index.conceptTerms);
+  if (
+    matches.some(
+      (match, i) => i > 0 && /\b(?:o|u)\b/.test(normalized.slice(matches[i - 1].end, match.start)),
+    )
+  )
+    return true;
+  return /\s+(?:o|u)\s+/.test(normalized) && technicalList(text, index) !== null;
+}
+
+/** Mantiene «; basta con uno» unido al grupo sin cambiar la segmentación del CV. */
+function offerSentences(text: string, index: CatalogIndex): string[] {
+  const parts = splitSentences(text);
+  const sentences: string[] = [];
+  let offset = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const start = text.indexOf(parts[i], offset);
+    let end = start + parts[i].length;
+    if (
+      hasAlternative(parts[i], index) &&
+      /^basta con (?:uno|una)\b/.test(normalize(parts[i + 1] ?? ''))
+    ) {
+      end = text.indexOf(parts[i + 1], end) + parts[i + 1].length;
+      i++;
+    }
+    sentences.push(text.slice(start, end));
+    offset = end;
+  }
+  return sentences;
+}
+
+function protectedDemandClauses(
+  source: string,
+  index: CatalogIndex,
+  section: Section,
+): DemandClause[] {
+  const normalized = normalize(source);
+  if (
+    sentenceRole(normalized, section, statedImportance(normalized)) === 'requirement' &&
+    hasAlternative(source, index)
+  ) {
+    return [{ source, text: source, review: true, reviewCause: 'alternative' }];
+  }
+  return demandClauses(source, index).flatMap((clause) => {
+    if (
+      clause.review ||
+      !(
+        section.role === 'requirements' ||
+        (section.role === 'preamble' && containsAny(normalize(clause.text), demandWords))
+      )
+    )
+      return [clause];
+    const value = normalize(clause.text);
+    if (
+      sentenceRole(value, section, clause.importance ?? statedImportance(value)) !==
+        'requirement' ||
+      /\b(?:o|u)\b/.test(value)
+    )
+      return [clause];
+    const items = technicalList(clause.text, index);
+    return [
+      clause,
+      ...(items
+        ?.filter((item) => !item.known)
+        .map((item) => ({
+          source: clause.source,
+          text: item.text,
+          review: true,
+          reviewCause: 'partial-recognition' as const,
+        })) ?? []),
+    ];
+  });
+}
 
 /**
  * Aísla solo demandas con marcadores propios. Cada fragmento conserva la frase de origen;
@@ -565,7 +674,7 @@ function demandClauses(source: string, index: CatalogIndex): DemandClause[] {
   const negated = containsAny(normalized, negatedRequiredWords);
   const mixed = containsAny(normalized, requiredWords) && containsAny(normalized, preferredWords);
   if (!negated && !mixed) return [{ source, text: source }];
-  // Las alternativas siguen fuera del alcance: no las reinterpretamos como conjunciones.
+  // La protección de alternativas se resuelve antes; aquí no se reinterpretan como conjunciones.
   if (containsAny(normalized, ['o'])) {
     return [{ source, text: source, review: negated }];
   }
@@ -679,7 +788,9 @@ export function extractOfferRequirementsFromIndex(
     }
     if (section.role === 'excluded') continue;
 
-    for (const clause of splitSentences(line.text).flatMap((text) => demandClauses(text, index))) {
+    for (const clause of offerSentences(line.text, index).flatMap((text) =>
+      protectedDemandClauses(text, index, section),
+    )) {
       const sentence = clause.source;
       const normalized = normalize(clause.text);
       const stated = clause.importance ?? statedImportance(normalized);
@@ -708,7 +819,14 @@ export function extractOfferRequirementsFromIndex(
         // Solo unificamos repeticiones literales del mismo tipo y contexto. No inferimos
         // equivalencias entre frases desconocidas ni mezclamos obligaciones con preferencias.
         const text = clause.text.toLowerCase().replace(/\s+/g, ' ').replace(/\.$/, '').trim();
-        const key = JSON.stringify([role, section, importance, text, Boolean(wordingReview)]);
+        const key = JSON.stringify([
+          role,
+          section,
+          importance,
+          text,
+          Boolean(wordingReview),
+          clause.reviewCause,
+        ]);
         const existing = unscored.get(key);
         if (existing) {
           if (!existing.sources.includes(sentence)) existing.sources.push(sentence);
@@ -723,7 +841,7 @@ export function extractOfferRequirementsFromIndex(
                 importance,
                 sources: [sentence],
                 cause: wordingReview
-                  ? 'requirement-wording'
+                  ? (clause.reviewCause ?? 'requirement-wording')
                   : section.role === 'doubtful'
                     ? 'unknown-section'
                     : 'company-practice',

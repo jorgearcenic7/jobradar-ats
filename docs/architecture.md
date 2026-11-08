@@ -200,7 +200,7 @@ Las subidas y bajadas proceden de recuperar un criterio explícito o corregir su
 
 **Regresión:** quince casos nuevos en las pruebas existentes de extracción y análisis, con negativos de contexto, significado, frases independientes, experiencia insuficiente y niveles compartidos. No se elimina ninguna prueba ni se modifican interfaz, catálogo, cobertura, generadores de recomendaciones, importadores o dependencias.
 
-#### Negaciones de exigencia e importancia por cláusula (Fase 5c)
+#### Negaciones de exigencia e importancia por cláusula (Fase 5c, `e2ae056`)
 
 Base: `4e5951a`, 704 pruebas. La auditoría 5b fue de solo lectura. Esta fase modifica únicamente extracción, el tipo de causa de revisión y su explicación en la evaluación; no cambia cobertura, catálogo, evidencias del CV, presentación ni generadores de recomendaciones.
 
@@ -222,6 +222,29 @@ Comparación de los mismos once casos ficticios antes/después; cuatro permanece
 Se añaden quince regresiones en los archivos existentes de extracción y análisis, incluyendo controles de no propagación, contradicciones, negaciones en el CV, trazabilidad y cobertura. Se adapta la prueba previa de una exigencia negada para proteger su tratamiento corregido; no se elimina ninguna prueba.
 
 **Límites y riesgos pendientes:** se trata de patrones explícitos, no de un analizador sintáctico general. Las construcciones no cubiertas se conservan con las reglas anteriores o, si contienen las negaciones/marcadores contradictorios detectados, se envían a revisión. La contradicción entre exigencias en frases o secciones distintas mantiene su tratamiento anterior y requiere un estudio separado. El reconocimiento parcial, las alternativas, los encabezados ambiguos, el catálogo y las responsabilidades no se corrigen en esta fase. No se generaliza la elipsis a varios criterios ni se interpreta una mera proximidad como obligatoriedad.
+
+#### Alternativas técnicas y reconocimiento parcial (Fase 5d)
+
+Base: `e2ae056`, 719 pruebas. Se reutiliza `review` con dos causas específicas y explicaciones en `assess.ts`; no se añaden tipos de grupo puntuable ni cambios visuales. Representar y evaluar una disyunción correctamente requeriría cambiar el modelo de requisitos independientes, por lo que se elige la protección no evaluable autorizada, sin cambiar fórmula ni pesos.
+
+- **Alternativas.** Se retienen como un único grupo para revisión cuando «o»/«u» separa conceptos del catálogo o elementos de una lista técnica segura con al menos un concepto conocido. Se conserva la etiqueta y fuente literal con todas las opciones; no se extraen como obligaciones independientes ni se acredita automáticamente el grupo por nombrar una opción en el CV. «; basta con uno» o «. Basta con uno» se mantiene unido al grupo, con el espaciado original. La segmentación del CV no cambia. Los grupos completamente desconocidos conservan su tratamiento no evaluable anterior. No se generaliza la regla a «y», idiomas o titulaciones.
+- **Reconocimiento parcial.** Para listas explícitas con «y» o comas dentro de Requisitos/Perfil, o una demanda explícita en el preámbulo, los conceptos conocidos se evalúan como antes. Cada elemento técnico desconocido se añade como revisión no puntuable, con su nombre literal y la frase de origen completa. Se admiten listas breves, opcionalmente precedidas de «experiencia con/en», «conocimientos de», «dominio de», «manejo de» o un marcador explícito compatible. Los desconocidos deben ser nombres de una o dos palabras con mayúscula inicial; no se infieren habilidades a partir de prosa libre. Los elementos repetidos se deduplican; SQL no se vuelve a emitir por generar el aviso de Databricks.
+- **Límites de contexto.** No se generan avisos parciales dentro de Funciones, encabezados desconocidos, prácticas de empresa ni secciones excluidas. Tampoco se separan negaciones, idiomas, años, descripciones largas o calificativos de un concepto conocido. Las responsabilidades mantienen su política previa: esta fase no convierte tareas en requisitos ni corrige de forma general su clasificación.
+
+Comparación con el mismo CV ficticio que acredita Docker y SQL:
+
+| Oferta                                                        | Antes de 5d                                                               | Después                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| «Experiencia con Docker o Kubernetes; basta con uno»          | 2 evaluados y 1 no evaluable («basta con uno» separado); 2/4 puntos, 50 % | 0 evaluados y 1 grupo no evaluable con fuente completa; 0/0 puntos, sin porcentaje |
+| «Experiencia con Docker y Kubernetes»                         | Docker respaldado, Kubernetes no acreditado; 2/4 puntos, 50 %             | Exactamente igual                                                                  |
+| «Experiencia con SQL y Databricks»                            | SQL respaldado; Databricks sin fila propia; 2/2 puntos, 100 %             | SQL idéntico y Databricks para revisión; 2/2 puntos, 100 %, 1 no evaluable         |
+| Práctica de empresa y tarea bajo Funciones con SQL/Databricks | Contexto para revisión y tarea con la interpretación anterior             | Exactamente iguales, sin nuevos avisos parciales                                   |
+
+**Trazabilidad de 5c:** se ejecuta en memoria el extractor histórico de `4e5951a` y el actual con el mismo CV («Desarrollé consultas con SQL para una empresa ficticia. No tengo experiencia con Docker») y oferta («Imprescindible SQL y valorable Docker»). Antes de 5c ambos pesos eran 1: SQL aportaba 1 y Docker 0, sobre 2 posibles (50 %). Desde `e2ae056`, SQL es obligatorio, con peso 2, y Docker deseable, con peso 1: 2/3, redondeado a 67 %. Las fuentes, las evidencias literales y la negación del CV permanecen iguales. La prueba existente ahora verifica también las contribuciones individuales; 5d mantiene exactamente ese resultado.
+
+Se añaden doce regresiones, con alternativas conocidas y mixtas, conjunción, listas en ambos órdenes, varios conceptos, deduplicación y controles de contexto/prosa insegura. Se adapta la expectativa previa que puntuaba «React o Vue» como dos obligaciones y se conserva la comprobación de todos sus conceptos en la fuente. No se elimina ninguna prueba.
+
+**Pendiente, sin forzar:** evaluar grupos alternativos, identificar fragmentos en texto libre, nombres desconocidos en minúsculas y estructuras con incisos requiere un estudio posterior. No se amplía el catálogo ni se intenta atribuir causas a la oferta real del usuario.
 
 #### Presentación
 

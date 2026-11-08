@@ -35,8 +35,15 @@ export type OfferRequirement =
        * - `unknown-section`: it sits under a heading JobRadar cannot classify.
        * - `company-practice`: it describes how the company works without asking for it.
        * - `requirement-wording`: niega una exigencia o su alcance necesita revisión.
+       * - `alternative`: grupo de opciones que no se puntúan como obligaciones independientes.
+       * - `partial-recognition`: elemento explícito de una lista técnica no reconocido.
        */
-      cause: 'unknown-section' | 'company-practice' | 'requirement-wording';
+      cause:
+        | 'unknown-section'
+        | 'company-practice'
+        | 'requirement-wording'
+        | 'alternative'
+        | 'partial-recognition';
       /** The unclassified heading, for `unknown-section`. */
       heading: string | null;
     });

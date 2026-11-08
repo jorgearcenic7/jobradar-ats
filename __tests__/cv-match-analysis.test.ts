@@ -198,6 +198,93 @@ describe('evidence in the CV', () => {
   });
 });
 
+describe('alternative and partial technical requirements', () => {
+  const cv =
+    'EXPERIENCIA\nDesarrollé servicios con Docker y consultas con SQL para una empresa ficticia.';
+
+  it.each([
+    'Experiencia con Docker o Kubernetes; basta con uno.',
+    'Experiencia con Docker o Kubernetes.',
+    'Experiencia con SQL o Databricks.',
+  ])(
+    'retains an alternative group for review without penalizing the other option: %s',
+    (sentence) => {
+      const result = analyzeMatch(cv, `Requisitos\n- ${sentence}`);
+      expect(result.requirements).toHaveLength(1);
+      expect(result.requirements[0]).toMatchObject({
+        requirement: { kind: 'review', cause: 'alternative', label: sentence, sources: [sentence] },
+        status: 'not-evaluable',
+        contribution: null,
+        evidence: [],
+      });
+      expect(result.requirements[0].reason).toMatch(/alternativas/);
+      expect(result.coverage).toMatchObject({
+        evaluated: 0,
+        notEvaluated: 1,
+        possible: 0,
+        percentage: null,
+      });
+    },
+  );
+
+  it('keeps a conjunction as two independent requirements', () => {
+    const result = analyzeMatch(cv, 'Requisitos\n- Experiencia con Docker y Kubernetes.');
+    expect(result.requirements.map((i) => [i.requirement.id, i.status])).toEqual([
+      ['concept:docker', 'supported'],
+      ['concept:kubernetes', 'missing'],
+    ]);
+    expect(result.coverage).toMatchObject({ evaluated: 2, notEvaluated: 0, percentage: 50 });
+  });
+
+  it.each([
+    'Experiencia con SQL y Databricks.',
+    'Experiencia con Databricks y SQL.',
+    'Experiencia con SQL, Python y Databricks.',
+    'Experiencia con SQL y Databricks y Databricks.',
+  ])('preserves the known requirements and isolates the unknown item: %s', (sentence) => {
+    const result = analyzeMatch(cv, `Requisitos\n- ${sentence}`);
+    const sql = assessment(result, 'concept:sql');
+    expect(sql).toMatchObject({
+      status: 'supported',
+      requirement: { sources: [sentence] },
+      contribution: { points: 1, weight: 2 },
+    });
+    expect(sql.evidence[0].text).toBe(cv.split('\n')[1]);
+    const reviews = result.requirements.filter((i) => i.requirement.kind === 'review');
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0]).toMatchObject({
+      requirement: { label: 'Databricks', cause: 'partial-recognition', sources: [sentence] },
+      status: 'not-evaluable',
+      contribution: null,
+    });
+    expect(reviews[0].reason).toMatch(/no reconoce/);
+    expect(result.requirements.filter((i) => i.requirement.id === 'concept:sql')).toHaveLength(1);
+    expect(result.coverage).toMatchObject({
+      evaluated: sentence.includes('Python') ? 2 : 1,
+      notEvaluated: 1,
+      percentage: sentence.includes('Python') ? 50 : 100,
+    });
+  });
+
+  it.each([
+    ['Usamos SQL y Databricks en el producto.', 0, 1],
+    ['Funciones\n- Mantener servicios con SQL y Databricks.', 1, 0],
+    ['Sobre nosotros\n- Usamos SQL y Databricks.', 0, 0],
+    ['Requisitos\n- SQL y ganas de aprender.', 1, 0],
+  ])(
+    'does not invent partial requirements from unsafe or contextual text: %s',
+    (offer, evaluated, notEvaluated) => {
+      const result = analyzeMatch(cv, offer);
+      expect(result.coverage).toMatchObject({ evaluated, notEvaluated });
+      expect(
+        result.requirements.some(
+          (i) => i.requirement.kind === 'review' && i.requirement.cause === 'partial-recognition',
+        ),
+      ).toBe(false);
+    },
+  );
+});
+
 describe('offer demand scope', () => {
   it.each([
     'No se requiere Docker.',
@@ -261,8 +348,10 @@ describe('offer demand scope', () => {
       'EXPERIENCIA\nDesarrollé consultas con SQL para una empresa ficticia.\nNo tengo experiencia con Docker.';
     const result = analyzeMatch(cv, 'Requisitos\n- Imprescindible SQL y valorable Docker.');
     expect(assessment(result, 'concept:sql').requirement.importance).toBe('required');
+    expect(assessment(result, 'concept:sql').contribution).toEqual({ points: 1, weight: 2 });
     const docker = assessment(result, 'concept:docker');
     expect(docker).toMatchObject({ status: 'missing', requirement: { importance: 'preferred' } });
+    expect(docker.contribution).toEqual({ points: 0, weight: 1 });
     expect(docker.evidence[0]).toMatchObject({
       text: 'No tengo experiencia con Docker.',
       role: 'negation',

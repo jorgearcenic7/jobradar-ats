@@ -27,13 +27,18 @@ describe('offer with headings', () => {
       'review:1 [unclassified]',
       'concept:typescript [required]',
       'years:3:typescript [required]',
-      'concept:react [required]',
-      'concept:vue [required]',
+      'review:2 [required]',
       'unrecognized:1 [required]',
       'concept:docker [preferred]',
       'concept:kubernetes [preferred]',
       'unrecognized:2 [preferred]',
     ]);
+    expect(requirement(structuredOffer, 'review:2')).toMatchObject({
+      kind: 'review',
+      cause: 'alternative',
+      label: 'Experiencia con React o Vue.',
+      sources: ['Experiencia con React o Vue.'],
+    });
   });
 
   it('does not take the integrations of the product for requirements', () => {

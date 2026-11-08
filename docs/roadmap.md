@@ -125,9 +125,15 @@ La ampliación del catálogo, la separación sistemática de responsabilidades y
 
 ### Fase 5c — Negaciones e importancia por cláusula
 
-**Implementada, pendiente de revisión y commit.** Tras la auditoría 5b de solo lectura, sobre `4e5951a` (704 pruebas), se corrigen exigencias negadas y la importancia de cláusulas con marcadores explícitos. Se conserva la frase original mediante el mecanismo de revisión para las negaciones o alcances inseguros; «pero se valorará» y «pero sí Kubernetes» reciben su interpretación explícita sin propagar la negación. Fórmula, pesos, estados y evidencia del CV mantienen su significado. Quince regresiones nuevas y ninguna eliminada; comparación de once casos y controles de las ofertas técnicas de 5b.
+**Completada: `e2ae056`.** Tras la auditoría 5b de solo lectura, sobre `4e5951a` (704 pruebas), se corrigen exigencias negadas y la importancia de cláusulas con marcadores explícitos. Se conserva la frase original mediante el mecanismo de revisión para las negaciones o alcances inseguros; «pero se valorará» y «pero sí Kubernetes» reciben su interpretación explícita sin propagar la negación. Fórmula, pesos, estados y evidencia del CV mantienen su significado. Quince regresiones nuevas y ninguna eliminada; comparación de once casos y controles de las ofertas técnicas de 5b.
 
 No se adelantan alternativas, reconocimiento parcial, ampliaciones del catálogo ni cambios visuales. La política general de responsabilidades y los conflictos entre frases distintas siguen pendientes. El diagnóstico y sus límites quedan en arquitectura.
+
+### Fase 5d — Protecciones ante alternativas y reconocimiento parcial
+
+**Implementada, pendiente de revisión y commit.** Base: 5c (`e2ae056`), 719 pruebas. Las alternativas técnicas explícitas se conservan como grupos no evaluables con todas sus opciones y fuente, incluida la aclaración «basta con uno»; no se puntúan como dos obligaciones. Las listas seguras como «SQL y Databricks» mantienen SQL evaluable y añaden Databricks para revisión sin duplicados ni puntuación. Se reutilizan los componentes existentes, sin cambios visuales. Doce pruebas nuevas y ninguna eliminada; se adapta la expectativa incorrecta de React/Vue como dos obligaciones.
+
+Se verifica con el extractor histórico la trazabilidad del 50 % → 67 % de 5c, que permanece intacta. La fórmula, los pesos, el catálogo, el tratamiento del CV y los contextos ajenos a las listas explícitas no cambian. La evaluación real de grupos alternativos y el reconocimiento parcial de prosa libre quedan pendientes; no se fuerza un rediseño del dominio.
 
 ## Próximas fases
 
