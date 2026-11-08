@@ -73,6 +73,12 @@ describe('CV match screen', () => {
     expect(
       screen.getByText(/No es una puntuación ATS ni una probabilidad de contratación/),
     ).toBeOnTheScreen();
+    // Los requisitos están contraídos: se abren el de React y el no evaluable.
+    expect(
+      screen.queryByText('«Capacidad para organizar tu propio trabajo en remoto.»'),
+    ).not.toBeOnTheScreen();
+    await user.press(screen.getByRole('button', { name: /^React\. / }));
+    await user.press(screen.getByRole('button', { name: /^Capacidad para organizar/ }));
     // Literal evidence from the CV and the unevaluable line of the offer.
     expect(
       screen.getAllByText(
