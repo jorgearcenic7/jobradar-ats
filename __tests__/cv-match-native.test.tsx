@@ -37,9 +37,25 @@ describe('CV match screen in the native app', () => {
     const user = userEvent.setup();
 
     await fireEvent.changeText(screen.getByLabelText('Texto del CV'), sampleCv);
-    await fireEvent.changeText(screen.getByLabelText('Oferta de empleo'), sampleOffer);
+    await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), sampleOffer);
     await user.press(screen.getByRole('button', { name: 'Analizar' }));
 
     expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+  });
+
+  it('offers the same offer section, with an editor that expands within the window', async () => {
+    await render(<AnalysisRoute />, { wrapper: SafeArea });
+    const user = userEvent.setup();
+
+    expect(screen.getByRole('header', { name: 'La oferta' })).toBeOnTheScreen();
+    await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), sampleOffer);
+    const regular = StyleSheet.flatten(screen.getByLabelText('Texto de la oferta').props.style);
+
+    await user.press(screen.getByRole('button', { name: 'Ampliar el editor' }));
+    const expanded = StyleSheet.flatten(screen.getByLabelText('Texto de la oferta').props.style);
+
+    // En nativo la altura ampliada se limita a una parte de la ventana, nunca al texto.
+    expect(expanded.maxHeight).toBeGreaterThan(regular.maxHeight as number);
+    expect(screen.getByLabelText('Texto de la oferta').props.value).toBe(sampleOffer);
   });
 });

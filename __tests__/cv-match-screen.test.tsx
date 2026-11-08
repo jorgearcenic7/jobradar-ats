@@ -94,7 +94,10 @@ describe('CV match screen', () => {
     await user.press(screen.getByRole('button', { name: 'Cargar ejemplo ficticio' }));
     await user.press(analyzeButton());
 
-    await fireEvent.changeText(screen.getByLabelText('Oferta de empleo'), 'Requisitos\n- Python.');
+    await fireEvent.changeText(
+      screen.getByLabelText('Texto de la oferta'),
+      'Requisitos\n- Python.',
+    );
     await user.press(analyzeButton());
 
     expect(
@@ -107,7 +110,7 @@ describe('CV match screen', () => {
     const user = await renderScreen();
     await user.press(screen.getByRole('button', { name: 'Cargar ejemplo ficticio' }));
     await fireEvent.changeText(
-      screen.getByLabelText('Oferta de empleo'),
+      screen.getByLabelText('Texto de la oferta'),
       'Hola, buscamos a alguien con ganas.',
     );
 
@@ -177,5 +180,97 @@ describe('CV match screen', () => {
     expect(
       screen.getByText('3 años de experiencia con React: sin evidencia suficiente → respaldado'),
     ).toBeOnTheScreen();
+  });
+});
+
+// Sección «La oferta»: texto completo, editor ampliable y relación con los resultados.
+describe('Offer section on the analysis screen', () => {
+  const cvWithPython =
+    'EXPERIENCIA\n- Construí una herramienta ficticia con Python para el equipo.';
+
+  async function pasteCv(user: ReturnType<typeof userEvent.setup>) {
+    await user.press(screen.getByRole('radio', { name: 'Pegar texto' }));
+    await fireEvent.changeText(screen.getByLabelText('Texto del CV'), cvWithPython);
+  }
+
+  it('analyzes the whole offer, also a requirement at the end of a very long text', async () => {
+    const user = await renderScreen();
+    await pasteCv(user);
+    const filler = 'Somos una empresa ficticia con un equipo amable y cercano. '.repeat(600);
+    const offer = `Sobre nosotros\n${filler}\n\nRequisitos\n- Experiencia con Python.`;
+    expect(offer.length).toBeGreaterThan(35_000);
+
+    await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
+    // Escribir la oferta no analiza nada por sí solo.
+    expect(screen.queryByRole('header', { name: 'Resultados' })).not.toBeOnTheScreen();
+
+    await user.press(analyzeButton());
+    expect(screen.getByRole('header', { name: 'Respaldados por tu CV (1)' })).toBeOnTheScreen();
+    expect(screen.getByLabelText('Texto de la oferta').props.value).toBe(offer);
+  });
+
+  it('keeps the results current when the editor is expanded or reduced', async () => {
+    const user = await renderScreen();
+    await pasteCv(user);
+    await fireEvent.changeText(
+      screen.getByLabelText('Texto de la oferta'),
+      'Requisitos\n- Experiencia con Python.',
+    );
+    await user.press(analyzeButton());
+
+    await user.press(screen.getByRole('button', { name: 'Ampliar el editor' }));
+    await user.press(screen.getByRole('button', { name: 'Reducir el editor' }));
+
+    expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
+    expect(
+      screen.queryByText(/Has cambiado el texto desde el último análisis/),
+    ).not.toBeOnTheScreen();
+  });
+
+  it('marks the results as outdated after editing the offer in the expanded editor', async () => {
+    const user = await renderScreen();
+    await pasteCv(user);
+    await fireEvent.changeText(
+      screen.getByLabelText('Texto de la oferta'),
+      'Requisitos\n- Experiencia con Python.',
+    );
+    await user.press(analyzeButton());
+
+    await user.press(screen.getByRole('button', { name: 'Ampliar el editor' }));
+    await fireEvent.changeText(
+      screen.getByLabelText('Texto de la oferta'),
+      'Requisitos\n- Experiencia con Python.\n- Inglés B2.',
+    );
+
+    expect(screen.getByText(/Has cambiado el texto desde el último análisis/)).toBeOnTheScreen();
+    expect(screen.getByRole('button', { name: 'Reducir el editor' })).toBeOnTheScreen();
+  });
+
+  it('keeps the offer when the CV mode changes', async () => {
+    const user = await renderScreen();
+    await fireEvent.changeText(
+      screen.getByLabelText('Texto de la oferta'),
+      'Requisitos\n- Inglés B2.',
+    );
+
+    await user.press(screen.getByRole('radio', { name: 'Pegar texto' }));
+    await user.press(screen.getByRole('radio', { name: 'Archivo' }));
+
+    expect(screen.getByLabelText('Texto de la oferta').props.value).toBe(
+      'Requisitos\n- Inglés B2.',
+    );
+    expect(screen.getByText('Lista para analizar · 23 caracteres')).toBeOnTheScreen();
+  });
+
+  it('asks for the offer next to its field and clears the error once it has text', async () => {
+    const user = await renderScreen();
+    await pasteCv(user);
+
+    await user.press(analyzeButton());
+    expect(screen.getByText('Pega el texto de la oferta para analizarla.')).toBeOnTheScreen();
+    expect(screen.getByLabelText('Texto de la oferta').props['aria-invalid']).toBe(true);
+
+    await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), 'Requisitos');
+    expect(screen.queryByText('Pega el texto de la oferta para analizarla.')).not.toBeOnTheScreen();
   });
 });

@@ -356,6 +356,50 @@ describe('TextField with several lines', () => {
     },
   );
 
+  it('grows up to 28 lines when expanded, without passing 75 % of the window', async () => {
+    setWindow(1200, 1);
+    await render(<Field multiline expanded />);
+    // 28 líneas caben en el 75 % de una ventana de 1.200 px.
+    expect(inputStyle()).toMatchObject({ minHeight: 6 * 24 + chrome, maxHeight: 28 * 24 + chrome });
+
+    setWindow(844, 1);
+    await render(<Field multiline expanded />);
+    expect(inputStyle()).toMatchObject({ minHeight: 6 * 24 + chrome, maxHeight: 844 * 0.75 });
+  });
+
+  it('never makes the expanded field shorter than the regular one', async () => {
+    // Con texto al triple y una ventana de 300 px, el 75 % (225 px) no llega a las tres líneas
+    // mínimas (242 px): el campo ampliado se queda en la altura normal.
+    setWindow(300, 3);
+    await render(<Field multiline expanded />);
+
+    const threeLines = 3 * 72 + chrome;
+    expect(inputStyle()).toMatchObject({ minHeight: threeLines, maxHeight: threeLines });
+
+    // Con 375 px el 75 % (281 px) ya supera la altura normal y el campo crece hasta él.
+    setWindow(375, 3);
+    await render(<Field multiline expanded />);
+    expect(inputStyle().maxHeight).toBe(375 * 0.75);
+  });
+
+  it('only changes the visible area when expanded: the text stays whole', async () => {
+    const text = jobOffer(20_000);
+    const { rerender } = await render(<Field multiline value={text} />);
+    await rerender(<Field multiline expanded value={text} />);
+    expect(input().props.value).toBe(text);
+
+    await rerender(<Field multiline value={text} />);
+    expect(input().props.value).toBe(text);
+    expect(inputStyle().maxHeight).toBe(12 * 24 + chrome);
+  });
+
+  it('ignores expanded on single-line fields', async () => {
+    await render(<Field value="Designer" expanded />);
+
+    expect(inputStyle().maxHeight).toBeUndefined();
+    expect(inputStyle().minHeight).toBe(layout.minTouchTarget);
+  });
+
   it('keeps single-line fields and fields without a limit unchanged', async () => {
     await render(<Field value="Designer" />);
 

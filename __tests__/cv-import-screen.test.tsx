@@ -105,7 +105,7 @@ describe('CV import on the analysis screen', () => {
     );
     expect(screen.getByText(/pueden perderse los encabezados y pies de página/)).toBeOnTheScreen();
 
-    await fireEvent.changeText(screen.getByLabelText('Oferta de empleo'), offer);
+    await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     await analyze(user);
     expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
     expect(screen.getByRole('header', { name: 'Respaldados por tu CV (2)' })).toBeOnTheScreen();
@@ -130,7 +130,7 @@ describe('CV import on the analysis screen', () => {
     await selectCv(user, picked('cv.doc', buildCompoundFile()));
     expect(await screen.findByText(/Parece un Word antiguo \(\.doc\)/)).toBeOnTheScreen();
 
-    await fireEvent.changeText(screen.getByLabelText('Oferta de empleo'), offer);
+    await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     await analyze(user);
     expect(screen.getByText(/No se ha podido leer este CV/)).toBeOnTheScreen();
     expect(screen.queryByRole('header', { name: 'Resultados' })).not.toBeOnTheScreen();
@@ -143,7 +143,7 @@ describe('CV import on the analysis screen', () => {
       await screen.findByText(/todavía no reconoce texto en imágenes \(OCR\)/),
     ).toBeOnTheScreen();
 
-    await fireEvent.changeText(screen.getByLabelText('Oferta de empleo'), offer);
+    await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     await analyze(user);
     expect(screen.getByText(/Este CV no tiene texto que se pueda analizar/)).toBeOnTheScreen();
     expect(screen.queryByRole('header', { name: 'Resultados' })).not.toBeOnTheScreen();
@@ -199,7 +199,7 @@ describe('CV import on the analysis screen', () => {
     expect(screen.getByText(/Has corregido el texto/)).toBeOnTheScreen();
 
     await fireEvent.changeText(
-      screen.getByLabelText('Oferta de empleo'),
+      screen.getByLabelText('Texto de la oferta'),
       'Requisitos\n- Experiencia con Python.',
     );
     await analyze(user);
@@ -213,7 +213,7 @@ describe('CV import on the analysis screen', () => {
     const user = await renderScreen();
     await selectCv(user, picked('cv-ficticio.pdf', buildTextPdf([pdfCv])));
     await waitForImport('cv-ficticio.pdf');
-    await fireEvent.changeText(screen.getByLabelText('Oferta de empleo'), offer);
+    await fireEvent.changeText(screen.getByLabelText('Texto de la oferta'), offer);
     await analyze(user);
     expect(screen.getByRole('header', { name: 'Resultados' })).toBeOnTheScreen();
 
@@ -324,7 +324,7 @@ describe('CV section on the analysis screen', () => {
       'PROYECTOS\n- Construí una herramienta ficticia con Python para el equipo.',
     );
     await fireEvent.changeText(
-      screen.getByLabelText('Oferta de empleo'),
+      screen.getByLabelText('Texto de la oferta'),
       'Requisitos\n- Experiencia con Python.\n- Experiencia con React.',
     );
     await analyze(user);

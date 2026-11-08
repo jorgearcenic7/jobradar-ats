@@ -57,6 +57,11 @@ export type TextFieldProps = KeyboardProps & {
    */
   multiline?: boolean;
   /**
+   * Solo con `multiline`: deja crecer el campo bastante más antes de desplazarse por dentro, para
+   * revisar un texto largo con comodidad. Solo cambia la zona visible; el texto nunca se recorta.
+   */
+  expanded?: boolean;
+  /**
    * Shows a counter against this number of characters. It never truncates: going over is only
    * shown, and the caller decides whether that is an error.
    */
@@ -76,6 +81,13 @@ const FLOOR_LINES = 3;
 const MAX_WINDOW_SHARE = 0.45;
 // Vertical padding and the 1 px border on each side.
 const INPUT_CHROME = space[3] * 2 + 2;
+/*
+Campo ampliado: hasta 28 líneas, sin pasar del 75 % de la ventana, para que la etiqueta o el botón
+que lo reduce sigan a la vista. Nunca queda por debajo de la altura máxima normal. Solo se activa
+tras una acción del usuario, así que el HTML del servidor, que no conoce la ventana, no lo usa.
+*/
+const EXPANDED_MAX_LINES = 28;
+const EXPANDED_WINDOW_SHARE = 0.75;
 
 /**
  * Text input with a visible label above it, and the error, guidance and optional counter below it.
@@ -90,6 +102,7 @@ export function TextField({
   ref,
   style,
   multiline = false,
+  expanded = false,
   characterLimit,
   onFocus,
   onBlur,
@@ -160,12 +173,18 @@ export function TextField({
   const isWeb = process.env.EXPO_OS === 'web';
   const lineHeight = typography.body.lineHeight * (isWeb ? 1 : windowSize.fontScale);
   const linesHeight = (lines: number) => lines * lineHeight + INPUT_CHROME;
-  const maxHeight = isWeb
+  const regularMaxHeight = isWeb
     ? linesHeight(MAX_LINES)
     : Math.max(
         Math.min(linesHeight(MAX_LINES), windowSize.height * MAX_WINDOW_SHARE),
         linesHeight(FLOOR_LINES),
       );
+  const maxHeight = expanded
+    ? Math.max(
+        Math.min(linesHeight(EXPANDED_MAX_LINES), windowSize.height * EXPANDED_WINDOW_SHARE),
+        regularMaxHeight,
+      )
+    : regularMaxHeight;
   const minHeight = Math.min(linesHeight(MIN_LINES), maxHeight);
 
   return (

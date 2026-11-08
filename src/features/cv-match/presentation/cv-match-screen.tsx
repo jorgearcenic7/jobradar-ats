@@ -10,11 +10,11 @@ import { Card } from '@/shared/ui/card';
 import { Notice } from '@/shared/ui/notice';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { Screen } from '@/shared/ui/screen';
-import { TextField } from '@/shared/ui/text-field';
 
 import { AnalysisResults } from './analysis-results';
 import { CvSection, type CvMode } from './cv-section';
 import { formatPercent } from './labels';
+import { OfferSection } from './offer-section';
 import { sampleCv } from './sample-texts';
 import { useCvMatch, type CvInput } from './use-cv-match';
 
@@ -96,19 +96,15 @@ export function CvMatchScreen({ onGoHome }: CvMatchScreenProps) {
           error={cvError}
           pastedRef={cvRef}
         />
-        <TextField
-          ref={offerRef}
-          label="Oferta de empleo"
-          helperText="Pega la oferta completa, sin recortarla."
+        <OfferSection
+          value={match.offerText}
+          onChange={match.changeOffer}
           error={
             match.errors.includes('offer')
               ? 'Pega el texto de la oferta para analizarla.'
               : undefined
           }
-          value={match.offerText}
-          onChangeText={match.changeOffer}
-          multiline
-          autoCorrect={false}
+          fieldRef={offerRef}
         />
         <View style={styles.submit}>
           <Button
