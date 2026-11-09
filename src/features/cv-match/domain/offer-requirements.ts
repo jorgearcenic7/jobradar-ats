@@ -19,7 +19,7 @@ import {
   compareEducation,
   educationLabels,
   findEducationLevels,
-  findYears,
+  findYearMentions,
   languageLevelAt,
   mentionsExperience,
 } from './criteria';
@@ -41,6 +41,7 @@ import {
   type Line,
 } from './text';
 import type { Importance, OfferRequirement } from './types';
+import { explicitExperienceRole } from './experience-role';
 
 /**
  * De qué trata la parte de la oferta que se está leyendo:
@@ -532,17 +533,20 @@ function recognize(normalized: string, index: CatalogIndex): Candidate[] {
   letras, no se reconoce) y se asocia a todos los conceptos de la frase. Esos conceptos siguen
   siendo además requisitos propios, evaluados por separado.
   */
-  const [years] = findYears(normalized);
-  if (years !== undefined && mentionsExperience(normalized)) {
+  const [yearMention] = findYearMentions(normalized);
+  if (yearMention && mentionsExperience(normalized)) {
+    const { years, start } = yearMention;
+    const role = conceptIds.length === 0 ? explicitExperienceRole(normalized) : null;
+    const strict = /\bmas de\s+$/.test(normalized.slice(0, start));
     const labels = conceptIds.map((id) => index.concepts.get(id)!.label);
     candidates.push({
       kind: 'years',
-      id: `years:${years}:${conceptIds.join('+') || 'general'}`,
+      id: `years:${years}:${role ? `role:${role.replace(/ /g, '-')}` : conceptIds.join('+') || 'general'}${strict ? ':more-than' : ''}`,
       years,
       conceptIds,
-      label: labels.length
-        ? `${years} años de experiencia con ${labels.join(' y ')}`
-        : `${years} años de experiencia`,
+      ...(role ? { role } : {}),
+      ...(strict ? { comparison: 'more-than' as const } : {}),
+      label: `${strict ? 'Más de ' : ''}${years} años de experiencia${role ? ` como ${role}` : labels.length ? ` con ${labels.join(' y ')}` : ''}`,
     });
   }
 
@@ -671,6 +675,9 @@ function protectedDemandClauses(
  */
 function demandClauses(source: string, index: CatalogIndex): DemandClause[] {
   const normalized = normalize(source);
+  // «No más de» expresa un máximo, no el mínimo estricto que esta fase sabe evaluar.
+  if (/\bno\s+mas de\s+\d{1,2}\s+anos\b/.test(normalized))
+    return [{ source, text: source, review: true }];
   const negated = containsAny(normalized, negatedRequiredWords);
   const mixed = containsAny(normalized, requiredWords) && containsAny(normalized, preferredWords);
   if (!negated && !mixed) return [{ source, text: source }];

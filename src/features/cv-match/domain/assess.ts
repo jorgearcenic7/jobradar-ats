@@ -25,6 +25,7 @@ import {
 } from './criteria';
 import { withoutDates, type CvUnit } from './cv-structure';
 import { asksGeneralExperience, workExperience } from './work-periods';
+import { explicitExperienceRole } from './experience-role';
 import type { CatalogIndex } from './skill-catalog';
 import { containsAny, countWords, type TermMatch } from './text';
 import type {
@@ -517,21 +518,45 @@ así que no se deduce ninguna otra cifra: se aparta en `denied` solo para explic
 `deniedDurations` guarda aparte las cifras negadas en sí mismas, porque negar una duración no
 es lo mismo que negar toda experiencia con la tecnología.
 */
+function declaredYearsQualifier(unit: CvUnit): 'more-than' | 'at-least' | null {
+  const mentions = findYearMentions(unit.normalized);
+  if (mentions.length !== 1) return null;
+  const prefix = unit.normalized.slice(0, mentions[0].start);
+  if (/\bmas de\s+$/.test(prefix)) return 'more-than';
+  return /\b(?:al menos|como minimo|minimo|minima)\s+$/.test(prefix) ? 'at-least' : null;
+}
+
 function yearsStatedFor(requirement: Requirement<'years'>, unit: CvUnit) {
   const stated: number[] = [];
   const denied: number[] = [];
   const deniedDurations: number[] = [];
   const { conceptIds } = requirement;
+  // No se adivina qué cifra de una frase mixta corresponde al puesto, ni se usa una
+  // declaración general cuando el título pedido tras «como» está incompleto o es ambiguo.
+  if (
+    (requirement.role && findYearMentions(unit.normalized).length !== 1) ||
+    (!conceptIds.length &&
+      !requirement.role &&
+      requirement.sources.some((s) => containsAny(s.toLowerCase(), ['como'])))
+  )
+    return { stated, denied, deniedDurations };
   const matches = unit.conceptMatches();
-  const named = conceptIds.length
-    ? conceptIds.every((id) => matches.some((item) => item.id === id))
-    : mentionsExperience(unit.normalized);
+  const roleMention = requirement.role ? findYearMentions(unit.normalized)[0] : null;
+  const roleTail = roleMention ? unit.normalized.slice(roleMention.end).trim() : '';
+  const named = requirement.role
+    ? /^(?:de\s+)?experiencia(?:\s+(?:profesional|laboral|previa))*\s+como\b/.test(roleTail) &&
+      explicitExperienceRole(roleTail) === requirement.role
+    : conceptIds.length
+      ? conceptIds.every((id) => matches.some((item) => item.id === id))
+      : mentionsExperience(unit.normalized);
   if (!named) return { stated, denied, deniedDurations };
 
   const conceptDenied = !conceptIds.every((id) =>
     matches.some((item) => item.id === id && !isNegated(unit.normalized, item)),
   );
   for (const mention of findYearMentions(unit.normalized)) {
+    // Un máximo declarado en el CV no demuestra una duración exacta ni mínima.
+    if (/\bno\s+mas de\s+$/.test(unit.normalized.slice(0, mention.start))) continue;
     if (conceptIds.length) {
       const nearby = conceptsAround(unit, mention.start);
       if (!conceptIds.every((id) => nearby.includes(id))) continue;
@@ -553,7 +578,7 @@ function assessYears(
   // Si hay varias declaraciones válidas, se usa la cifra mayor.
   const declarations = units.map((unit) => ({ unit, ...yearsStatedFor(requirement, unit) }));
   const statements = declarations.flatMap(({ unit, stated }) =>
-    stated.map((years) => ({ unit, years })),
+    stated.map((years) => ({ unit, years, qualifier: declaredYearsQualifier(unit) })),
   );
   const denials = declarations.filter(({ denied }) => denied.length > 0).map(({ unit }) => unit);
   const deniedDurations = declarations.flatMap(({ deniedDurations }) => deniedDurations);
@@ -565,19 +590,40 @@ function assessYears(
     hay crédito parcial. Un CV que no indica ninguna duración (más abajo) sí cuenta como
     evidencia insuficiente, igual que una competencia solo mencionada.
     */
-    const supported = most >= requirement.years;
+    const strict = requirement.comparison === 'more-than';
+    const supported = statements.some(
+      (item) =>
+        item.years > requirement.years ||
+        (item.years === requirement.years && (!strict || item.qualifier === 'more-than')),
+    );
+    const uncertain =
+      !supported &&
+      (strict || Boolean(requirement.role)) &&
+      statements.some((item) => item.qualifier !== null);
+    const strongest =
+      statements
+        .filter((item) => item.years === most)
+        .find((item) => item.qualifier === 'more-than') ??
+      statements.find((item) => item.years === most)!;
+    const declared = `${strongest.qualifier === 'more-than' ? 'más de ' : strongest.qualifier === 'at-least' ? 'al menos ' : ''}${most}`;
     return {
-      status: supported ? 'supported' : 'missing',
+      status: supported ? 'supported' : uncertain ? 'mentioned' : 'missing',
       reason: supported
-        ? `El CV declara ${most} años, igual o más de los ${requirement.years} que pide la oferta.`
-        : `El CV declara ${most} años, menos de los ${requirement.years} que pide la oferta.`,
+        ? strict
+          ? `El CV declara ${declared} años${requirement.role ? ` como ${requirement.role}` : ''}; supera los ${requirement.years} años que pide la oferta.`
+          : `El CV declara ${declared} años${requirement.role ? ` como ${requirement.role}` : ''}, igual o más de los ${requirement.years} que pide la oferta.`
+        : uncertain
+          ? `El CV declara ${declared} años${requirement.role ? ` como ${requirement.role}` : ''}; esa cota no permite confirmar que se cumpla ${strict ? 'más de' : 'al menos'} ${requirement.years} años.`
+          : strict
+            ? `El CV declara ${declared} años${requirement.role ? ` como ${requirement.role}` : ''}; no permite superar los ${requirement.years} años exigidos.`
+            : `El CV declara ${most} años, menos de los ${requirement.years} que pide la oferta.`,
       evidence: statements.map(({ unit }) => evidenceOf(unit, supported ? 'support' : 'mention')),
     };
   }
 
   // El CV no declara ninguna duración: el requisito se entiende, lo que falta es la evidencia.
   const notFromDates =
-    'Las fechas solo acreditan experiencia general cuando los periodos laborales son reconocibles; no se atribuyen a tecnologías o puestos por proximidad.';
+    'Las fechas acreditan experiencia general o periodos asociados explícitamente al mismo puesto; no acreditan tecnologías por proximidad.';
   const labels = requirement.conceptIds
     .map((id) => index.concepts.get(id)?.label ?? id)
     .join(' y ');
@@ -600,25 +646,67 @@ function assessYears(
 
   if (requirement.conceptIds.length === 0) {
     const generalScope = asksGeneralExperience(requirement.sources);
-    const dated = !denial && generalScope ? workExperience(units, referenceDate) : null;
-    if (dated) {
-      const supported = dated.minimumMonths >= requirement.years * 12;
+    const dated = !denial ? workExperience(units, referenceDate, requirement.role) : null;
+    if (dated && (generalScope || requirement.role)) {
+      const strict = requirement.comparison === 'more-than';
+      const supported = strict
+        ? dated.minimumMonths > requirement.years * 12
+        : dated.minimumMonths >= requirement.years * 12;
       const ranges = dated.periods
-        .map(
-          (p) => `«${p.range}» (${Math.max(0, p.end.earliest - p.start.latest)} meses como mínimo)`,
+        .map((p) =>
+          requirement.role
+            ? `«${p.context ? `${p.context.text}: ` : ''}${p.unit.text}» (${Math.max(0, p.end.earliest - p.start.latest)} meses como mínimo; ${p.relevant ? 'incluido: mismo título literal' : p.ambiguousAssociation ? 'excluido: varias fechas sin asociación inequívoca al puesto' : 'excluido: sin asociación explícita al puesto solicitado'})`
+            : `«${p.range}» (${Math.max(0, p.end.earliest - p.start.latest)} meses como mínimo)`,
         )
         .join(', ');
       const uncertainty = dated.periods.some((p) => p.start.yearOnly || p.end.yearOnly)
         ? ` Los años sin meses se calculan como límites conservadores, sin meses supuestos: el intervalo posible es de ${dated.minimumMonths} a ${dated.maximumMonths} meses y solo se acredita el mínimo.`
         : '';
+      const relevantUnits = new Set(
+        dated.periods
+          .filter((p) => p.relevant)
+          .flatMap((p) => (p.context ? [p.context, p.unit] : [p.unit])),
+      );
       return {
         status: supported ? 'supported' : 'mentioned',
-        reason: `Periodos laborales: ${ranges}. Su unión sin solapamientos acredita como mínimo ${dated.minimumMonths} meses (referencia ${dated.reference}; no se suma el mes final).${uncertainty} ${supported ? 'Alcanza' : 'No permite confirmar'} los ${requirement.years} años que pide la oferta.`,
-        evidence: [...new Set(dated.periods.map((p) => p.unit))].map((unit) =>
-          evidenceOf(unit, supported ? 'support' : 'mention'),
+        reason: `Periodos laborales reconocidos: ${ranges}. La unión ${requirement.role ? `relevante para «${requirement.role}» ` : ''}sin solapamientos acredita como mínimo ${dated.minimumMonths} meses (referencia ${dated.reference}; no se suma el mes final).${uncertainty} ${supported ? 'Permite' : 'No permite'} ${strict ? 'superar' : 'alcanzar'} los ${requirement.years} años que pide la oferta.`,
+        evidence: [
+          ...new Set(
+            dated.periods.flatMap((p) =>
+              requirement.role && p.context ? [p.context, p.unit] : [p.unit],
+            ),
+          ),
+        ].map((unit) =>
+          evidenceOf(
+            unit,
+            supported && (!requirement.role || relevantUnits.has(unit)) ? 'support' : 'mention',
+          ),
         ),
       };
     }
+    if (dated)
+      return {
+        status: 'mentioned',
+        reason: `Periodos generales reconocidos: ${dated.periods.map((p) => `«${p.unit.text}»`).join(', ')}. Su unión es de ${dated.minimumMonths} meses como mínimo (referencia ${dated.reference}). Ninguno se asigna a esta exigencia: no se ha identificado un ámbito o título completo de puesto de forma inequívoca. No se usan años generales para acreditarlo.`,
+        evidence: dated.periods.map((p) => evidenceOf(p.unit, 'mention')),
+      };
+    if (requirement.role)
+      return (
+        denial ?? {
+          status: 'mentioned',
+          reason: `La oferta pide ${requirement.comparison === 'more-than' ? 'más de' : 'al menos'} ${requirement.years} años como «${requirement.role}». No hay periodos profesionales reconocibles asociados explícitamente a ese mismo título. No se infieren equivalencias entre puestos ni se usan años generales para acreditarlo.`,
+          evidence: [],
+        }
+      );
+    if (!generalScope && units.some((unit) => mentionsExperience(unit.normalized)))
+      return {
+        status: 'mentioned',
+        reason:
+          'La oferta especifica un puesto o ámbito que no se ha identificado de forma inequívoca. Los años generales no se asignan a esa exigencia.',
+        evidence: units
+          .filter((unit) => mentionsExperience(unit.normalized))
+          .map((unit) => evidenceOf(unit, 'mention')),
+      };
     const hasExperience = units.some((unit) => unit.section === 'experience');
     return hasExperience
       ? {
@@ -631,6 +719,10 @@ function assessYears(
       : (denial ?? { status: 'missing', reason: 'El CV no muestra experiencia.', evidence: [] });
   }
 
+  const generalDates = workExperience(units, referenceDate);
+  const dateContext = generalDates
+    ? ` Periodos generales reconocidos: ${generalDates.periods.map((p) => `«${p.unit.text}»`).join(', ')}. Unión general: ${generalDates.minimumMonths} meses como mínimo (referencia ${generalDates.reference}); ninguno se atribuye a ${labels} sin una duración específica explícita.`
+    : '';
   const related = units.filter((unit) => {
     const matches = unit.conceptMatches();
     return requirement.conceptIds.every((id) => {
@@ -650,12 +742,18 @@ function assessYears(
           reason: deniedTechnology,
           evidence: negatedOnly.map((unit) => evidenceOf(unit, 'negation')),
         }
-      : { status: 'missing', reason: `El CV no menciona ${labels}.`, evidence: [] };
+      : {
+          status: 'missing',
+          reason: `El CV no menciona ${labels}.${dateContext}`,
+          evidence: generalDates?.periods.map((p) => evidenceOf(p.unit, 'mention')) ?? [],
+        };
   }
   return {
     status: 'mentioned',
-    reason: `El CV menciona ${labels}, pero no indica cuánto tiempo lo has usado. ${notFromDates}`,
-    evidence: related.map((unit) => evidenceOf(unit, 'mention')),
+    reason: `El CV menciona ${labels}, pero no indica cuánto tiempo lo has usado. ${notFromDates}${dateContext}`,
+    evidence: [...new Set([...related, ...(generalDates?.periods.map((p) => p.unit) ?? [])])].map(
+      (unit) => evidenceOf(unit, 'mention'),
+    ),
   };
 }
 

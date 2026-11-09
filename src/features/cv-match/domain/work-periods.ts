@@ -5,6 +5,7 @@ solapamientos y no atribuye el tiempo a tecnologías, empresas o puestos por pro
 */
 import type { CvUnit } from './cv-structure';
 import { containsAny, normalize } from './text';
+import { isRoleHeader } from './experience-role';
 
 const months = [
   'enero',
@@ -40,7 +41,15 @@ const excluded = [
   'sin',
 ];
 type Bound = { earliest: number; latest: number; yearOnly: boolean };
-type Period = { unit: CvUnit; range: string; start: Bound; end: Bound };
+type Period = {
+  unit: CvUnit;
+  range: string;
+  start: Bound;
+  end: Bound;
+  context?: CvUnit;
+  relevant?: boolean;
+  ambiguousAssociation?: boolean;
+};
 
 function bound(text: string, reference: number): Bound | null {
   if (text === 'actualidad') return { earliest: reference, latest: reference, yearOnly: false };
@@ -72,7 +81,7 @@ function unionMonths(intervals: [number, number][]): number {
   return total;
 }
 
-export function workExperience(units: CvUnit[], referenceDate: Date) {
+export function workExperience(units: CvUnit[], referenceDate: Date, role?: string) {
   if (!Number.isFinite(referenceDate.getTime())) return null;
   const reference = referenceDate.getUTCFullYear() * 12 + referenceDate.getUTCMonth();
   const periods: Period[] = [];
@@ -85,7 +94,8 @@ export function workExperience(units: CvUnit[], referenceDate: Date) {
       `(^|[^\\p{L}\\d/])(${endpoint})\\s*(?:[–—-]|\\ba\\b|\\bhasta\\b)\\s*(${endpoint}|actualidad)(?=$|[^\\p{L}\\d/])`,
       'gu',
     );
-    for (const match of unit.normalized.matchAll(pattern)) {
+    const ranges = [...unit.normalized.matchAll(pattern)];
+    for (const match of ranges) {
       const range = unit.text.slice(match.index + match[1].length, match.index + match[0].length);
       const onlyRange = unit.normalized.replace(match[0], '').replace(/[().,:;\s]/g, '') === '';
       if (excludedLine || (onlyRange && containsAny(previousLine, excluded))) continue;
@@ -101,6 +111,7 @@ export function workExperience(units: CvUnit[], referenceDate: Date) {
       periods.push({
         unit,
         range,
+        ambiguousAssociation: ranges.length > 1,
         start,
         end: { ...end, latest: Math.min(end.latest, reference) },
       });
@@ -108,8 +119,25 @@ export function workExperience(units: CvUnit[], referenceDate: Date) {
     previousLine = line;
   }
   if (!periods.length) return null;
-  const minimumMonths = unionMonths(periods.map((p) => [p.start.latest, p.end.earliest]));
-  const maximumMonths = unionMonths(periods.map((p) => [p.start.earliest, p.end.latest]));
+  for (const period of periods) {
+    const previous = units[units.indexOf(period.unit) - 1];
+    // Solo el contexto inmediatamente anterior y sin fechas: no se salta otro puesto ni se
+    // hereda el título de un empleo anterior. Se usa la frase, no toda una línea con dos empleos.
+    const onlyRange = period.unit.text.replace(period.range, '').replace(/[\s().,:;]+/g, '') === '';
+    if (onlyRange && previous?.section === 'experience' && !/\b\d{4}\b/.test(previous.text))
+      period.context = previous;
+    const singlePeriod = !period.ambiguousAssociation;
+    const ownHeader = Boolean(
+      role && isRoleHeader(period.unit.text.replace(period.range, ''), role),
+    );
+    const precedingHeader = Boolean(
+      role && period.context && isRoleHeader(period.context.text, role),
+    );
+    period.relevant = !role || (singlePeriod && (ownHeader || (onlyRange && precedingHeader)));
+  }
+  const relevant = periods.filter((period) => period.relevant);
+  const minimumMonths = unionMonths(relevant.map((p) => [p.start.latest, p.end.earliest]));
+  const maximumMonths = unionMonths(relevant.map((p) => [p.start.earliest, p.end.latest]));
   return {
     minimumMonths,
     maximumMonths,
@@ -125,7 +153,7 @@ export function asksGeneralExperience(sources: string[]): boolean {
       normalize(source)
         .replace(/\d{1,2}\s*\+?\s*(?:o mas\s+)?anos/g, ' ')
         .replace(
-          /\b(?:experiencia|profesional|laboral|general|previa|minima|minimo|minimos|al|menos|de|se|requiere|requerida|necesaria|imprescindible|obligatoria|obligatorio)\b/g,
+          /\b(?:experiencia|profesional|laboral|general|previa|minima|minimo|minimos|mas|al|menos|de|se|requiere|requerida|necesaria|imprescindible|obligatoria|obligatorio)\b/g,
           ' ',
         )
         .replace(/[\s.,;:()]/g, '') === '',

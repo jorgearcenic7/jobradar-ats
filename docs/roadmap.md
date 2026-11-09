@@ -137,9 +137,15 @@ Se verifica con el extractor histórico la trazabilidad del 50 % → 67 % de 5c,
 
 ### Fase 6a — Comprobación DOCX y experiencia desde fechas
 
-**Implementada, pendiente de revisión y commit.** Base: `204f239`, 731 pruebas. El usuario confirma que DOCX sí funciona en su iPhone; no se modifica el importador sin una causa reproducible. Chrome valida documentos ficticios válidos, vacíos y dañados, rechazo de Word antiguo, edición y PDF. WebKit no está instalado y no se afirma una prueba propia de Safari real.
+**Completada: `7da7ac4`.** Base: `204f239`, 731 pruebas. El usuario confirma que DOCX sí funciona en su iPhone; no se modifica el importador sin una causa reproducible. Chrome valida documentos ficticios válidos, vacíos y dañados, rechazo de Word antiguo, edición y PDF. WebKit no está instalado y no se afirma una prueba propia de Safari real.
 
 El motor calcula la unión conservadora de periodos profesionales a resolución mensual, con límites para años sin meses y referencia controlable para «actualidad». Respalda solo experiencia general suficientemente acreditada, sin trasladar esos años a tecnologías o puestos ni sumar dos veces solapamientos. Conserva periodos, mínimos, referencia y fuentes; se actualizan los mensajes anteriores. Veinte regresiones nuevas, ninguna eliminada, y adaptación de dos mensajes existentes. El cálculo específico por tecnología/puesto y formatos no reconocidos quedan pendientes; se mantienen fórmula y pesos.
+
+### Fase 6b — Puestos explícitos y trazabilidad de fechas
+
+**Implementada, pendiente de revisión y commit.** Base: 6a (`7da7ac4`), 751 pruebas. Se asocian periodos a títulos literales explícitos, se une solo la duración relevante y se distinguen «más de» y «al menos». No se equiparan profesiones, traducciones o seniority ni se atribuyen fechas generales a tecnologías. Se evitan respaldos desde declaraciones generales o frases con cifras mezcladas.
+
+El desplegable existente explica periodos incluidos/excluidos, mínimo relevante, referencia y cumplimiento del umbral. Veintitrés regresiones nuevas, ninguna eliminada; se adapta un mensaje anterior. Comparación con 6a y comprobación en Chrome a 390/1440 px. Las relaciones profesionales ambiguas, cabeceras no reconocidas y formatos no acotados quedan como decisiones pendientes, sin forzar puntuaciones positivas. Se conservan fórmula y pesos.
 
 ## Próximas fases
 

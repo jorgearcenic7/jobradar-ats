@@ -26,7 +26,15 @@ export type OfferRequirement =
       levelText: string | null;
     })
   | (RequirementBase & { kind: 'education'; level: EducationLevel })
-  | (RequirementBase & { kind: 'years'; years: number; conceptIds: string[] })
+  | (RequirementBase & {
+      kind: 'years';
+      years: number;
+      conceptIds: string[];
+      /** Título literal solicitado con «experiencia como…», sin equivalencias profesionales. */
+      role?: string;
+      /** Ausente equivale a «al menos»; «más de» exige superar el umbral. */
+      comparison?: 'more-than';
+    })
   | (RequirementBase & { kind: 'unrecognized' })
   | (RequirementBase & {
       /** A sentence that may or may not be a requirement. Shown for review, never scored. */
