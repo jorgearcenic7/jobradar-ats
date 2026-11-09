@@ -14,7 +14,16 @@ export function Card({ style, ...rest }: CardProps) {
 
   return (
     <View
-      style={[styles.card, { backgroundColor: theme.surface, borderColor: theme.border }, style]}
+      style={[
+        styles.card,
+        {
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+          // Sombra corta y difusa: separa la tarjeta del fondo sin competir con el contenido.
+          boxShadow: `0 1px 3px ${theme.shadow}`,
+        },
+        style,
+      ]}
       {...rest}
     />
   );

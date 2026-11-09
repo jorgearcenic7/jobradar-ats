@@ -65,6 +65,7 @@ jest/                   # Stubs y utilidades de prueba
   pdfjs-node.cjs        # Ejecuta pdf.js en un proceso de Node aparte (Jest no carga sus módulos ES)
   pdfjs-text-items.mjs  # Script de ese proceso: devuelve los fragmentos de texto de cada página
 assets/                 # Iconos y pantalla de bienvenida
+  branding/             # SVG oficiales del logo: icono con fondo y símbolo sin fondo
   fonts/                # Sora SemiBold y Bold (OTF) y su licencia OFL.txt
 ```
 
@@ -491,7 +492,7 @@ La Fase 3a.1 recorrió en Chrome con Playwright, a 390 y 1440 px y en claro y os
 - **Salida estática.** `web.output` es `"static"`: `expo export` genera un HTML por ruta (`index.html`, `analisis/index.html`, `analisis/resultados.html`) y Vercel los sirve sin servidor ni funciones. Se descartó `"server"` porque no hay rutas de API y `"single"` porque obliga a reescribir todas las rutas hacia una sola página y no usa `+html.tsx`. El HTML se genera con el mismo renderizado en Node que ya usaba `"server"`, así que la hidratación no cambia.
 - **`vercel.json`.** Compila con `npx expo export --platform web` y publica `dist/`. `cleanUrls` sirve `/analisis/resultados` desde `resultados.html`; no hace falta ninguna reescritura. Los archivos de `/_expo/static/` y `/assets/` llevan un hash en el nombre y se cachean un año como inmutables; el HTML se revalida siempre. Todas las respuestas llevan `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` y `X-Frame-Options: DENY`. `.vercelignore` evita subir `node_modules/`, `dist/` y las cachés locales.
 - **`src/app/+html.tsx`.** Replica la plantilla de Expo (incluido el reinicio de scroll) y añade `lang="es"`, el título, la descripción, `theme-color` por tema, `apple-touch-icon` y el manifiesto.
-- **Pantalla de inicio del iPhone.** `public/apple-touch-icon.png` (180 px) y `public/manifest.json` (`display: standalone`) con el nombre «JobRadar ATS». El icono, el de 512 px y el favicon se generaron con recursos de la marca: Sora Bold, el marino `#15152D` y el lavanda `#A896FF`. Sustituyen al logotipo de la plantilla de Expo solo en web; los iconos nativos de `app.json` no cambian.
+- **Pantalla de inicio del iPhone.** `public/apple-touch-icon.png` (180 px) y `public/manifest.json` (`display: standalone`) con el nombre «JobRadar ATS». Desde la v1.1 todos los iconos salen del logo oficial (ver «Identidad visual (v1.1)»).
 - **Sin modo sin conexión.** No hay service worker: la app necesita red para cargar y no funciona sin conexión.
 - **Rutas desconocidas.** Vercel responde con su página 404 propia; `+not-found.html` solo se muestra al navegar dentro de la app.
 
@@ -501,6 +502,15 @@ Comprobado sobre la compilación de producción con un servidor local que emula 
 - Firefox sin interfaz: las tres rutas se renderizan (captura previa a la hidratación).
 - Tráfico: solo peticiones `GET` al propio origen, sin parámetros; pdf.js y mammoth se descargan como fragmentos propios. Los bundles no contienen analítica, `sendBeacon`, `WebSocket` ni `EventSource`.
 - **Pendiente:** Safari en iPhone real (instalación, modo standalone, barra de estado, áreas seguras e importación de archivos) y el despliegue real en Vercel.
+
+### Identidad visual (v1.1)
+
+- **Fuente única del logo.** `assets/branding/jobradar-icon.svg` (símbolo sobre su fondo marino redondeado) y `assets/branding/jobradar-mark.svg` (solo el símbolo). Los PNG se rasterizan desde estos SVG sin redibujarlos; si el logo cambia, se regeneran todos.
+- **Iconos opacos a sangre.** `assets/images/icon.png` (1024 px, también `ios.icon`), `public/icon-512.png` y `public/apple-touch-icon.png` (180 px) llevan el fondo marino hasta el borde y no tienen canal alfa: iOS rellena la transparencia con negro y aplica su propia máscara redondeada. Sustituyen a los iconos de la plantilla de Expo, incluido el paquete de Icon Composer.
+- **Android.** Primer plano y monocromo con el símbolo al 82 %, dentro de la zona segura de 66 dp de los iconos adaptativos; fondo con el degradado marino del logo.
+- **Favicon y pantalla de bienvenida.** Usan el icono redondeado con esquinas transparentes (64 px y 512 px). La bienvenida nativa lo muestra a 100 dp sobre el fondo de cada tema.
+- **Logo en la app.** `assets/images/logo.png` (96 px) acompaña al nombre en `AppNavigation`; es decorativo porque el nombre ya está escrito.
+- **Sistema visual.** El azul (`primary`, `accentText`, `focusRing`) es el color de acción y el violeta del logo, el secundario (`accentSubtle`, `onAccentSubtle`). Superficies blancas sobre un fondo casi blanco, bordes suaves, tarjetas con una sombra corta (`shadow`, transparente en oscuro) y radio de 16 px. El tema oscuro parte del marino del logo. Los titulares en Sora se compactan ligeramente. En web, el puntero sobre un `Button` muestra su color de pulsado. Los contrastes siguen comprobados por `theme-contrast.test.ts`.
 
 ## Estructura planificada
 

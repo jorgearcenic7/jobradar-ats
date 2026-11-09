@@ -16,7 +16,7 @@ export const space = {
 export const radius = {
   sm: 8, // inner elements
   md: 12, // buttons and fields
-  lg: 20, // cards
+  lg: 16, // cards
   xl: 28, // sheets
   full: 9999, // pills
 } as const;

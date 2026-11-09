@@ -86,11 +86,13 @@ export function Button({
       onPress={loading ? undefined : onPress}
       onFocus={(event) => setFocusVisible(isKeyboardFocus(event))}
       onBlur={() => setFocusVisible(false)}
-      style={({ pressed }) => [
+      // React Native Web también entrega `hovered`, que los tipos de React Native no declaran: en la
+      // web el puntero encima ya muestra el color de pulsado. En iOS y Android llega sin definir.
+      style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
         styles.button,
         {
           backgroundColor:
-            theme[pressed && !loading ? colors.pressedBackground : colors.background],
+            theme[(pressed || hovered) && !loading ? colors.pressedBackground : colors.background],
           borderColor: theme[colors.border],
         },
         focusVisible && { ...focusRing, outlineColor: theme.focusRing },

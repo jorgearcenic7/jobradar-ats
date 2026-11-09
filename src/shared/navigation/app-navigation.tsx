@@ -1,10 +1,10 @@
 // Dos destinos reales. Resultados pertenece a Analizar y no añade una sección independiente.
 import { Link } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
-import { layout, space } from '@/shared/theme';
+import { layout, radius, space } from '@/shared/theme';
 import { focusRing, isKeyboardFocus } from '@/shared/ui/focus-ring';
 import { ThemedText } from '@/shared/ui/themed-text';
 
@@ -14,12 +14,21 @@ export function AppNavigation({ section }: { section: 'home' | 'analysis' }) {
 
   return (
     <View style={styles.header}>
-      <ThemedText step="heading">
-        JobRadar{' '}
-        <ThemedText step="heading" color="accentText">
-          ATS
+      <View style={styles.brand}>
+        {/* Decorativo: el nombre de la app ya está escrito al lado. */}
+        <Image
+          source={require('../../../assets/images/logo.png')}
+          style={styles.logo}
+          aria-hidden
+          accessibilityIgnoresInvertColors
+        />
+        <ThemedText step="heading">
+          JobRadar{' '}
+          <ThemedText step="heading" color="accentText">
+            ATS
+          </ThemedText>
         </ThemedText>
-      </ThemedText>
+      </View>
       <View role="navigation" aria-label="Navegación principal" style={styles.links}>
         {(
           [
@@ -72,6 +81,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: space[2],
   },
+  brand: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
+  // El PNG de 96 px cubre las pantallas de densidad 3x.
+  logo: { width: 32, height: 32, borderRadius: radius.sm },
   links: { flexDirection: 'row', gap: space[1] },
   link: {
     minHeight: layout.minTouchTarget,
