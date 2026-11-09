@@ -1,0 +1,15 @@
+{
+  "name": "JobRadar ATS",
+  "short_name": "JobRadar ATS",
+  "description": "Compara tu CV con una oferta, requisito a requisito.",
+  "lang": "es",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F7F7FC",
+  "theme_color": "#F7F7FC",
+  "icons": [
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }
+  ]
+}
