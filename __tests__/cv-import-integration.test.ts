@@ -1,5 +1,6 @@
 import { importCvFile, importLimits } from '@/features/cv-import/application/import-cv';
 import { analysisInput } from '@/features/cv-import/domain/imported-cv';
+import { pdfDocumentOptions } from '@/features/cv-import/infrastructure/pdf-reader.web';
 import { analyzeMatch } from '@/features/cv-match/domain/analyze-match';
 
 import {
@@ -132,6 +133,36 @@ describe('real PDF extraction', () => {
     for (let page = 1; page <= 25; page++) {
       expect(cv.extractedText).toContain(`Página ficticia ${page}\n`);
     }
+  });
+});
+
+/*
+Regresión: PDF.js 6 llama a `Promise.withResolvers()` al abrir cualquier documento y su build
+«legacy» no la rellena. En los navegadores que no la tienen, todos los PDF fallaban.
+*/
+describe('real PDF extraction in a browser without Promise.withResolvers', () => {
+  const { extractPdfTextItems } = jest.requireActual('../jest/pdfjs-node.cjs');
+  const bytes = buildTextPdf([oneColumnCv]);
+
+  it('cannot open any PDF without a polyfill', () => {
+    expect(
+      extractPdfTextItems(bytes, pdfDocumentOptions, { withoutPromiseWithResolvers: true }),
+    ).toEqual({
+      error: { name: 'TypeError', message: 'Promise.withResolvers is not a function' },
+    });
+  });
+
+  it('reads it with the polyfill that the web reader installs', () => {
+    const result = extractPdfTextItems(bytes, pdfDocumentOptions, {
+      withoutPromiseWithResolvers: true,
+      installPolyfill: true,
+    });
+
+    expect(result.error).toBeUndefined();
+    expect(result.pageCount).toBe(1);
+    expect(result.pages[0].items.map((item: { str: string }) => item.str)).toContain(
+      'Lucía Ficticia Ortega',
+    );
   });
 });
 
