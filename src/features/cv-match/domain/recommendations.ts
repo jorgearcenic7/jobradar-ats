@@ -152,7 +152,7 @@ function forYears({ label, requirementId, status }: RecommendationInput): Recomm
   return {
     kind: 'years',
     requirementId,
-    message: `La oferta pide ${label} y tu CV no indica cuánto tiempo tienes esa experiencia. Si la tienes, indica la duración real; JobRadar no la calcula a partir de las fechas.`,
+    message: `La oferta pide ${label} y el CV no acredita esa duración. Revisa los periodos laborales o indica la duración real si la tienes; las fechas generales no acreditan años en una tecnología o puesto concreto.`,
   };
 }
 

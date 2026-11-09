@@ -151,6 +151,7 @@ src/features/cv-match/domain/
   recommendations.ts     # Recomendaciones a partir del resultado
   compare.ts             # Cambios entre dos análisis
   criteria.ts            # Niveles de estudios, niveles de idioma (MCER) y años
+  work-periods.ts        # Unión conservadora de periodos laborales y límites por precisión
   skill-catalog.ts       # Catálogo cerrado de habilidades, conocimientos e idiomas
   text.ts                # Normalización, líneas, frases y búsqueda de términos
   input.ts               # Campos que deben rellenarse antes de analizar
@@ -223,7 +224,7 @@ Se añaden quince regresiones en los archivos existentes de extracción y análi
 
 **Límites y riesgos pendientes:** se trata de patrones explícitos, no de un analizador sintáctico general. Las construcciones no cubiertas se conservan con las reglas anteriores o, si contienen las negaciones/marcadores contradictorios detectados, se envían a revisión. La contradicción entre exigencias en frases o secciones distintas mantiene su tratamiento anterior y requiere un estudio separado. El reconocimiento parcial, las alternativas, los encabezados ambiguos, el catálogo y las responsabilidades no se corrigen en esta fase. No se generaliza la elipsis a varios criterios ni se interpreta una mera proximidad como obligatoriedad.
 
-#### Alternativas técnicas y reconocimiento parcial (Fase 5d)
+#### Alternativas técnicas y reconocimiento parcial (Fase 5d, `204f239`)
 
 Base: `e2ae056`, 719 pruebas. Se reutiliza `review` con dos causas específicas y explicaciones en `assess.ts`; no se añaden tipos de grupo puntuable ni cambios visuales. Representar y evaluar una disyunción correctamente requeriría cambiar el modelo de requisitos independientes, por lo que se elige la protección no evaluable autorizada, sin cambiar fórmula ni pesos.
 
@@ -245,6 +246,36 @@ Comparación con el mismo CV ficticio que acredita Docker y SQL:
 Se añaden doce regresiones, con alternativas conocidas y mixtas, conjunción, listas en ambos órdenes, varios conceptos, deduplicación y controles de contexto/prosa insegura. Se adapta la expectativa previa que puntuaba «React o Vue» como dos obligaciones y se conserva la comprobación de todos sus conceptos en la fuente. No se elimina ninguna prueba.
 
 **Pendiente, sin forzar:** evaluar grupos alternativos, identificar fragmentos en texto libre, nombres desconocidos en minúsculas y estructuras con incisos requiere un estudio posterior. No se amplía el catálogo ni se intenta atribuir causas a la oferta real del usuario.
+
+#### Comprobación DOCX y experiencia por fechas (Fase 6a)
+
+Base: `204f239`, 731 pruebas. El usuario rectifica el fallo inicial de Word y confirma que funciona en su iPhone. No se reproduce un defecto ni se modifica el importador: hacerlo sin una causa demostrada introduciría un riesgo innecesario. Se inspecciona el flujo completo: `expo-document-picker` conserva el `File`, `arrayBuffer()` entrega los bytes, `detectFormat` identifica el contenedor, la carga diferida de Mammoth recibe `arrayBuffer` y convierte a HTML que solo se transforma en texto plano, nunca se ejecuta. La aplicación clasifica lectura fallida, formato incompatible, Word antiguo/protegido, extracción dañada y documento sin texto mediante sus mecanismos existentes.
+
+Playwright con Chrome comprueba DOCX ficticio válido y editable, DOCX vacío, ZIP DOCX dañado, cabecera de Word antiguo y PDF válido. No hay errores de página ni solicitudes externas. Las pruebas de integración conservan los lectores reales. WebKit no está instalado y no se instala ninguna herramienta; Safari real en iPhone no se prueba desde este entorno. La confirmación del usuario no se presenta como una validación automatizada de Safari. DOCX y DOC antiguo no se equiparan; el contenedor binario OLE mantiene el aviso «antiguo o protegido» sin afirmar que se distinguen ambos casos. No se tocan PDF, selección, privacidad ni dependencias.
+
+**Duración laboral general:** `work-periods.ts` lee rangos dentro de la sección profesional reconocida, con meses españoles completos o `MM/AAAA`, años solos y final «actualidad». Admite guion, raya, «a» o «hasta». La opción `analyzeMatch(..., { referenceDate })` controla la referencia, en UTC; por defecto se usa la fecha de ejecución. Una referencia inválida no acredita fechas. El motivo muestra la referencia `AAAA-MM`.
+
+- Los intervalos son semiabiertos a resolución mensual: `01/2020 – 01/2025` aporta 60 meses; no se suma además el mes final. No se interpretan días. Se calcula la unión ordenada de los intervalos, por lo que periodos consecutivos se suman y empleos simultáneos nunca se cuentan dos veces.
+- Sin meses no se asignan fechas exactas. Para la cota mínima, el comienzo se sitúa después del año inicial y el final antes del año final; la cota máxima es envolvente y no se usa para acreditar. Así, `2019 – 2024` garantiza solo 48 meses y no respalda cinco años; `2018 – 2024` garantiza 60 y sí puede respaldarlos. «2021 – actualidad» garantiza 58 meses con referencia noviembre de 2026, y 60 con enero de 2027.
+- Las fechas inválidas, invertidas, incompletas o explícitamente futuras no suman. Se excluyen Formación y Proyectos, y las líneas de formación, aprendizaje, proyectos personales, previsiones o negaciones dentro de Experiencia. `CvUnit.sourceLine`, solo interno y en memoria, conserva la línea literal para que un punto y coma no separe una fecha de la negación que la contextualiza. Las líneas de fechas aisladas no se acreditan si su contexto inmediato es formación excluida.
+- Solo se respalda desde fechas un requisito de experiencia **general** cuyo texto esté acotado sin un puesto, tecnología o condición específica. Se comprueba también el texto de la oferta, para no confundir «con Databricks» o «como analista» con años generales cuando el catálogo no reconoce ese ámbito. Las fechas generales nunca se atribuyen a Kubernetes, SQL u otra tecnología de Habilidades ni a un puesto por cercanía. Los requisitos específicos conservan la vía anterior de duración declarada explícitamente; tampoco se atribuye todo un empleo a una tecnología mencionada en su descripción.
+- La duración declarada explícitamente conserva su precedencia. Si solo hay fechas, se respalda cuando el mínimo de la unión alcanza los años solicitados; si no basta, se mantiene evidencia insuficiente, sin deducir una carencia definitiva de una historia potencialmente incompleta. Una duración negada no se sustituye por un respaldo calculado. Fórmula, pesos y significado de los estados no cambian.
+- El motivo detalla cada periodo literal, su mínimo y la unión total; la evidencia conserva las frases originales. Los años sin meses muestran también el intervalo posible, sin usar el máximo como puntuación. Se actualizan las explicaciones y recomendaciones que afirmaban que nunca se calculaba desde fechas. No hay cambios de diseño o navegación.
+
+Comparación frente a 5d, con oferta ficticia de cinco años generales y referencia fija:
+
+| Historial ficticio                                                    | Antes                                    | Después                                 |
+| --------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------- |
+| Enero 2020 – enero 2025                                               | Evidencia insuficiente, 50 %             | 60 meses; respaldado, 100 %             |
+| Dos trabajos sucesivos, enero 2020–enero 2023 y enero 2023–enero 2025 | Evidencia insuficiente, 50 %             | Unión de 60 meses; respaldado, 100 %    |
+| Dos trabajos solapados, enero 2021–enero 2024 y enero 2022–enero 2025 | Evidencia insuficiente, 50 %             | Unión de 48 meses, no 72; sigue en 50 % |
+| 2019 – 2024, sin meses                                                | Evidencia insuficiente, 50 %             | Mínimo 48 meses; sigue en 50 %          |
+| Estudios o proyecto personal con diez años de fechas                  | No acredita experiencia profesional, 0 % | Sin cambios                             |
+| Diez años generales más Kubernetes en Habilidades                     | No respalda cinco años con Kubernetes    | Sin respaldo nuevo para ese ámbito      |
+
+Veinte regresiones nuevas con formatos, unión, incertidumbre, referencia controlada, fechas inválidas/futuras, estudios, negaciones y ámbitos específicos conocidos/desconocidos. Solo se adaptan dos expectativas de mensajes existentes. Playwright comprueba además el resultado general respaldado, el detalle de los periodos y su evidencia en web móvil; las capturas y diagnósticos ficticios se guardan fuera del repositorio en `jobradar-6a` del directorio temporal.
+
+**Límites:** no se infieren fechas incompletas, duración por puesto/tecnología, experiencia desde Formación o Proyectos ni contratos desde prosa libre. Las abreviaturas de meses, días y formatos no reconocidos quedan sin acreditar por fechas. La clasificación sigue dependiendo de los encabezados profesionales existentes y no se rediseña el parser del CV. La resolución mensual y la exclusión del mes final pueden infravalorar historiales próximos al umbral; se explican en el resultado. La revisión en Safari/iPhone y WebKit de esta lógica nueva sigue pendiente.
 
 #### Presentación
 

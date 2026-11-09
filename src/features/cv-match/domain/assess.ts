@@ -7,8 +7,8 @@ conocimiento teórico o como algo que se está aprendiendo, o lo niega. Con esas
 decide el estado (`supported`, `mentioned`, `missing` o `not-evaluable`) y un motivo legible.
 
 Las evidencias son siempre frases literales del CV, para que el usuario pueda comprobar de
-dónde sale cada conclusión. El motor no deduce lo que el CV no dice: no calcula duraciones a
-partir de las fechas y no da crédito parcial a un nivel de idioma o a unos años inferiores a
+dónde sale cada conclusión. Las fechas solo acreditan duración laboral general con límites
+conservadores; el motor no da crédito parcial a un nivel de idioma o a unos años inferiores a
 los que pide la oferta.
 
 Las reglas de negación, aprendizaje y conocimiento teórico están escritas para CV en español,
@@ -24,6 +24,7 @@ import {
   mentionsExperience,
 } from './criteria';
 import { withoutDates, type CvUnit } from './cv-structure';
+import { asksGeneralExperience, workExperience } from './work-periods';
 import type { CatalogIndex } from './skill-catalog';
 import { containsAny, countWords, type TermMatch } from './text';
 import type {
@@ -547,6 +548,7 @@ function assessYears(
   requirement: Requirement<'years'>,
   units: CvUnit[],
   index: CatalogIndex,
+  referenceDate: Date,
 ): Assessment {
   // Si hay varias declaraciones válidas, se usa la cifra mayor.
   const declarations = units.map((unit) => ({ unit, ...yearsStatedFor(requirement, unit) }));
@@ -574,7 +576,8 @@ function assessYears(
   }
 
   // El CV no declara ninguna duración: el requisito se entiende, lo que falta es la evidencia.
-  const notFromDates = 'JobRadar no calcula la duración a partir de las fechas.';
+  const notFromDates =
+    'Las fechas solo acreditan experiencia general cuando los periodos laborales son reconocibles; no se atribuyen a tecnologías o puestos por proximidad.';
   const labels = requirement.conceptIds
     .map((id) => index.concepts.get(id)?.label ?? id)
     .join(' y ');
@@ -596,11 +599,33 @@ function assessYears(
     : null;
 
   if (requirement.conceptIds.length === 0) {
+    const generalScope = asksGeneralExperience(requirement.sources);
+    const dated = !denial && generalScope ? workExperience(units, referenceDate) : null;
+    if (dated) {
+      const supported = dated.minimumMonths >= requirement.years * 12;
+      const ranges = dated.periods
+        .map(
+          (p) => `«${p.range}» (${Math.max(0, p.end.earliest - p.start.latest)} meses como mínimo)`,
+        )
+        .join(', ');
+      const uncertainty = dated.periods.some((p) => p.start.yearOnly || p.end.yearOnly)
+        ? ` Los años sin meses se calculan como límites conservadores, sin meses supuestos: el intervalo posible es de ${dated.minimumMonths} a ${dated.maximumMonths} meses y solo se acredita el mínimo.`
+        : '';
+      return {
+        status: supported ? 'supported' : 'mentioned',
+        reason: `Periodos laborales: ${ranges}. Su unión sin solapamientos acredita como mínimo ${dated.minimumMonths} meses (referencia ${dated.reference}; no se suma el mes final).${uncertainty} ${supported ? 'Alcanza' : 'No permite confirmar'} los ${requirement.years} años que pide la oferta.`,
+        evidence: [...new Set(dated.periods.map((p) => p.unit))].map((unit) =>
+          evidenceOf(unit, supported ? 'support' : 'mention'),
+        ),
+      };
+    }
     const hasExperience = units.some((unit) => unit.section === 'experience');
     return hasExperience
       ? {
           status: 'mentioned',
-          reason: `El CV tiene experiencia, pero no indica cuánto tiempo suma. ${notFromDates}`,
+          reason: generalScope
+            ? `El CV tiene experiencia, pero no indica cuánto tiempo suma en periodos reconocibles. ${notFromDates}`
+            : `La duración específica que pide la oferta no se puede asociar con seguridad a los periodos laborales generales. ${notFromDates}`,
           evidence: [],
         }
       : (denial ?? { status: 'missing', reason: 'El CV no muestra experiencia.', evidence: [] });
@@ -644,6 +669,7 @@ export function assessRequirement(
   requirement: OfferRequirement,
   units: CvUnit[],
   index: CatalogIndex,
+  referenceDate: Date = new Date(),
 ): Assessment {
   switch (requirement.kind) {
     case 'concept':
@@ -653,7 +679,7 @@ export function assessRequirement(
     case 'education':
       return assessEducation(requirement, units);
     case 'years':
-      return assessYears(requirement, units, index);
+      return assessYears(requirement, units, index, referenceDate);
     case 'unrecognized':
       return {
         status: 'not-evaluable',

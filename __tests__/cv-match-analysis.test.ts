@@ -634,7 +634,7 @@ describe('negated years of experience', () => {
     const noDuration = yearsOf('- Desarrollé un panel con React para 3 clientes.');
     expect(noDuration.status).toBe('mentioned');
     expect(noDuration.reason).toBe(
-      'El CV menciona React, pero no indica cuánto tiempo lo has usado. JobRadar no calcula la duración a partir de las fechas.',
+      'El CV menciona React, pero no indica cuánto tiempo lo has usado. Las fechas solo acreditan experiencia general cuando los periodos laborales son reconocibles; no se atribuyen a tecnologías o puestos por proximidad.',
     );
   });
 });

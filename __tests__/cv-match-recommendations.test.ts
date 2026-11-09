@@ -128,7 +128,7 @@ describe('recommendation contracts for special requirement states', () => {
       kind: 'years',
       requirementId: 'years:3:react',
       message:
-        'La oferta pide «3 años de experiencia con React» y tu CV no indica cuánto tiempo tienes esa experiencia. Si la tienes, indica la duración real; JobRadar no la calcula a partir de las fechas.',
+        'La oferta pide «3 años de experiencia con React» y el CV no acredita esa duración. Revisa los periodos laborales o indica la duración real si la tienes; las fechas generales no acreditan años en una tecnología o puesto concreto.',
     });
   });
 });

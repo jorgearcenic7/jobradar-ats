@@ -12,6 +12,8 @@ import type { CvChecks, CvSectionKind } from './types';
 /** One sentence of the CV. `text` is a literal slice of the CV. */
 export type CvUnit = {
   text: string;
+  /** Línea literal: evita separar una fecha de una negación o formación en su contexto. */
+  sourceLine?: string;
   normalized: string;
   section: CvSectionKind;
   // Términos del catálogo que aparecen en la frase. Se buscan una sola vez (ver `once`).
@@ -179,6 +181,7 @@ export function parseCv(cvText: string, index: CatalogIndex): ParsedCv {
       const normalized = normalize(sentence);
       units.push({
         text: sentence,
+        sourceLine: line.text,
         normalized,
         section,
         conceptMatches: once(() => findTerms(normalized, index.conceptTerms)),

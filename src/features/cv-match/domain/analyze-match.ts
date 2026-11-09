@@ -14,7 +14,10 @@ import type { AnalysisResult, RequirementAssessment } from './types';
 export function analyzeMatch(
   cvText: string,
   offerText: string,
-  { catalog = skillCatalog }: { catalog?: readonly SkillConcept[] } = {},
+  {
+    catalog = skillCatalog,
+    referenceDate = new Date(),
+  }: { catalog?: readonly SkillConcept[]; referenceDate?: Date } = {},
 ): AnalysisResult {
   const index = indexCatalog(catalog);
   const cv = parseCv(cvText, index);
@@ -23,7 +26,7 @@ export function analyzeMatch(
     offerText,
     index,
   ).map((requirement) => {
-    const assessment = assessRequirement(requirement, cv.units, index);
+    const assessment = assessRequirement(requirement, cv.units, index, referenceDate);
     return {
       requirement,
       ...assessment,

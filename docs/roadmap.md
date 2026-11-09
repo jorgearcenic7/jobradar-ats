@@ -131,9 +131,15 @@ No se adelantan alternativas, reconocimiento parcial, ampliaciones del catálogo
 
 ### Fase 5d — Protecciones ante alternativas y reconocimiento parcial
 
-**Implementada, pendiente de revisión y commit.** Base: 5c (`e2ae056`), 719 pruebas. Las alternativas técnicas explícitas se conservan como grupos no evaluables con todas sus opciones y fuente, incluida la aclaración «basta con uno»; no se puntúan como dos obligaciones. Las listas seguras como «SQL y Databricks» mantienen SQL evaluable y añaden Databricks para revisión sin duplicados ni puntuación. Se reutilizan los componentes existentes, sin cambios visuales. Doce pruebas nuevas y ninguna eliminada; se adapta la expectativa incorrecta de React/Vue como dos obligaciones.
+**Completada: `204f239`.** Base: 5c (`e2ae056`), 719 pruebas. Las alternativas técnicas explícitas se conservan como grupos no evaluables con todas sus opciones y fuente, incluida la aclaración «basta con uno»; no se puntúan como dos obligaciones. Las listas seguras como «SQL y Databricks» mantienen SQL evaluable y añaden Databricks para revisión sin duplicados ni puntuación. Se reutilizan los componentes existentes, sin cambios visuales. Doce pruebas nuevas y ninguna eliminada; se adapta la expectativa incorrecta de React/Vue como dos obligaciones.
 
 Se verifica con el extractor histórico la trazabilidad del 50 % → 67 % de 5c, que permanece intacta. La fórmula, los pesos, el catálogo, el tratamiento del CV y los contextos ajenos a las listas explícitas no cambian. La evaluación real de grupos alternativos y el reconocimiento parcial de prosa libre quedan pendientes; no se fuerza un rediseño del dominio.
+
+### Fase 6a — Comprobación DOCX y experiencia desde fechas
+
+**Implementada, pendiente de revisión y commit.** Base: `204f239`, 731 pruebas. El usuario confirma que DOCX sí funciona en su iPhone; no se modifica el importador sin una causa reproducible. Chrome valida documentos ficticios válidos, vacíos y dañados, rechazo de Word antiguo, edición y PDF. WebKit no está instalado y no se afirma una prueba propia de Safari real.
+
+El motor calcula la unión conservadora de periodos profesionales a resolución mensual, con límites para años sin meses y referencia controlable para «actualidad». Respalda solo experiencia general suficientemente acreditada, sin trasladar esos años a tecnologías o puestos ni sumar dos veces solapamientos. Conserva periodos, mínimos, referencia y fuentes; se actualizan los mensajes anteriores. Veinte regresiones nuevas, ninguna eliminada, y adaptación de dos mensajes existentes. El cálculo específico por tecnología/puesto y formatos no reconocidos quedan pendientes; se mantienen fórmula y pesos.
 
 ## Próximas fases
 
