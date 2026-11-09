@@ -63,7 +63,7 @@ npm start      # servidor de desarrollo de Expo
 El proyecto se desarrolla en **Windows** y con un presupuesto de 0 €. Esto condiciona cómo se prueba en iPhone:
 
 - **Vía actual: Expo Web en Safari.** Ejecuta `npm run web` en el PC y abre en Safari del iPhone la dirección de red del PC (por ejemplo, `http://<IP-del-PC>:8081`), con ambos dispositivos en la misma red Wi-Fi. Puede ser necesario permitir el puerto en el firewall de Windows. Así se prueba la interfaz, no el comportamiento nativo.
-- **Vía futura: PWA instalable** en la pantalla de inicio del iPhone, prevista en la Fase 5b (ver [docs/roadmap.md](docs/roadmap.md)).
+- **Vía para la v1.0: app web en Vercel.** Se abre en Safari y se añade con «Compartir → Añadir a pantalla de inicio». No funciona sin conexión (ver [Publicación en Vercel](#publicación-en-vercel)).
 - **Expo Go no es una opción con el SDK actual:** la versión de Expo Go disponible en la App Store no es compatible directamente con Expo SDK 58.
 - `npm run ios` intenta abrir el simulador de iOS, que **solo existe en macOS**. No funciona en Windows.
 - **Compilaciones nativas para iPhone:** Apple permite instalar apps de desarrollo en dispositivos propios con una cuenta gratuita, pero desde Xcode, que solo existe en Mac. Desde nuestro entorno Windows no usaremos ese procedimiento por ahora. TestFlight y la distribución por App Store requieren una membresía de pago de Apple Developer, que no vamos a contratar: el presupuesto sigue siendo de 0 €.
@@ -86,6 +86,17 @@ En Android, las pruebas nativas (dispositivo físico o emulador de Android Studi
 | `npm run format:check` | Comprueba el formato sin modificar archivos. |
 
 Compilación web de comprobación: `npx expo export --platform web` (genera `dist/`, ignorado por Git).
+
+## Publicación en Vercel
+
+La web es estática (`web.output: "static"`) y Vercel la compila con la configuración de `vercel.json`. La primera vez, la CLI pide iniciar sesión y vincular el proyecto.
+
+```bash
+npx vercel@latest deploy          # versión preliminar (preview) con URL propia
+npx vercel@latest deploy --prod   # versión definitiva
+```
+
+El CV, la oferta y los resultados se procesan en el navegador y no se envían a Vercel ni a ningún otro servicio.
 
 ## Pruebas
 
