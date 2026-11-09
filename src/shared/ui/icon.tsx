@@ -13,6 +13,7 @@ type PlatformSymbols = { ios: SFSymbol; android: AndroidSymbol; web: AndroidSymb
 export const iconSymbols = {
   add: { ios: 'plus', android: 'add', web: 'add' },
   arrowForward: { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' },
+  check: { ios: 'checkmark', android: 'check', web: 'check' },
   checkCircle: { ios: 'checkmark.circle', android: 'check_circle', web: 'check_circle' },
   chevronDown: { ios: 'chevron.down', android: 'expand_more', web: 'expand_more' },
   chevronRight: { ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' },
@@ -21,6 +22,8 @@ export const iconSymbols = {
   document: { ios: 'doc.text', android: 'description', web: 'description' },
   error: { ios: 'exclamationmark.circle', android: 'error', web: 'error' },
   info: { ios: 'info.circle', android: 'info', web: 'info' },
+  lock: { ios: 'lock', android: 'lock', web: 'lock' },
+  search: { ios: 'magnifyingglass', android: 'search', web: 'search' },
   uploadFile: { ios: 'doc.badge.arrow.up', android: 'upload_file', web: 'upload_file' },
   warning: { ios: 'exclamationmark.triangle', android: 'warning', web: 'warning' },
 } as const satisfies Record<string, PlatformSymbols>;

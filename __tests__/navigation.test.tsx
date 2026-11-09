@@ -12,7 +12,8 @@ describe('Home navigation to the analysis', () => {
     expect(screen.getByRole('link', { name: 'Inicio' }).props['aria-current']).toBe('page');
     expect(screen.getAllByRole('link')).toHaveLength(2);
 
-    await user.press(screen.getByRole('button', { name: 'Analizar mi CV' }));
+    // La primera de las tres acciones iguales es la de la cabecera.
+    await user.press(screen.getAllByRole('button', { name: 'Analizar mi CV' })[0]);
     expect(screen).toHavePathname('/analisis');
     expect(screen.getByRole('link', { name: 'Analizar' }).props['aria-current']).toBe('page');
     expect(screen.getByRole('header', { name: 'Analizar CV y oferta' })).toBeOnTheScreen();

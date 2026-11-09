@@ -44,7 +44,9 @@ describe('CV match screen', () => {
   it('offers the fictional example as a development demonstration, after the main action', async () => {
     await renderScreen();
 
-    expect(screen.getByText(/^Demostración, solo en desarrollo/)).toBeOnTheScreen();
+    expect(
+      screen.getByText(/^Rellena el formulario con un CV y una oferta inventados/),
+    ).toBeOnTheScreen();
     const buttons = screen.getAllByRole('button').map((button) => button.props.accessibilityLabel);
     expect(buttons.indexOf('Analizar')).toBeLessThan(buttons.indexOf('Cargar ejemplo ficticio'));
   });
@@ -280,7 +282,7 @@ describe('Offer section on the analysis screen', () => {
     expect(screen.getByLabelText('Texto de la oferta').props.value).toBe(
       'Requisitos\n- Inglés B2.',
     );
-    expect(screen.getByText('Lista para analizar · 23 caracteres')).toBeOnTheScreen();
+    expect(screen.getByText('23 caracteres')).toBeOnTheScreen();
   });
 
   it('asks for the offer next to its field and clears the error once it has text', async () => {

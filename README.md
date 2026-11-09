@@ -28,16 +28,16 @@ La herramienta se inspira en funcionalidades generales de Jobscan y alternativas
 
 ## Tecnologías
 
-| Área              | Tecnología                                                                     |
-| ----------------- | ------------------------------------------------------------------------------ |
-| Plataforma        | Expo SDK 58, React Native 0.88, React 19.3                                     |
-| Lenguaje          | TypeScript 6 (modo `strict`)                                                   |
-| Navegación        | Expo Router (rutas basadas en archivos en `src/app/`, rutas tipadas)           |
-| Web               | React Native Web                                                               |
-| Calidad de código | ESLint 9 (`eslint-config-expo`) y Prettier 3                                   |
-| Pruebas           | Jest 30, `jest-expo` y React Native Testing Library 14                         |
-| Compilación       | React Compiler (experimental) y EAS para compilaciones en la nube              |
-| Tipografía        | Sora (SemiBold y Bold) para títulos y cifras; fuente del sistema para el resto |
+| Área              | Tecnología                                                           |
+| ----------------- | -------------------------------------------------------------------- |
+| Plataforma        | Expo SDK 58, React Native 0.88, React 19.3                           |
+| Lenguaje          | TypeScript 6 (modo `strict`)                                         |
+| Navegación        | Expo Router (rutas basadas en archivos en `src/app/`, rutas tipadas) |
+| Web               | React Native Web                                                     |
+| Calidad de código | ESLint 9 (`eslint-config-expo`) y Prettier 3                         |
+| Pruebas           | Jest 30, `jest-expo` y React Native Testing Library 14               |
+| Compilación       | React Compiler (experimental) y EAS para compilaciones en la nube    |
+| Tipografía        | Inter (400, 500, 600 y 700) en toda la interfaz, incluida con la app |
 
 ## Requisitos
 
@@ -110,7 +110,7 @@ Las pruebas viven en `__tests__/`, fuera de `src/app/`, porque Expo Router trata
 
 ## Atribuciones de terceros
 
-- **Sora**, de Jonathan Barnbrook y Julián Moncada. Copyright 2019 The Sora Project Authors. Licencia [SIL Open Font License 1.1](assets/fonts/OFL.txt). Archivos OTF estáticos (SemiBold y Bold) sin modificar, obtenidos de [sora-xor/sora-font](https://github.com/sora-xor/sora-font) en el commit `7f9a9c5d0ccd1c099cfac420aa27133df1c5fdc4`.
+- **Inter**, de Rasmus Andersson. Copyright 2016 The Inter Project Authors. Licencia [SIL Open Font License 1.1](assets/fonts/OFL.txt). Archivos estáticos Regular, Medium, SemiBold y Bold sin modificar, de la versión 4.1 publicada en [rsms/inter](https://github.com/rsms/inter/releases/tag/v4.1): OTF para iOS y Android y WOFF2 para la web. Se distribuyen con la app; la web no los pide a ningún servicio externo.
 - **Material Symbols**, de Google. Licencia Apache 2.0. Fuente de iconos que `expo-symbols` utiliza en Android y web, distribuida sin modificar mediante la dependencia `@expo-google-fonts/material-symbols` (su licencia está en `node_modules/@expo-google-fonts/material-symbols/LICENSE_FONT`). En iOS se usan los SF Symbols del sistema.
 
 ## Licencia

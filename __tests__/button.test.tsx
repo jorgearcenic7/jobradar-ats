@@ -22,7 +22,11 @@ describe('Button', () => {
     await render(<Button label="Save offer" onPress={jest.fn()} />);
 
     expect(screen.getByRole('button', { name: 'Save offer' })).toBeOnTheScreen();
-    expect(screen.getByText('Save offer')).toHaveStyle(typography.headline);
+    // El tamaño normal usa 15 px, como el texto que lo rodea.
+    expect(screen.getByText('Save offer')).toHaveStyle({
+      fontSize: typography.callout.fontSize,
+      fontWeight: typography.headline.fontWeight,
+    });
   });
 
   it('calls onPress when pressed', async () => {
@@ -45,6 +49,14 @@ describe('Button', () => {
     });
     expect(buttonStyle().height).toBeUndefined();
     expect(screen.getByText('Save offer').props.numberOfLines).toBeUndefined();
+  });
+
+  it('makes the large size taller and wider without changing the label style', async () => {
+    await render(<Button label="Analyze" onPress={jest.fn()} size="large" />);
+
+    expect(buttonStyle()).toMatchObject({ minHeight: 52, paddingHorizontal: space[6] });
+    expect(buttonStyle().height).toBeUndefined();
+    expect(screen.getByText('Analyze')).toHaveStyle(typography.headline);
   });
 
   it('never grows wider than its container', async () => {
@@ -137,12 +149,12 @@ describe.each(['light', 'dark'] as const)('Button colors in %s mode', (scheme) =
     expect(screen.getByText('Analyze')).toHaveStyle({ color: palette.onPrimary });
   });
 
-  it('draws the secondary variant on a surface with a control border', async () => {
+  it('draws the secondary variant on a surface with its soft border', async () => {
     await render(<Button label="Cancel" onPress={jest.fn()} variant="secondary" />);
 
     expect(buttonStyle()).toMatchObject({
       backgroundColor: palette.surface,
-      borderColor: palette.borderStrong,
+      borderColor: palette.secondaryBorder,
     });
     expect(screen.getByText('Cancel')).toHaveStyle({ color: palette.text });
   });

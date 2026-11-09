@@ -1,4 +1,5 @@
 import { render, screen, userEvent } from '@testing-library/react-native';
+import { StyleSheet } from 'react-native';
 
 import HomeScreen from '@/app/index';
 
@@ -10,7 +11,8 @@ describe('HomeScreen', () => {
   it('introduces the product with one main heading and its identity', async () => {
     await render(<HomeScreen />, { wrapper: SafeArea });
     expect(screen.getByRole('header', { name: title })).toBeOnTheScreen();
-    expect(screen.getByText('JobRadar ATS')).toBeOnTheScreen();
+    expect(screen.getByText('JobRadar')).toBeOnTheScreen();
+    expect(screen.getByText('ATS')).toBeOnTheScreen();
     expect(screen.getAllByRole('header').map((h) => h.props['aria-level'] ?? 1)).toEqual([1, 2, 2]);
   });
 
@@ -20,10 +22,12 @@ describe('HomeScreen', () => {
       expect(screen.getByText(step)).toBeOnTheScreen();
     }
     expect(
-      screen.getByText(/Tus textos no se envían ni se guardan de forma permanente/),
+      screen.getByText(
+        'El análisis se hace en tu dispositivo. Tus textos no se envían ni se guardan.',
+      ),
     ).toBeOnTheScreen();
     expect(
-      screen.getByText('No predice la decisión de un ATS ni de la empresa.'),
+      screen.getByText(/No predice la decisión de un ATS ni de la empresa.$/),
     ).toBeOnTheScreen();
     expect(
       screen.getByText(
@@ -34,11 +38,17 @@ describe('HomeScreen', () => {
     ).toBeOnTheScreen();
   });
 
-  it('offers a single enabled primary action with an accessible touch target', async () => {
+  it('offers the same enabled action in the header, the hero and the closing block', async () => {
     await render(<HomeScreen />, { wrapper: SafeArea });
-    const action = screen.getByRole('button', { name: 'Analizar mi CV' });
-    expect(action).toBeEnabled();
-    expect(action).toHaveStyle({ minHeight: 44, minWidth: 44 });
+    const actions = screen.getAllByRole('button', { name: 'Analizar mi CV' });
+    expect(actions).toHaveLength(3);
+    for (const action of actions) {
+      expect(action).toBeEnabled();
+      // Nunca baja de los 44 px de área táctil.
+      const { minHeight, minWidth } = StyleSheet.flatten(action.props.style);
+      expect(minHeight).toBeGreaterThanOrEqual(44);
+      expect(minWidth).toBeGreaterThanOrEqual(44);
+    }
     expect(screen.queryByText(/Último análisis|Aplicación en construcción/)).not.toBeOnTheScreen();
   });
 

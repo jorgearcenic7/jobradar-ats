@@ -8,19 +8,22 @@ texto», que desmonta todo el componente, no pierde nada: al volver se muestra e
 Aquí solo se guarda si el bloque de revisión está abierto.
 */
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { radius, space } from '@/shared/theme';
 import type { BadgeTone } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Disclosure } from '@/shared/ui/disclosure';
+import { focusRing, isKeyboardFocus } from '@/shared/ui/focus-ring';
 import { Icon } from '@/shared/ui/icon';
 import { Notice } from '@/shared/ui/notice';
 import { ThemedText } from '@/shared/ui/themed-text';
 import { TextField } from '@/shared/ui/text-field';
 
+import type { DroppedFile } from '../domain/readers';
 import type { ImportedCv } from '../domain/types';
+import { DropTarget } from './drop-target';
 import { FileCard } from './file-card';
 import {
   extractionCaution,
@@ -58,36 +61,72 @@ const statusBadges: Record<ImportedCv['status'], { tone: BadgeTone; label: strin
 
 type FieldActions = { onPick: () => void; pickDisabled: boolean; onPasteInstead: () => void };
 
-/** Zona para elegir un archivo cuando todavía no hay ninguno que mostrar. */
+const formats = ['PDF con texto', 'Word (.docx)', 'Máx. 10 MB'];
+
+/*
+Zona para elegir un archivo cuando todavía no hay ninguno que mostrar. Toda la zona es un único
+botón, con el mismo nombre que tenía el botón de selección; en la web también acepta un archivo
+arrastrado. El texto visible lo explica, y el botón no tiene controles anidados.
+*/
 function Dropzone({
   onPick,
+  onDrop,
   pickDisabled,
   invalid,
 }: Omit<FieldActions, 'onPasteInstead'> & {
+  onDrop: (file: DroppedFile) => void;
   invalid: boolean;
 }) {
   const theme = useTheme();
+  const [focusVisible, setFocusVisible] = useState(false);
+  const [dragging, setDragging] = useState(false);
+
   return (
-    <View
-      style={[
-        styles.dropzone,
-        { borderColor: theme[invalid ? 'danger' : 'borderStrong'], backgroundColor: theme.surface },
-      ]}>
-      <View style={[styles.tile, { backgroundColor: theme.accentSubtle }]}>
-        <Icon name="uploadFile" size="lg" color="onAccentSubtle" />
-      </View>
-      <Button
-        label="Seleccionar PDF o Word"
-        variant="secondary"
+    <DropTarget disabled={pickDisabled} onDragChange={setDragging} onDrop={onDrop}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Seleccionar PDF o Word"
+        aria-disabled={pickDisabled}
         disabled={pickDisabled}
         onPress={onPick}
-        style={styles.pick}
-      />
-      <ThemedText step="footnote" color="textSecondary" style={styles.centered}>
-        PDF con texto o Word (.docx), hasta 10 MB. Se lee en este dispositivo y no se guarda ni se
-        envía a ningún servicio.
-      </ThemedText>
-    </View>
+        onFocus={(event) => setFocusVisible(isKeyboardFocus(event))}
+        onBlur={() => setFocusVisible(false)}
+        // `hovered` solo llega en la web (React Native Web); los tipos de React Native no lo declaran.
+        style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => {
+          const active = dragging || ((pressed || hovered) && !pickDisabled);
+          return [
+            styles.dropzone,
+            {
+              borderColor: invalid ? theme.danger : active ? theme.primary : theme.dropzoneBorder,
+              backgroundColor: active ? theme.surfaceSelected : theme.dropzoneBackground,
+            },
+            focusVisible && { ...focusRing, outlineColor: theme.focusRing },
+          ];
+        }}>
+        <View style={[styles.dropIcon, { backgroundColor: theme.accentSubtle }]}>
+          <Icon name="uploadFile" size="lg" color="onAccentSubtle" />
+        </View>
+        <ThemedText step="headline" style={styles.centered}>
+          {dragging ? 'Suelta el archivo para leerlo' : 'Arrastra tu CV aquí'}
+        </ThemedText>
+        <ThemedText step="callout" color="textSecondary" style={styles.centered}>
+          o{' '}
+          <ThemedText step="callout" color="accentText" style={styles.link}>
+            selecciona un archivo
+          </ThemedText>{' '}
+          de tu equipo
+        </ThemedText>
+        <View style={styles.formats}>
+          {formats.map((format) => (
+            <View key={format} style={[styles.format, { backgroundColor: theme.neutralSubtle }]}>
+              <ThemedText step="footnote" color="textSecondary">
+                {format}
+              </ThemedText>
+            </View>
+          ))}
+        </View>
+      </Pressable>
+    </DropTarget>
   );
 }
 
@@ -220,7 +259,12 @@ export function CvFileField({ cvImport, error, onPasteInstead }: CvFileFieldProp
   return (
     <View>
       {showDropzone ? (
-        <Dropzone onPick={cvImport.pick} pickDisabled={pickDisabled} invalid={Boolean(error)} />
+        <Dropzone
+          onPick={cvImport.pick}
+          onDrop={cvImport.importDropped}
+          pickDisabled={pickDisabled}
+          invalid={Boolean(error)}
+        />
       ) : null}
 
       {/* Siempre montada, para que los lectores de pantalla anuncien cada cambio del documento. */}
@@ -278,28 +322,41 @@ const styles = StyleSheet.create({
     marginTop: space[3],
   },
   dropzone: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    minHeight: 240,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: space[2],
-    padding: space[3],
-    borderWidth: 1,
+    padding: space[6],
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
     borderRadius: radius.md,
     borderCurve: 'continuous',
   },
-  tile: {
-    width: space[8],
-    height: space[8],
-    borderRadius: radius.sm,
+  dropIcon: {
+    width: 48,
+    height: 48,
+    marginBottom: space[2],
+    borderRadius: radius.icon,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
   },
   centered: {
-    flexBasis: '100%',
-    textAlign: 'left',
+    textAlign: 'center',
   },
-  pick: { flex: 1 },
+  link: { fontWeight: 600 },
+  formats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    gap: space[2],
+    marginTop: space[2],
+  },
+  format: {
+    paddingHorizontal: space[2],
+    paddingVertical: 2,
+    borderRadius: radius.xs,
+  },
   review: {
     gap: space[3],
     paddingBottom: space[1],

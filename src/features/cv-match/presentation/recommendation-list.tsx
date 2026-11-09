@@ -12,24 +12,29 @@ import type { Recommendation } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
 import { radius, space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
+import { StepNumber } from '@/shared/ui/step-number';
 import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 /** Cuántas recomendaciones se ven sin pedir más. */
 export const PRIORITY_RECOMMENDATIONS = 3;
 
+/*
+Las prioritarias van en tarjetas; las demás, en filas sobre el fondo, para que la jerarquía se vea
+sin leer los números.
+*/
 function Item({ message, number }: { message: string; number: number }) {
   const theme = useTheme();
+  const priority = number <= PRIORITY_RECOMMENDATIONS;
   return (
-    <View role="listitem" style={styles.item}>
-      <View
-        style={[styles.number, { backgroundColor: theme.accentSubtle }]}
-        aria-hidden
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants">
-        <ThemedText step="caption" color="onAccentSubtle">
-          {number}
-        </ThemedText>
-      </View>
+    <View
+      role="listitem"
+      style={[
+        styles.item,
+        priority
+          ? [styles.priority, { backgroundColor: theme.surface, borderColor: theme.border }]
+          : styles.secondary,
+      ]}>
+      <StepNumber value={number} />
       <ThemedText step="callout" style={styles.text}>
         {/* Las citas destacan el requisito al recorrer la lista, sin reescribir el mensaje. */}
         {message.includes('«')
@@ -95,22 +100,27 @@ const styles = StyleSheet.create({
     gap: space[3],
   },
   list: {
-    gap: space[3],
+    gap: space[2],
   },
   item: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: space[2],
+    gap: space[3],
   },
-  number: {
-    minWidth: space[6],
-    minHeight: space[6],
-    borderRadius: radius.full,
-    alignItems: 'center',
-    justifyContent: 'center',
+  priority: {
+    padding: space[4],
+    borderWidth: 1,
+    borderRadius: radius.md,
+    borderCurve: 'continuous',
+  },
+  secondary: {
+    paddingVertical: space[2],
+    paddingHorizontal: space[4],
   },
   text: {
     flex: 1,
+    // Alinea la primera línea con el número de 24 px.
+    paddingTop: 1,
   },
   subject: { fontWeight: 600 },
   more: {

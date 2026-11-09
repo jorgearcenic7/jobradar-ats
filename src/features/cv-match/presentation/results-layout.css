@@ -16,12 +16,8 @@
   min-width: 0;
 }
 
+/* El mismo contenedor de 1120 px que la cabecera y el resto de pantallas. */
 @media (min-width: 1024px) {
-  .analysis-results-page {
-    /* Más anchura solo en Resultados; los márgenes siguen siendo los de Screen. */
-    max-width: 1240px;
-  }
-
   .analysis-results-columns {
     display: grid;
     grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
