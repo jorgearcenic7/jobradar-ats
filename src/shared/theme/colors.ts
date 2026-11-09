@@ -7,7 +7,7 @@
 Identidad v1.1: el azul es el color de acción (botones, foco, selección y enlaces, incluido
 `accentText`) y el violeta del logo es el secundario (`accentSubtle` y `onAccentSubtle`: iconos
 destacados, pasos numerados y avisos informativos). Las superficies son blancas sobre un fondo casi
-blanco; el tema oscuro parte del marino del logo.
+blanco; el tema oscuro usa un marino profundo.
 */
 const light = {
   background: '#F8F9FC',

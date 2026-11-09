@@ -505,12 +505,12 @@ Comprobado sobre la compilación de producción con un servidor local que emula 
 
 ### Identidad visual (v1.1)
 
-- **Fuente única del logo.** `assets/branding/jobradar-icon.svg` (símbolo sobre su fondo marino redondeado) y `assets/branding/jobradar-mark.svg` (solo el símbolo). Los PNG se rasterizan desde estos SVG sin redibujarlos; si el logo cambia, se regeneran todos.
-- **Iconos opacos a sangre.** `assets/images/icon.png` (1024 px, también `ios.icon`), `public/icon-512.png` y `public/apple-touch-icon.png` (180 px) llevan el fondo marino hasta el borde y no tienen canal alfa: iOS rellena la transparencia con negro y aplica su propia máscara redondeada. Sustituyen a los iconos de la plantilla de Expo, incluido el paquete de Icon Composer.
-- **Android.** Primer plano y monocromo con el símbolo al 82 %, dentro de la zona segura de 66 dp de los iconos adaptativos; fondo con el degradado marino del logo.
-- **Favicon y pantalla de bienvenida.** Usan el icono redondeado con esquinas transparentes (64 px y 512 px). La bienvenida nativa lo muestra a 100 dp sobre el fondo de cada tema.
+- **Fuente única del logo.** La J violeta (`#5B4BE8`) con ondas de radar sobre fondo lavanda (`#F4F2FF`). `assets/branding/jobradar-icon.svg` es la fuente oficial, a sangre; `assets/branding/jobradar-mark.svg` contiene solo la J, extraída de ese SVG sin fondo; `assets/branding/jobradar-source.png` es solo una referencia visual. Los PNG se rasterizan desde el SVG sin redibujarlo; si el logo cambia, se regeneran todos.
+- **Iconos opacos a sangre.** `assets/images/icon.png` (1024 px, también `ios.icon`), `public/icon-512.png` y `public/apple-touch-icon.png` (180 px) llevan el fondo lavanda hasta el borde y no tienen canal alfa: iOS rellena la transparencia con negro y aplica su propia máscara redondeada. Sustituyen a los iconos de la plantilla de Expo, incluido el paquete de Icon Composer.
+- **Android.** Primer plano y monocromo con la J al 90 % de su tamaño en el icono, dentro de la zona segura de 66 dp de los iconos adaptativos; fondo lavanda liso (`backgroundColor` y `backgroundImage`).
+- **Favicon y pantalla de bienvenida.** Usan el icono recortado con esquinas redondeadas y transparentes (64 px y 512 px). La bienvenida nativa lo muestra a 100 dp sobre el fondo de cada tema.
 - **Logo en la app.** `assets/images/logo.png` (96 px) acompaña al nombre en `AppNavigation`; es decorativo porque el nombre ya está escrito.
-- **Sistema visual.** El azul (`primary`, `accentText`, `focusRing`) es el color de acción y el violeta del logo, el secundario (`accentSubtle`, `onAccentSubtle`). Superficies blancas sobre un fondo casi blanco, bordes suaves, tarjetas con una sombra corta (`shadow`, transparente en oscuro) y radio de 16 px. El tema oscuro parte del marino del logo. Los titulares en Sora se compactan ligeramente. En web, el puntero sobre un `Button` muestra su color de pulsado. Los contrastes siguen comprobados por `theme-contrast.test.ts`.
+- **Sistema visual.** El azul (`primary`, `accentText`, `focusRing`) es el color de acción y el violeta del logo, el secundario (`accentSubtle`, `onAccentSubtle`). Superficies blancas sobre un fondo casi blanco, bordes suaves, tarjetas con una sombra corta (`shadow`, transparente en oscuro) y radio de 16 px. El tema oscuro usa un marino profundo. Los titulares en Sora se compactan ligeramente. En web, el puntero sobre un `Button` muestra su color de pulsado. Los contrastes siguen comprobados por `theme-contrast.test.ts`.
 
 ## Estructura planificada
 
