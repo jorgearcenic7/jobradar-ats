@@ -36,6 +36,8 @@ type KeyboardProps = Pick<
   | 'onFocus'
   | 'onBlur'
   | 'placeholder'
+  | 'secureTextEntry'
+  | 'textContentType'
 >;
 
 export type TextFieldProps = KeyboardProps & {
