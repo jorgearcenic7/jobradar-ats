@@ -361,7 +361,8 @@ describe('CV section on the analysis screen', () => {
     expect(
       screen.queryByRole('button', { name: 'Revisar el texto extraído' }),
     ).not.toBeOnTheScreen();
-    expect(screen.queryByText(/caracteres/)).not.toBeOnTheScreen();
+    // El único recuento es el de la oferta, todavía vacía.
+    expect(screen.getAllByText(/caracteres/)).toEqual([screen.getByText('0 caracteres')]);
 
     await user.press(screen.getByRole('button', { name: 'Pegar texto en su lugar' }));
     expect(screen.getByRole('radio', { name: 'Pegar texto', checked: true })).toBeOnTheScreen();
@@ -480,7 +481,7 @@ describe('import and validation messages on the analysis screen', () => {
     const offerError = screen.getByText('Pega el texto de la oferta para analizarla.');
     expect(cvError).toHaveStyle({ color: palettes.light.danger });
     // La zona para elegir el archivo también se marca con el color del error.
-    const dropzone = screen.getByRole('button', { name: 'Seleccionar PDF o Word' }).parent!;
+    const dropzone = screen.getByRole('button', { name: 'Seleccionar PDF o Word' });
     expect(dropzone).toHaveStyle({ borderColor: palettes.light.danger });
     expect(offerError).toHaveStyle({ color: palettes.light.danger });
     // Ninguno de los dos va en un recuadro: los recuadros quedan para los avisos.

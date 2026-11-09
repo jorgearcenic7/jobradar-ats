@@ -63,15 +63,20 @@ export function CvSection({
 
   return (
     <View style={styles.section}>
-      <Heading level={2}>Tu CV</Heading>
-      {cvImport.canPickFile ? (
-        <SegmentedControl
-          accessibilityLabel="Cómo quieres añadir tu CV"
-          options={modes}
-          value={mode}
-          onChange={onModeChange}
-        />
-      ) : null}
+      {/* El título y el selector comparten fila; con poco ancho, el selector baja. */}
+      <View style={styles.heading}>
+        <Heading level={2} step="headline">
+          Tu CV
+        </Heading>
+        {cvImport.canPickFile ? (
+          <SegmentedControl
+            accessibilityLabel="Cómo quieres añadir tu CV"
+            options={modes}
+            value={mode}
+            onChange={onModeChange}
+          />
+        ) : null}
+      </View>
       {kept ? <Notice tone="info">{kept}</Notice> : null}
 
       {mode === 'file' ? (
@@ -85,11 +90,14 @@ export function CvSection({
           <TextField
             ref={pastedRef}
             label="Texto del CV"
+            placeholder="Pega aquí el texto completo de tu CV…"
             helperText="Pega el texto completo de tu CV."
             error={error}
             value={pastedCv}
             onChangeText={onPastedCvChange}
             multiline
+            minLines={8}
+            showCount
             autoCorrect={false}
           />
           {cvImport.canPickFile ? null : (
@@ -106,6 +114,13 @@ export function CvSection({
 
 const styles = StyleSheet.create({
   section: {
+    gap: space[4],
+  },
+  heading: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     gap: space[3],
   },
   pasted: {

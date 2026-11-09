@@ -4,7 +4,7 @@ import { Dimensions, StyleSheet } from 'react-native';
 
 import { OfferSection } from '@/features/cv-match/presentation/offer-section';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { palettes, space } from '@/shared/theme';
+import { palettes, space, typography } from '@/shared/theme';
 
 jest.mock('@/hooks/use-color-scheme', () => ({ useColorScheme: jest.fn() }));
 
@@ -42,24 +42,27 @@ describe('OfferSection', () => {
 
     expect(screen.getByRole('header', { name: 'La oferta' }).props['aria-level']).toBe(2);
     expect(field().props.multiline).toBe(true);
-    expect(screen.getByText('Pega la oferta completa, sin recortarla.')).toBeOnTheScreen();
+    expect(
+      screen.getByText('Pégala completa, sin recortar: los requisitos se leen de su texto.'),
+    ).toBeOnTheScreen();
+    expect(field().props.placeholder).toBe('Pega aquí la descripción completa del puesto…');
   });
 
-  it('offers no readiness line nor expansion while the offer is empty or blank', async () => {
+  it('counts the characters from the start and offers no expansion while the offer is blank', async () => {
     await render(<Controlled />);
-    expect(screen.queryByText(/^Lista para analizar/)).not.toBeOnTheScreen();
+    expect(screen.getByText('0 caracteres')).toBeOnTheScreen();
     expect(screen.queryByRole('button', { name: 'Ampliar el editor' })).not.toBeOnTheScreen();
 
     await fireEvent.changeText(field(), '   \n  ');
-    expect(screen.queryByText(/^Lista para analizar/)).not.toBeOnTheScreen();
+    expect(screen.queryByRole('button', { name: 'Ampliar el editor' })).not.toBeOnTheScreen();
   });
 
-  it('says the offer is ready and how long it is once it has text', async () => {
+  it('updates the live count and offers the expansion once it has text', async () => {
     await render(<Controlled />);
 
     await fireEvent.changeText(field(), longOffer(3394));
 
-    expect(screen.getByText('Lista para analizar · 3.394 caracteres')).toBeOnTheScreen();
+    expect(screen.getByText('3.394 caracteres')).toBeOnTheScreen();
     expect(screen.getByRole('button', { name: 'Ampliar el editor' })).toBeOnTheScreen();
   });
 
@@ -67,14 +70,14 @@ describe('OfferSection', () => {
     const text = longOffer(50_000);
     await render(<Controlled initial={text} />);
     const user = userEvent.setup();
-    expect(fieldStyle().maxHeight).toBe(12 * 24 + chrome);
+    expect(fieldStyle().maxHeight).toBe(12 * typography.body.lineHeight + chrome);
 
     await user.press(screen.getByRole('button', { name: 'Ampliar el editor' }));
     expect(fieldStyle().maxHeight).toBe(844 * 0.75);
     expect(field().props.value).toBe(text);
 
     await user.press(screen.getByRole('button', { name: 'Reducir el editor' }));
-    expect(fieldStyle().maxHeight).toBe(12 * 24 + chrome);
+    expect(fieldStyle().maxHeight).toBe(12 * typography.body.lineHeight + chrome);
     expect(field().props.value).toBe(text);
     expect(field().props.maxLength).toBeUndefined();
   });
@@ -96,7 +99,7 @@ describe('OfferSection', () => {
 
     await fireEvent.changeText(field(), '');
 
-    expect(fieldStyle().maxHeight).toBe(12 * 24 + chrome);
+    expect(fieldStyle().maxHeight).toBe(12 * typography.body.lineHeight + chrome);
     expect(screen.queryByRole('button', { name: /el editor$/ })).not.toBeOnTheScreen();
   });
 
@@ -125,16 +128,14 @@ describe.each(['light', 'dark'] as const)('OfferSection in %s mode', (scheme) =>
 
   beforeEach(() => mockedUseColorScheme.mockReturnValue(scheme));
 
-  it('uses the theme colors for the field and the readiness line', async () => {
+  it('uses the theme colors for the field and the character count', async () => {
     await render(<Controlled initial="Requisitos" />);
 
     expect(fieldStyle()).toMatchObject({
       backgroundColor: palette.surface,
       color: palette.text,
-      borderColor: palette.borderStrong,
+      borderColor: palette.inputBorder,
     });
-    expect(screen.getByText(/^Lista para analizar/)).toHaveStyle({
-      color: palette.textSecondary,
-    });
+    expect(screen.getByText('10 caracteres')).toHaveStyle({ color: palette.textTertiary });
   });
 });

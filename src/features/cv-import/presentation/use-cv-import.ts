@@ -2,7 +2,7 @@ import { useRef, useState, useSyncExternalStore } from 'react';
 
 import { importCvFile } from '../application/import-cv';
 import { analysisInput, discardCorrection, reviseText } from '../domain/imported-cv';
-import type { CvReaders, PickResult } from '../domain/readers';
+import type { CvReaders, DroppedFile, PickedFile, PickResult } from '../domain/readers';
 import type { AnalysisInput, ImportedCv } from '../domain/types';
 
 /** What the platform provides. The module's public API assembles it from the infrastructure. */
@@ -57,19 +57,11 @@ export function useCvImportWith({ canPickFile, pickFile, readers }: CvImportDepe
     setState({ kind: 'imported', cv, documentId: documents.current });
   };
 
-  const pick = async () => {
-    // The browser does not report a cancelled picker, so nothing changes until a file
-    // arrives: a cancelled selection leaves the current CV in place.
-    const picked = await pickFile();
-    if (picked.kind === 'cancelled') return;
-    if (picked.kind === 'unavailable') {
-      setState({ kind: 'unavailable' });
-      return;
-    }
-
+  // Elegido con el selector o soltado en la zona de subida, el archivo sigue el mismo camino.
+  const importPicked = async (file: PickedFile) => {
     const previous = state;
-    setState({ kind: 'reading', fileName: picked.file.name });
-    const outcome = await importCvFile(picked.file, readers);
+    setState({ kind: 'reading', fileName: file.name });
+    const outcome = await importCvFile(file, readers);
     if (outcome.kind === 'imported') showImported(outcome.cv);
     else if (outcome.kind === 'too-large') {
       setState({
@@ -88,6 +80,32 @@ export function useCvImportWith({ canPickFile, pickFile, readers }: CvImportDepe
         pageLimit: outcome.pageLimit,
       });
     }
+  };
+
+  const pick = async () => {
+    // The browser does not report a cancelled picker, so nothing changes until a file
+    // arrives: a cancelled selection leaves the current CV in place.
+    const picked = await pickFile();
+    if (picked.kind === 'cancelled') return;
+    if (picked.kind === 'unavailable') {
+      setState({ kind: 'unavailable' });
+      return;
+    }
+    await importPicked(picked.file);
+  };
+
+  /*
+  Solo web: un archivo arrastrado hasta la zona de subida. Se lee con los mismos lectores y límites
+  que uno elegido; el formato se reconoce por el contenido, no por la extensión ni el tipo MIME.
+  */
+  const importDropped = async (file: DroppedFile) => {
+    if (!canPickFile) return;
+    await importPicked({
+      name: file.name,
+      size: file.size,
+      mimeType: file.type || null,
+      readBytes: async () => new Uint8Array(await file.arrayBuffer()),
+    });
   };
 
   const confirmLongPdf = async () => {
@@ -116,6 +134,7 @@ export function useCvImportWith({ canPickFile, pickFile, readers }: CvImportDepe
     canPickFile,
     state,
     pick,
+    importDropped,
     confirmLongPdf,
     cancelLongPdf,
     reviseText: (text: string) => updateCv((cv) => reviseText(cv, text)),

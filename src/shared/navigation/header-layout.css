@@ -1,0 +1,48 @@
+.app-header-layout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  min-width: 0;
+}
+
+.app-header-aside {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.app-header-note {
+  display: flex;
+  min-width: 0;
+}
+
+/* En un móvil la nota haría la cabecera fija de tres líneas; la privacidad sigue en la página. */
+@media (max-width: 479px) {
+  .app-header-note {
+    display: none;
+  }
+}
+
+@media (min-width: 900px) {
+  .app-header-layout {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .app-header-aside {
+    justify-self: end;
+  }
+}
+
+/* La cabecera queda fija arriba al desplazarse, con el contenido difuminado detrás. */
+.app-header-sticky {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+}

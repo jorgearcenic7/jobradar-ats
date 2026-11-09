@@ -35,6 +35,8 @@ export default function Root({ children }: PropsWithChildren) {
           media="(prefers-color-scheme: dark)"
           content={palettes.dark.background}
         />
+        {/* Logo vectorial para los navegadores que lo admiten; Expo añade el .ico de respaldo. */}
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
 

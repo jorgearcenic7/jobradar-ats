@@ -20,7 +20,7 @@ import {
 
 import { useTheme } from '@/hooks/use-theme';
 import { formatCount } from '@/shared/format';
-import { layout, radius, space, typography } from '@/shared/theme';
+import { layout, radius, space, typography, useAppFont } from '@/shared/theme';
 import { Icon } from '@/shared/ui/icon';
 
 /** Keyboard and editing behavior passed straight to the native input. */
@@ -35,6 +35,7 @@ type KeyboardProps = Pick<
   | 'onSubmitEditing'
   | 'onFocus'
   | 'onBlur'
+  | 'placeholder'
 >;
 
 export type TextFieldProps = KeyboardProps & {
@@ -61,6 +62,10 @@ export type TextFieldProps = KeyboardProps & {
    * revisar un texto largo con comodidad. Solo cambia la zona visible; el texto nunca se recorta.
    */
   expanded?: boolean;
+  /** Solo con `multiline`: líneas visibles cuando el campo está vacío. Por defecto, 6. */
+  minLines?: number;
+  /** Muestra en vivo cuántos caracteres hay, a la derecha de la ayuda, sin ningún límite. */
+  showCount?: boolean;
   /**
    * Shows a counter against this number of characters. It never truncates: going over is only
    * shown, and the caller decides whether that is an error.
@@ -103,12 +108,17 @@ export function TextField({
   style,
   multiline = false,
   expanded = false,
+  minLines = MIN_LINES,
+  showCount = false,
   characterLimit,
   onFocus,
   onBlur,
   ...keyboardProps
 }: TextFieldProps) {
   const theme = useTheme();
+  const font = useAppFont();
+  // Todo el campo usa Inter Regular salvo la etiqueta, en Medium.
+  const regular = font?.(400);
   const windowSize = useWindowDimensions();
   const [focused, setFocused] = useState(false);
   // The label focuses the input, so the component keeps its own reference and hands the same
@@ -145,7 +155,7 @@ export function TextField({
       ? theme.danger
       : showFocus
         ? theme.primary
-        : theme.borderStrong;
+        : theme.inputBorder;
 
   // Web: the DOM links the messages through ids, in the order they are shown. React Native has
   // no equivalent on iOS or Android, so there the same messages are read as the input's hint.
@@ -185,7 +195,7 @@ export function TextField({
         regularMaxHeight,
       )
     : regularMaxHeight;
-  const minHeight = Math.min(linesHeight(MIN_LINES), maxHeight);
+  const minHeight = Math.min(linesHeight(minLines), maxHeight);
 
   return (
     <View style={[styles.field, style]}>
@@ -193,7 +203,12 @@ export function TextField({
       <Text
         nativeID={labelId}
         onPress={disabled ? undefined : () => inputRef.current?.focus()}
-        style={[typography.headline, { color: theme.text }]}>
+        style={[
+          typography.callout,
+          styles.label,
+          { color: theme.text },
+          font?.(styles.label.fontWeight),
+        ]}>
         {label}
       </Text>
       <View>
@@ -216,6 +231,7 @@ export function TextField({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy || undefined}
           selectionColor={theme.primary}
+          placeholderTextColor={theme.textTertiary}
           onFocus={(event) => {
             setFocused(true);
             onFocus?.(event);
@@ -231,6 +247,7 @@ export function TextField({
               backgroundColor: disabled ? theme.neutralSubtle : theme.surface,
               color: disabled ? theme.textSecondary : theme.text,
             },
+            regular,
             // No fixed height: React Native sizes a multiline input to its text between these bounds
             // and scrolls inside it beyond the maximum (not yet verified on devices). Browsers need
             // `field-sizing`; without it the field keeps its minimum height and scrolls. Nothing is
@@ -239,7 +256,13 @@ export function TextField({
             // Focus thickens the border to 2 px with an inner shadow, which takes no layout space,
             // so the text never moves. High contrast modes drop shadows and recolor the transparent
             // outline instead, so focus stays visible there too (web).
-            showFocus && { boxShadow: `inset 0 0 0 1px ${borderColor}`, ...styles.focusOutline },
+            showFocus && {
+              // El halo de acento solo acompaña a un campo válido: con error manda el borde rojo.
+              boxShadow: error
+                ? `inset 0 0 0 1px ${borderColor}`
+                : `inset 0 0 0 1px ${borderColor}, 0 0 0 3px ${theme.focusHalo}`,
+              ...styles.focusOutline,
+            },
           ]}
         />
         {/* Always mounted, so an error that appears later is announced (web and Android). */}
@@ -253,22 +276,35 @@ export function TextField({
               <Text
                 nativeID={errorId}
                 selectable
-                style={[typography.callout, styles.errorText, { color: theme.danger }]}>
+                style={[typography.callout, styles.errorText, { color: theme.danger }, regular]}>
                 {error}
               </Text>
             </View>
           ) : null}
         </View>
-        {helperText ? (
-          <Text
-            nativeID={helperId}
-            style={[
-              typography.callout,
-              error ? styles.messageAfterError : styles.message,
-              { color: theme.textSecondary },
-            ]}>
-            {helperText}
-          </Text>
+        {helperText || showCount ? (
+          // La ayuda a la izquierda y el recuento a la derecha; con poco ancho, el recuento baja.
+          <View style={[styles.helperRow, error ? styles.messageAfterError : styles.message]}>
+            {helperText ? (
+              <Text
+                nativeID={helperId}
+                style={[
+                  typography.footnote,
+                  styles.helper,
+                  { color: theme.textSecondary },
+                  regular,
+                ]}>
+                {helperText}
+              </Text>
+            ) : null}
+            {showCount ? (
+              // No es una región viva: anunciar el recuento en cada pulsación sería ruido.
+              <Text
+                style={[typography.footnote, styles.count, { color: theme.textTertiary }, regular]}>
+                {`${formatCount(value.length)} ${value.length === 1 ? 'carácter' : 'caracteres'}`}
+              </Text>
+            ) : null}
+          </View>
         ) : null}
         {hasCounter ? (
           <View
@@ -286,7 +322,12 @@ export function TextField({
                   </View>
                   <Text
                     nativeID={limitNoticeId}
-                    style={[typography.callout, styles.errorText, { color: theme.danger }]}>
+                    style={[
+                      typography.callout,
+                      styles.errorText,
+                      { color: theme.danger },
+                      regular,
+                    ]}>
                     Límite superado
                   </Text>
                 </View>
@@ -299,6 +340,7 @@ export function TextField({
                 typography.callout,
                 styles.count,
                 { color: overLimit ? theme.danger : theme.textSecondary },
+                regular,
               ]}>
               {`${formatCount(value.length)} / ${formatCount(characterLimit)}`}
             </Text>
@@ -313,7 +355,22 @@ const styles = StyleSheet.create({
   field: {
     gap: space[2],
   },
-  // Messages use `callout` (15 px): instructions on how to fix the value must be easy to read.
+  // Los errores usan `callout` (15 px): cómo corregir el valor debe leerse bien. La ayuda
+  // persistente, `footnote` (13 px), como el resto de metadatos.
+  label: {
+    fontWeight: 500,
+  },
+  helperRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
+    columnGap: space[4],
+  },
+  helper: {
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 200,
+  },
   message: {
     paddingTop: space[2],
   },
@@ -347,6 +404,7 @@ const styles = StyleSheet.create({
   // Same-width digits, so the count doesn't shift while typing.
   count: {
     fontVariant: ['tabular-nums'],
+    marginLeft: 'auto',
   },
   input: {
     minHeight: layout.minTouchTarget,
@@ -354,7 +412,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.md,
     borderCurve: 'continuous',
-    // 17 px also keeps Safari on iPhone from zooming the page on focus (it does below 16 px).
+    // 16 px also keeps Safari on iPhone from zooming the page on focus (it does below 16 px).
     // No lineHeight: single-line inputs on iOS misplace the text when it is set.
     fontSize: typography.body.fontSize,
     fontWeight: typography.body.fontWeight,

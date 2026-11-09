@@ -138,7 +138,9 @@ describe('SegmentedControl', () => {
       expect(radio).toHaveStyle({
         minHeight: layout.minTouchTarget,
         minWidth: layout.minTouchTarget,
-        flex: 1,
+        // Parte del ancho de su contenido y crece si el grupo es más ancho.
+        flexGrow: 1,
+        flexBasis: 'auto',
       });
     }
     expect(screen.getByText('Pegar texto')).toHaveStyle({ flexShrink: 1 });
@@ -150,13 +152,13 @@ describe.each(['light', 'dark'] as const)('SegmentedControl in %s mode', (scheme
 
   beforeEach(() => mockedUseColorScheme.mockReturnValue(scheme));
 
-  it('marks the active option with surface, primary border and main text color', async () => {
+  it('marks the active option with a raised surface, its shadow and main text color', async () => {
     await render(<Controlled />);
 
     expect(radioGroup()).toHaveStyle({ backgroundColor: palette.neutralSubtle });
     expect(screen.getByRole('radio', { name: 'Archivo' })).toHaveStyle({
-      backgroundColor: palette.surface,
-      borderColor: palette.primary,
+      backgroundColor: palette.segmentActive,
+      boxShadow: palette.shadowSegment,
     });
     expect(screen.getByText('Archivo')).toHaveStyle({ color: palette.text, fontWeight: 600 });
   });
@@ -166,7 +168,7 @@ describe.each(['light', 'dark'] as const)('SegmentedControl in %s mode', (scheme
 
     const inactive = screen.getByRole('radio', { name: 'Pegar texto' });
     expect(inactive).toHaveStyle({ borderColor: 'transparent' });
-    expect(inactive).not.toHaveStyle({ backgroundColor: palette.surface });
+    expect(inactive).not.toHaveStyle({ backgroundColor: palette.segmentActive });
     expect(screen.getByText('Pegar texto')).toHaveStyle({ color: palette.textSecondary });
   });
 });

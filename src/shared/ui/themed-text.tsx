@@ -1,13 +1,7 @@
-import { Text, type TextProps } from 'react-native';
+import { StyleSheet, Text, type TextProps } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
-import {
-  displaySteps,
-  typography,
-  useDisplayFont,
-  type ThemeColor,
-  type TypographyStep,
-} from '@/shared/theme';
+import { typography, useAppFont, type ThemeColor, type TypographyStep } from '@/shared/theme';
 
 export type ThemedTextProps = TextProps & {
   /** Step of the shared type scale. */
@@ -16,17 +10,15 @@ export type ThemedTextProps = TextProps & {
   color?: ThemeColor;
 };
 
-/** Text on the shared type scale, with Sora on display steps when it has loaded. */
+/** Text on the shared type scale, set in Inter when it has loaded. */
 export function ThemedText({ step = 'body', color = 'text', style, ...rest }: ThemedTextProps) {
   const theme = useTheme();
-  const displayFont = useDisplayFont();
-  const fontFamily = displaySteps.includes(step) ? displayFont : undefined;
+  const font = useAppFont();
+  // El peso puede venir del paso o del `style` de quien lo usa; el archivo de Inter sigue al final.
+  const weight = StyleSheet.flatten(style)?.fontWeight ?? typography[step].fontWeight;
 
   return (
-    <Text
-      style={[typography[step], { color: theme[color] }, fontFamily && { fontFamily }, style]}
-      {...rest}
-    />
+    <Text style={[typography[step], { color: theme[color] }, style, font?.(weight)]} {...rest} />
   );
 }
 

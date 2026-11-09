@@ -1,5 +1,12 @@
-import type { CSSProperties, ReactNode } from 'react';
-import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
+import type { CSSProperties, ReactNode, Ref } from 'react';
+import {
+  ScrollView,
+  StyleSheet,
+  View,
+  type ScrollViewInstance,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
@@ -11,13 +18,22 @@ export type ScreenProps = {
   scroll?: boolean;
   /** Layout adjustments for the content area, merged last. */
   style?: StyleProp<ViewStyle>;
+  /**
+   * Cabecera a todo el ancho, por encima del contenido y dentro del desplazamiento. Aplica ella
+   * misma el área segura superior y los márgenes laterales.
+   */
+  header?: ReactNode;
+  /** Pie a todo el ancho, al final del contenido. Aplica él mismo el área segura inferior. */
+  footer?: ReactNode;
+  /** El contenedor de desplazamiento, para llevar la vista a una sección (solo con `scroll`). */
+  scrollRef?: Ref<ScrollViewInstance>;
 };
 
 /**
  * Root container for a screen: full-bleed background, safe areas and the app margins.
- * Safe areas are applied only here, so screens never add their own insets.
+ * Safe areas are applied here, or by the `header` and `footer` it receives, never by screens.
  */
-export function Screen({ children, scroll = true, style }: ScreenProps) {
+export function Screen({ children, scroll = true, style, header, footer, scrollRef }: ScreenProps) {
   const theme = useTheme();
   // Native insets come from Expo Router's provider. On web they are always zero, so the
   // wrapper below applies the browser's `env(safe-area-inset-*)` values through CSS instead.
@@ -26,27 +42,41 @@ export function Screen({ children, scroll = true, style }: ScreenProps) {
   const content = [
     styles.content,
     {
-      paddingTop: insets.top + space[4],
-      paddingBottom: insets.bottom + space[6],
+      // La cabecera y el pie ya cubren su área segura; el contenido solo deja su propio aire.
+      paddingTop: (header ? 0 : insets.top) + space[4],
+      paddingBottom: (footer ? 0 : insets.bottom) + space[6],
       paddingLeft: insets.left + layout.screenPadding,
       paddingRight: insets.right + layout.screenPadding,
     },
     style,
   ];
+  // Sin cabecera ni pie, el contenido es el propio contenedor del desplazamiento.
+  const framed = Boolean(header || footer);
 
   const body = scroll ? (
     <ScrollView
+      ref={scrollRef}
       style={[styles.fill, background]}
-      contentContainerStyle={content}
+      contentContainerStyle={framed ? styles.frame : content}
       // Insets are already in the padding; the system must not add its own on iOS.
       contentInsetAdjustmentBehavior="never"
       automaticallyAdjustKeyboardInsets
       keyboardShouldPersistTaps="handled">
-      {children}
+      {framed ? (
+        <>
+          {header}
+          <View style={content}>{children}</View>
+          {footer}
+        </>
+      ) : (
+        children
+      )}
     </ScrollView>
   ) : (
     <View style={[styles.fill, background]}>
+      {header}
       <View style={[styles.fill, content]}>{children}</View>
+      {footer}
     </View>
   );
 
@@ -76,6 +106,9 @@ const webContainer: CSSProperties = {
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
+  },
+  frame: {
+    flexGrow: 1,
   },
   content: {
     flexGrow: 1,

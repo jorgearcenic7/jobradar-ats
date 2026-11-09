@@ -107,7 +107,6 @@ const styles = StyleSheet.create({
   card: {
     gap: 0,
     paddingVertical: 0,
-    borderWidth: 0,
     borderRadius: radius.md,
   },
   header: {

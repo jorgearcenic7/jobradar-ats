@@ -13,9 +13,9 @@ En la web solo la opción elegida entra en el orden de tabulación. Las flechas 
 opciones y eligen la que recibe el foco, e Inicio y Fin van a los extremos, como en un grupo de
 botones de opción del navegador. Intro y Espacio eligen la opción enfocada.
 
-La opción activa se ve por tres señales a la vez: la superficie, el texto en `text` y el borde
-`primary`. Se usa `primary` y no `borderStrong` porque es el único borde que supera 3:1 sobre
-`neutralSubtle` en los dos temas (WCAG 1.4.11); `borderStrong` se queda en 2,9-3,0.
+La opción activa se ve por tres señales a la vez: la superficie elevada con su sombra, el texto en
+`text` en lugar de `textSecondary` y el peso del texto. No lleva borde de acento, como pide el
+diseño v1.1: el estado también llega a las tecnologías de asistencia con `aria-checked`.
 */
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -102,15 +102,19 @@ export function SegmentedControl<T extends string>({
             }}
             onFocus={(event) => setKeyboardFocus(isKeyboardFocus(event) ? option.value : null)}
             onBlur={() => setKeyboardFocus(null)}
-            style={({ pressed }) => [
+            // `hovered` solo llega en la web (React Native Web); los tipos de React Native no lo declaran.
+            style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
               styles.option,
               selected
-                ? { backgroundColor: theme.surface, borderColor: theme.primary }
-                : pressed && { backgroundColor: theme.surfaceSelected },
+                ? { backgroundColor: theme.segmentActive, boxShadow: theme.shadowSegment }
+                : (pressed || hovered) && { backgroundColor: theme.border },
               keyboardFocus === option.value && { ...focusRing, outlineColor: theme.focusRing },
             ]}>
-            {option.icon ? <Icon name={option.icon} color={color} /> : null}
-            <ThemedText step="callout" color={color} style={styles.label}>
+            {option.icon ? <Icon name={option.icon} size="sm" color={color} /> : null}
+            <ThemedText
+              step="callout"
+              color={color}
+              style={[styles.label, { fontWeight: selected ? 600 : 500 }]}>
               {option.label}
             </ThemedText>
           </Pressable>
@@ -125,11 +129,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: space[1],
     padding: space[1],
-    borderRadius: radius.md,
+    borderRadius: radius.icon,
     borderCurve: 'continuous',
   },
+  // Cada opción parte del ancho de su contenido y crece por igual si el grupo es más ancho.
   option: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    flexBasis: 'auto',
     minHeight: layout.minTouchTarget,
     minWidth: layout.minTouchTarget,
     flexDirection: 'row',
@@ -138,7 +145,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: space[2],
-    paddingVertical: space[2],
+    paddingVertical: space[1],
     paddingHorizontal: space[3],
     borderWidth: 1,
     borderColor: 'transparent',
@@ -146,7 +153,6 @@ const styles = StyleSheet.create({
     borderCurve: 'continuous',
   },
   label: {
-    fontWeight: 600,
     flexShrink: 1,
     minWidth: 0,
     textAlign: 'center',

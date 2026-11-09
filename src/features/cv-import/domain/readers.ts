@@ -9,6 +9,18 @@ export type PickedFile = {
   readBytes(): Promise<Uint8Array>;
 };
 
+/**
+ * A file dropped on the page (web): only the parts of the browser's `File` that the import uses,
+ * so this type does not depend on the DOM.
+ */
+export type DroppedFile = {
+  name: string;
+  size: number;
+  /** MIME type reported by the browser, or an empty string when it doesn't know it. */
+  type: string;
+  arrayBuffer(): Promise<ArrayBuffer>;
+};
+
 export type PickResult =
   | { kind: 'picked'; file: PickedFile }
   | { kind: 'cancelled' }

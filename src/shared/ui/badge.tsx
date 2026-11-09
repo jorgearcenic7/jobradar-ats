@@ -37,7 +37,7 @@ export function Badge({ tone, label }: BadgeProps) {
 
   return (
     <View style={[styles.badge, { backgroundColor: theme[background] }]}>
-      <Icon name={icon} size="sm" color={color} />
+      <Icon name={icon} size="xs" color={color} />
       <ThemedText step="footnote" color={color} style={styles.label}>
         {label}
       </ThemedText>
@@ -50,13 +50,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    gap: space[1],
-    paddingVertical: space[1],
+    gap: space[1] + 2,
+    paddingVertical: 3,
     paddingHorizontal: space[2],
-    borderRadius: radius.full,
+    borderRadius: radius.xs,
   },
   label: {
-    fontWeight: 600,
+    fontWeight: 500,
     flexShrink: 1,
   },
 });

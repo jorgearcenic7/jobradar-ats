@@ -28,6 +28,10 @@ export type AnalysisSession = {
   match: ReturnType<typeof useCvMatch>;
   /** Mensaje cuando el análisis no puede empezar por el CV. */
   cvError: string | undefined;
+  /** Hay un CV con texto que analizar en la modalidad elegida. */
+  cvReady: boolean;
+  /** La oferta tiene texto. */
+  offerReady: boolean;
   /** Campos de Preparar, para llevar el foco al primero que falte. */
   cvRef: RefObject<TextInputInstance | null>;
   offerRef: RefObject<TextInputInstance | null>;
@@ -76,6 +80,8 @@ export function AnalysisSessionProvider({ children }: { children: ReactNode }) {
     setPastedCv,
     match,
     cvError: match.errors.includes('cv') ? cvErrorMessage(cvMode, cvImport) : undefined,
+    cvReady: Boolean(cv.text?.trim()),
+    offerReady: match.offerText.trim().length > 0,
     cvRef,
     offerRef,
     loadSample: () => {

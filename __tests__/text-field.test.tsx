@@ -38,7 +38,8 @@ describe('TextField', () => {
 
     const label = screen.getByText('Job title');
     expect(label).toBeOnTheScreen();
-    expect(label).toHaveStyle(typography.headline);
+    // Etiqueta en 15 px y peso medio, por debajo del título de la tarjeta.
+    expect(label).toHaveStyle({ ...typography.callout, fontWeight: 500 });
     expect(input().props.accessibilityLabel).toBe('Job title');
     // Android and web resolve the name from the visible label through its id.
     expect(input().props['aria-labelledby']).toBe(label.props.nativeID);
@@ -81,7 +82,7 @@ describe('TextField', () => {
     // transparent outline only shows when high contrast modes recolor it.
     expect(inputStyle()).toMatchObject({
       borderColor: palettes.light.primary,
-      boxShadow: `inset 0 0 0 1px ${palettes.light.primary}`,
+      boxShadow: `inset 0 0 0 1px ${palettes.light.primary}, 0 0 0 3px ${palettes.light.focusHalo}`,
       outlineStyle: 'solid',
       outlineWidth: 2,
       outlineColor: 'transparent',
@@ -91,7 +92,7 @@ describe('TextField', () => {
 
     await fireEvent(input(), 'blur');
 
-    expect(inputStyle().borderColor).toBe(palettes.light.borderStrong);
+    expect(inputStyle().borderColor).toBe(palettes.light.inputBorder);
     expect(inputStyle().boxShadow).toBeUndefined();
     expect(onBlur).toHaveBeenCalledTimes(1);
   });
@@ -100,7 +101,8 @@ describe('TextField', () => {
     await render(<Field helperText="As it appears in the offer." />);
 
     const helper = screen.getByText('As it appears in the offer.');
-    expect(helper).toHaveStyle(typography.callout);
+    // La ayuda persistente usa el tamaño de los metadatos (13 px); los errores, 15 px.
+    expect(helper).toHaveStyle(typography.footnote);
     expect(input().props['aria-describedby']).toBe(helper.props.nativeID);
     expect(input().props.accessibilityHint).toBe('As it appears in the offer.');
     expect(input().props['aria-invalid']).toBeUndefined();
@@ -131,7 +133,7 @@ describe('TextField', () => {
       const [first, region, last] = block.children;
       expect(first).toBe(input());
       expect(region).toContainElement(screen.getByText('Enter the job title.'));
-      expect(last).toBe(screen.getByText('As it appears in the offer.'));
+      expect(last).toContainElement(screen.getByText('As it appears in the offer.'));
     });
 
     it('shows a selectable message with a decorative icon and a danger border', async () => {
@@ -276,6 +278,8 @@ describe('TextField with several lines', () => {
   const initialWindow = Dimensions.get('window');
   const initialScreen = Dimensions.get('screen');
   const chrome = space[3] * 2 + 2;
+  // Altura de una línea de texto del campo.
+  const line = typography.body.lineHeight;
 
   function setWindow(height: number, fontScale: number) {
     Dimensions.set({
@@ -300,8 +304,8 @@ describe('TextField with several lines', () => {
     expect(inputStyle()).toMatchObject({
       lineHeight: typography.body.lineHeight,
       textAlignVertical: 'top',
-      minHeight: 6 * 24 + chrome,
-      maxHeight: 12 * 24 + chrome,
+      minHeight: 6 * line + chrome,
+      maxHeight: 12 * line + chrome,
     });
     expect(inputStyle().height).toBeUndefined();
     // The browser sizing is applied on web only; iOS and Android never receive it.
@@ -313,7 +317,7 @@ describe('TextField with several lines', () => {
     await render(<Field multiline />);
 
     expect(inputStyle()).toMatchObject({
-      minHeight: 6 * 36 + chrome,
+      minHeight: 6 * line * 1.5 + chrome,
       // Twelve lines would take more than 45 % of the window.
       maxHeight: 844 * 0.45,
     });
@@ -323,7 +327,7 @@ describe('TextField with several lines', () => {
     setWindow(375, 3);
     await render(<Field multiline />);
 
-    const threeLines = 3 * 72 + chrome;
+    const threeLines = 3 * line * 3 + chrome;
     expect(inputStyle()).toMatchObject({ minHeight: threeLines, maxHeight: threeLines });
   });
 
@@ -360,20 +364,23 @@ describe('TextField with several lines', () => {
     setWindow(1200, 1);
     await render(<Field multiline expanded />);
     // 28 líneas caben en el 75 % de una ventana de 1.200 px.
-    expect(inputStyle()).toMatchObject({ minHeight: 6 * 24 + chrome, maxHeight: 28 * 24 + chrome });
+    expect(inputStyle()).toMatchObject({
+      minHeight: 6 * line + chrome,
+      maxHeight: 28 * line + chrome,
+    });
 
     setWindow(844, 1);
     await render(<Field multiline expanded />);
-    expect(inputStyle()).toMatchObject({ minHeight: 6 * 24 + chrome, maxHeight: 844 * 0.75 });
+    expect(inputStyle()).toMatchObject({ minHeight: 6 * line + chrome, maxHeight: 844 * 0.75 });
   });
 
   it('never makes the expanded field shorter than the regular one', async () => {
     // Con texto al triple y una ventana de 300 px, el 75 % (225 px) no llega a las tres líneas
-    // mínimas (242 px): el campo ampliado se queda en la altura normal.
+    // mínimas (251 px): el campo ampliado se queda en la altura normal.
     setWindow(300, 3);
     await render(<Field multiline expanded />);
 
-    const threeLines = 3 * 72 + chrome;
+    const threeLines = 3 * line * 3 + chrome;
     expect(inputStyle()).toMatchObject({ minHeight: threeLines, maxHeight: threeLines });
 
     // Con 375 px el 75 % (281 px) ya supera la altura normal y el campo crece hasta él.
@@ -390,7 +397,7 @@ describe('TextField with several lines', () => {
 
     await rerender(<Field multiline value={text} />);
     expect(input().props.value).toBe(text);
-    expect(inputStyle().maxHeight).toBe(12 * 24 + chrome);
+    expect(inputStyle().maxHeight).toBe(12 * line + chrome);
   });
 
   it('ignores expanded on single-line fields', async () => {
@@ -488,7 +495,7 @@ describe('TextField with a character limit', () => {
     expect(input().props.value).toBe(text);
     expect(input().props.maxLength).toBeUndefined();
     expect(input().props['aria-invalid']).toBeUndefined();
-    expect(inputStyle().borderColor).toBe(palettes.light.borderStrong);
+    expect(inputStyle().borderColor).toBe(palettes.light.inputBorder);
     expect(input().props['aria-describedby']).toBe(
       `${count.props.nativeID} ${notice.props.nativeID}`,
     );
@@ -539,7 +546,7 @@ describe.each(['light', 'dark'] as const)('TextField colors in %s mode', (scheme
 
     expect(inputStyle()).toMatchObject({
       backgroundColor: palette.surface,
-      borderColor: palette.borderStrong,
+      borderColor: palette.inputBorder,
       color: palette.text,
     });
     expect(input().props.selectionColor).toBe(palette.primary);

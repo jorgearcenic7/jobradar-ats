@@ -45,10 +45,11 @@ export function ResultsScreen({ onEdit }: ResultsScreenProps) {
   };
 
   return (
-    <Screen style={[styles.content, isWeb && styles.webContent]}>
+    <Screen
+      header={<AppNavigation section="analysis" />}
+      style={[styles.content, isWeb && styles.webContent]}>
       <ResultsPage>
-        <AppNavigation section="analysis" />
-        <View>
+        <View style={styles.titleBlock}>
           <View style={styles.titleRow}>
             {/* El título conserva su destino de foco y queda antes de la acción contextual. */}
             <View ref={titleRef} tabIndex={-1} style={styles.focusTarget}>
@@ -107,6 +108,9 @@ const styles = StyleSheet.create({
   // ResultsPage aplica el límite responsive en web; Screen conserva márgenes y áreas seguras.
   webContent: {
     maxWidth: '100%',
+  },
+  titleBlock: {
+    paddingTop: space[6],
   },
   titleRow: {
     flexDirection: 'row',

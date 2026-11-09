@@ -12,12 +12,10 @@ del texto tal como se pega.
 import { useState, type Ref } from 'react';
 import { StyleSheet, View, type TextInputInstance } from 'react-native';
 
-import { formatCount } from '@/shared/format';
 import { space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
-import { Icon } from '@/shared/ui/icon';
 import { TextField } from '@/shared/ui/text-field';
-import { Heading, ThemedText } from '@/shared/ui/themed-text';
+import { Heading } from '@/shared/ui/themed-text';
 
 export type OfferSectionProps = {
   value: string;
@@ -34,37 +32,31 @@ export function OfferSection({ value, onChange, error, fieldRef }: OfferSectionP
 
   return (
     <View style={styles.section}>
-      <Heading level={2}>La oferta</Heading>
+      <Heading level={2} step="headline">
+        La oferta
+      </Heading>
       <TextField
         ref={fieldRef}
         label="Texto de la oferta"
-        helperText="Pega la oferta completa, sin recortarla."
+        placeholder="Pega aquí la descripción completa del puesto…"
+        helperText="Pégala completa, sin recortar: los requisitos se leen de su texto."
         error={error}
         value={value}
         onChangeText={onChange}
         multiline
+        minLines={8}
+        showCount
         expanded={expanded && hasText}
         autoCorrect={false}
       />
       {hasText ? (
-        <View style={styles.footer}>
-          {/*
-          Indica que ya hay texto que analizar y cuánto. No es una región en vivo: el recuento
-          cambia con cada pulsación y anunciarlo sería ruido.
-          */}
-          <View style={styles.ready}>
-            <Icon name="checkCircle" size="sm" color="success" />
-            <ThemedText step="footnote" color="textSecondary" style={styles.readyText}>
-              {`Lista para analizar · ${formatCount(value.length)} ${value.length === 1 ? 'carácter' : 'caracteres'}`}
-            </ThemedText>
-          </View>
-          {/* La etiqueta cambia con el estado, así que no hace falta un estado «pulsado». */}
-          <Button
-            label={expanded ? 'Reducir el editor' : 'Ampliar el editor'}
-            variant="secondary"
-            onPress={() => setExpanded(!expanded)}
-          />
-        </View>
+        // La etiqueta cambia con el estado, así que no hace falta un estado «pulsado».
+        <Button
+          label={expanded ? 'Reducir el editor' : 'Ampliar el editor'}
+          variant="secondary"
+          onPress={() => setExpanded(!expanded)}
+          style={styles.expand}
+        />
       ) : null}
     </View>
   );
@@ -72,23 +64,9 @@ export function OfferSection({ value, onChange, error, fieldRef }: OfferSectionP
 
 const styles = StyleSheet.create({
   section: {
-    gap: space[3],
+    gap: space[4],
   },
-  footer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space[3],
-  },
-  ready: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space[1],
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  readyText: {
-    flexShrink: 1,
+  expand: {
+    alignSelf: 'flex-start',
   },
 });

@@ -29,14 +29,12 @@ describe.each(['light', 'dark'] as const)('%s scheme', (scheme) => {
 
     // `screen.root` is the harness provider; the screen's own root is its first child.
     expect(screen.root?.children[0]).toHaveStyle({ backgroundColor: palette.background });
-    expect(screen.getByText('JobRadar ATS')).toHaveStyle({
+    expect(screen.getByText('JobRadar')).toHaveStyle({
       color: palette.text,
     });
-    const message = screen.getByText('Compara tu CV con una oferta, requisito a requisito.');
-    expect(message).toHaveStyle({ color: palettes.dark.textSecondary });
-    expect(message.parent?.parent).toHaveStyle({
-      backgroundColor: scheme === 'dark' ? palette.accentSubtle : palettes.dark.surface,
-      borderColor: palettes.dark.border,
+    // El mensaje principal va sobre el fondo de la pantalla, con los colores del tema activo.
+    expect(screen.getByText(/^Compara tu CV con una oferta/)).toHaveStyle({
+      color: palette.textTertiary,
     });
   });
 

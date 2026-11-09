@@ -33,7 +33,7 @@ describe('Badge', () => {
   it('shows its label as text, so the state never depends on color alone', async () => {
     await render(<Badge tone="success" label="Respaldado" />);
 
-    expect(screen.getByText('Respaldado')).toHaveStyle({ ...typography.footnote, fontWeight: 600 });
+    expect(screen.getByText('Respaldado')).toHaveStyle({ ...typography.footnote, fontWeight: 500 });
     expect(symbolNamed(iconSymbols.checkCircle.ios)).toHaveLength(1);
   });
 
