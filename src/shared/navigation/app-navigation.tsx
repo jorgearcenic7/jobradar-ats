@@ -1,5 +1,5 @@
 /*
-Cabecera de la app: marca, los dos destinos reales y el recordatorio de privacidad. Resultados
+Cabecera de la app: marca, los destinos y el recordatorio de privacidad. Resultados
 pertenece a Analizar y no añade una sección independiente.
 
 Va a todo el ancho, en el hueco `header` de `Screen`, así que aplica ella misma el área segura
@@ -11,6 +11,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
+import { useAuth } from '@/features/auth/auth-provider';
 import { layout, radius, space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
 import { focusRing, isKeyboardFocus } from '@/shared/ui/focus-ring';
@@ -20,13 +21,14 @@ import { ThemedText } from '@/shared/ui/themed-text';
 import { HeaderLayout, HeaderShell } from './header-layout';
 
 export type AppNavigationProps = {
-  section: 'home' | 'analysis';
+  section: 'home' | 'analysis' | 'account';
   /** Solo en Inicio: la acción «Analizar mi CV» en la cabecera. */
   onAnalyze?: () => void;
 };
 
 export function AppNavigation({ section, onAnalyze }: AppNavigationProps) {
   const theme = useTheme();
+  const { session, loading } = useAuth();
   const insets = useSafeAreaInsets();
   const [focused, setFocused] = useState<string | null>(null);
 
@@ -54,6 +56,11 @@ export function AppNavigation({ section, onAnalyze }: AppNavigationProps) {
         [
           { key: 'home', href: '/', label: 'Inicio' },
           { key: 'analysis', href: '/analisis', label: 'Analizar' },
+          {
+            key: 'account',
+            href: '/mi-cuenta',
+            label: loading || session ? 'Mi cuenta' : 'Acceder',
+          },
         ] as const
       ).map((item) => {
         const selected = item.key === section;
@@ -96,7 +103,7 @@ export function AppNavigation({ section, onAnalyze }: AppNavigationProps) {
     <View style={styles.privacy}>
       <Icon name="lock" size="xs" color="textTertiary" />
       <ThemedText step="footnote" color="textTertiary">
-        Todo ocurre en tu dispositivo
+        El análisis ocurre en tu dispositivo
       </ThemedText>
     </View>
   );
@@ -137,7 +144,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xs,
   },
   badgeText: { fontWeight: 600 },
-  links: { flexDirection: 'row', gap: space[1] },
+  links: { flexDirection: 'row', flexWrap: 'wrap', gap: space[1], maxWidth: '100%' },
   link: {
     minHeight: layout.minTouchTarget,
     minWidth: layout.minTouchTarget,

@@ -10,7 +10,7 @@ describe('Home navigation to the analysis', () => {
     await renderRouter(routes, { initialUrl: '/' });
     const user = userEvent.setup();
     expect(screen.getByRole('link', { name: 'Inicio' }).props['aria-current']).toBe('page');
-    expect(screen.getAllByRole('link')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: 'Acceder' })).toBeOnTheScreen();
 
     // La primera de las tres acciones iguales es la de la cabecera.
     await user.press(screen.getAllByRole('button', { name: 'Analizar mi CV' })[0]);

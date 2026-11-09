@@ -43,7 +43,7 @@ describe('Analysis flow between Prepare and Results', () => {
     expect(headers[0]).toBe(resultsTitle());
     expect(screen.getByRole('header', { name: 'Respaldados por tu CV (1)' })).toBeOnTheScreen();
     expect(screen.getByRole('link', { name: 'Analizar' }).props['aria-current']).toBe('page');
-    expect(screen.getAllByRole('link')).toHaveLength(2);
+    expect(screen.getByRole('link', { name: 'Acceder' })).toBeOnTheScreen();
     expect(screen.queryByRole('link', { name: 'Resultados' })).not.toBeOnTheScreen();
   });
 

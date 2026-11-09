@@ -1,5 +1,7 @@
 # JobRadar ATS
 
+Autenticación v1.2: [configuración, sesión y pruebas locales](docs/auth.md).
+
 Aplicación móvil gratuita de ayuda para **candidatos que buscan empleo**. Su objetivo es ayudar a preparar mejor cada candidatura: comparar un currículum con los requisitos de una oferta, revisar su legibilidad y compatibilidad técnica con criterios habituales de los sistemas ATS (_Applicant Tracking Systems_) y proponer mejoras explicables.
 
 > **Estado actual:** la base técnica está preparada, pero **todavía no hay ninguna funcionalidad de producto implementada**. La app muestra una única pantalla provisional. Consulta [docs/roadmap.md](docs/roadmap.md).

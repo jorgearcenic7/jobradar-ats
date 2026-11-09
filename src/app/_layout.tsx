@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { AuthProvider } from '@/features/auth/auth-provider';
 import { AppFontContext, appFontFamilies, navigationThemes } from '@/shared/theme';
 
 // Keep the native splash screen visible while Inter loads (no-op on web).
@@ -32,7 +33,9 @@ export default function RootLayout() {
   return (
     <AppFontContext value={fontsLoaded}>
       <ThemeProvider value={navigationThemes[colorScheme === 'dark' ? 'dark' : 'light']}>
-        <Stack screenOptions={{ headerShown: false }} />
+        <AuthProvider>
+          <Stack screenOptions={{ headerShown: false }} />
+        </AuthProvider>
       </ThemeProvider>
     </AppFontContext>
   );
