@@ -1,5 +1,6 @@
 import type { PdfTextItem } from '../domain/assemble-pdf-text';
 import { CvReadError, type CvReaders, type PdfDocument } from '../domain/readers';
+import { installPromiseWithResolvers } from './promise-with-resolvers';
 
 export type PdfjsModule = Pick<typeof import('pdfjs-dist/legacy/build/pdf.mjs'), 'getDocument'>;
 
@@ -20,8 +21,12 @@ export const pdfDocumentOptions = {
   verbosity: 0,
 };
 
-/** The legacy build polyfills recent APIs (Math.sumPrecise, URL.parse) for older Safari. */
+/**
+ * The legacy build polyfills recent APIs (Math.sumPrecise, URL.parse) for older Safari, but not
+ * `Promise.withResolvers`, which it calls when opening any document: that one is installed first.
+ */
 async function loadLegacyPdfjs(): Promise<PdfjsModule> {
+  installPromiseWithResolvers();
   const [pdfjs, worker] = await Promise.all([
     import('pdfjs-dist/legacy/build/pdf.mjs'),
     import('pdfjs-dist/legacy/build/pdf.worker.mjs'),

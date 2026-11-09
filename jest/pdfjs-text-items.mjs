@@ -1,7 +1,17 @@
 // Runs PDF.js (legacy build) in plain Node for the cv-import integration test, since Jest
 // cannot load its ES modules. Reads a PDF from stdin, takes the getDocument options as JSON
 // in the first argument and prints the raw text items of every page as JSON.
-import { getDocument } from 'pdfjs-dist/legacy/build/pdf.mjs';
+//
+// Con `PDFJS_WITHOUT_PROMISE_WITH_RESOLVERS` simula un navegador sin `Promise.withResolvers`, y
+// con `PDFJS_INSTALL_POLYFILL` carga antes el polyfill de la app (Node elimina sus tipos al
+// importarlo). PDF.js se importa después, igual que en la web.
+if (process.env.PDFJS_WITHOUT_PROMISE_WITH_RESOLVERS) delete Promise.withResolvers;
+if (process.env.PDFJS_INSTALL_POLYFILL) {
+  const { installPromiseWithResolvers } =
+    await import('../src/features/cv-import/infrastructure/promise-with-resolvers.ts');
+  installPromiseWithResolvers();
+}
+const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
 const chunks = [];
 for await (const chunk of process.stdin) chunks.push(chunk);
