@@ -59,7 +59,7 @@ Las pruebas anteriores usan respuestas simuladas. Antes de guardar CV hay que co
 **Configuración de Supabase** (Dashboard del proyecto):
 
 1. Authentication → Sign In / Providers → Email: Email activado, **Confirm email**, **Secure email change** y **Secure password change** activados; **Minimum password length** = 8 o más.
-2. Authentication → URL Configuration: Site URL = dominio de producción. Redirect URLs solo con `https://<dominio>/auth/callback` y `https://<dominio>/auth/callback?flow=recovery`, sin comodines como `https://*.vercel.app/**`, que permitirían enviar los enlaces de recuperación a un dominio ajeno.
+2. Authentication → URL Configuration: Site URL = dominio de producción. Redirect URLs solo con `https://<dominio>/auth/callback` y `https://<dominio>/auth/callback?flow=recovery`, sin comodines como `https://*.vercel.app/**` o `https://*.pages.dev/**`, que permitirían enviar los enlaces de recuperación a un dominio ajeno. Durante la migración a Cloudflare Pages conviven los callbacks de `jobradar-ats.pages.dev`, `jobradar-ats.vercel.app` y `localhost`; el orden de los cambios está en [deploy.md](deploy.md#supabase-cambio-de-origen-de-autenticación-manual).
 3. SQL Editor, consultas de solo lectura:
 
 ```sql
@@ -94,7 +94,9 @@ Resultado esperado en v1.2: ninguna fila en las cuatro consultas. Cualquier tabl
 
 **GitHub:** <https://github.com/settings/security> debe indicar «Two-factor authentication: Enabled». En <https://github.com/settings/installations>, la app de Vercel debe tener acceso solo a este repositorio.
 
-**Vercel** (proyecto → Settings):
+**Cloudflare Pages** (hosting principal): variables, cuenta y acceso de GitHub en [deploy.md](deploy.md#cloudflare-pages-principal).
+
+**Vercel** (respaldo temporal, proyecto → Settings):
 
 - Environment Variables: solo `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, en Production y, si se usan, en Preview; ningún `sb_secret_` ni `service_role`.
 - Deployment Protection: Vercel Authentication activada para Preview.

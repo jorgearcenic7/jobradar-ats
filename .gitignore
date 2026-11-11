@@ -45,3 +45,6 @@ coverage/
 # generated native folders
 /ios
 /android
+
+# Supabase CLI: estado local del proyecto vinculado; no se versiona.
+supabase/.temp/

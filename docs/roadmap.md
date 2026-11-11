@@ -4,6 +4,15 @@ El desarrollo avanza por fases. Cada fase se autoriza de forma explícita y se c
 
 Estados: **Completada**, **En curso** (empezada, con subfases o tareas pendientes) y **Próxima** (acordada, sin empezar).
 
+## Hosting y dominio
+
+| Elemento                | Estado                                                                                                                                                                                                                    |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare Pages        | Hosting principal en migración: <https://jobradar-ats.pages.dev>, despliega `main`. Pasos pendientes en [deploy.md](deploy.md).                                                                                           |
+| Vercel                  | Respaldo temporal (<https://jobradar-ats.vercel.app>). Se retirará cuando se complete la [lista previa](deploy.md#antes-de-retirar-vercel).                                                                               |
+| `jobradar-ats.is-a.dev` | Solicitado en el [PR #60903 de is-a-dev/register](https://github.com/is-a-dev/register/pull/60903). **Pendiente de comprobar si se ha aprobado; no está activo.** Hay que confirmar a qué hosting apunta antes de usarlo. |
+| Correo de Auth (Resend) | **No integrado.** Pendiente de comprobar si se puede verificar el subdominio y configurar los registros DNS.                                                                                                              |
+
 ## Fases completadas
 
 | Fase          | Contenido                                            | Commit    |
