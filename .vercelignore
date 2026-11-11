@@ -1,7 +1,0 @@
-# Vercel compila en su entorno: no se suben dependencias, compilaciones ni cachés locales.
-node_modules/
-dist/
-.expo/
-coverage/
-.playwright-mcp/
-.env*

@@ -14,10 +14,10 @@ Límites, impuestos también por la base de datos: 20 CV por cuenta, 10 MB por a
 
 ## Seguridad
 
-La migración [`supabase/migrations/20261111120000_my_cvs.sql`](../supabase/migrations/20261111120000_my_cvs.sql) crea la tabla, los índices, el trigger del límite, los permisos y las políticas:
+La migración [`supabase/migrations/20261111120000_my_cvs.sql`](../supabase/migrations/20261111120000_my_cvs.sql) crea la tabla, los índices, el trigger del límite, los permisos y las políticas. [`20261113090000_cvs_prevent_orphan_files.sql`](../supabase/migrations/20261113090000_cvs_prevent_orphan_files.sql) impide borrar una fila mientras exista su archivo:
 
 - **Tabla.** RLS activado y cuatro políticas `to authenticated` con `(select auth.uid()) = user_id`; la de UPDATE lleva `USING` y `WITH CHECK`. `anon` no tiene ningún permiso. `authenticated` solo puede insertar las columnas que aporta el usuario y modificar únicamente `title`: el texto, el archivo y el propietario no cambian.
-- **Storage.** Bucket privado con tamaño y tipos limitados. Hay políticas de lectura, subida y borrado, todas limitadas a la carpeta `auth.uid()`. La subida exige además que exista la fila del CV con esa ruta. No hay política de UPDATE, así que un archivo guardado no se sobrescribe.
+- **Storage.** Bucket privado con tamaño y tipos limitados. Hay políticas de lectura, subida y borrado, todas limitadas a la carpeta `auth.uid()`. La subida exige además que exista la fila del CV con esa ruta. No hay política de UPDATE, así que un archivo guardado no se sobrescribe. Una fila no se puede borrar mientras su archivo exista, así que tampoco quedan archivos sin fila y el límite de 20 CV acota también Storage.
 - **Cliente.** Solo usa la clave publicable. No hay `service_role` ni secretos.
 
 ## Aplicar la migración
@@ -39,12 +39,27 @@ where table_schema = 'public' and table_name = 'cvs' and grantee in ('anon', 'au
 select id, public, file_size_limit, allowed_mime_types from storage.buckets where id = 'cvs';
 ```
 
-4. En **Integrations → Data API**, el esquema `public` debe seguir expuesto. La migración concede los permisos de forma explícita, porque los proyectos nuevos ya no exponen las tablas por defecto.
-5. Ejecuta [`supabase/tests/my_cvs_isolation.sql`](../supabase/tests/my_cvs_isolation.sql) en el SQL Editor. Antes, sustituye los dos UUID del principio por los id de los usuarios de prueba A y B (**Authentication → Users**). El script simula las peticiones de A y B dentro de una transacción que se deshace, así que no deja datos. Termina sin errores si todo es correcto; si algo falla, se detiene con «FALLO: …».
+4. **Migración de archivos huérfanos** (`20261113090000_cvs_prevent_orphan_files.sql`). Antes de aplicarla, comprueba que `service_role` puede leer `storage.objects`, porque la baja de cuenta borra filas con ese rol y el trigger consulta Storage:
+
+   ```sql
+   -- Debe devolver true.
+   select has_table_privilege('service_role', 'storage.objects', 'select');
+   ```
+
+   Después pega la migración en el SQL Editor y ejecútala una vez. Comprueba que existe el trigger:
+
+   ```sql
+   select tgname from pg_trigger where tgrelid = 'public.cvs'::regclass and not tgisinternal;
+   -- Debe incluir cvs_enforce_limit y cvs_prevent_delete_with_file.
+   ```
+
+5. En **Integrations → Data API**, el esquema `public` debe seguir expuesto. La migración concede los permisos de forma explícita, porque los proyectos nuevos ya no exponen las tablas por defecto.
+6. Ejecuta [`supabase/tests/my_cvs_isolation.sql`](../supabase/tests/my_cvs_isolation.sql) en el SQL Editor. Antes, sustituye los dos UUID del principio por los id de los usuarios de prueba A y B (**Authentication → Users**). El script simula las peticiones de A y B dentro de una transacción que se deshace, así que no deja datos. Termina sin errores si todo es correcto; si algo falla, se detiene con «FALLO: …».
 
 El script cubre:
 
 - `anon` no puede leer la tabla;
+- no se puede borrar un CV dejando su archivo huérfano;
 - B no ve, renombra, borra ni crea CV en la cuenta de A;
 - el texto guardado no se puede modificar;
 - el límite de 20 CV;
@@ -83,7 +98,7 @@ Usa dos buzones de prueba A y B y PDF/DOCX ficticios, en dos navegadores distint
 
 Cada paso solo empieza si el anterior ha terminado. La respuesta dice si se ha completado o en qué paso se ha detenido, sin datos del usuario ni mensajes internos. La app solo da la baja por hecha con la respuesta `deleted`: entonces cierra la sesión local y muestra «Tu cuenta y tus CV guardados se han eliminado» en `/acceso`. En cualquier otro caso explica qué se ha borrado y qué no, y deja reintentar. Repetir la baja es seguro, porque los pasos ya hechos no encuentran nada.
 
-La clave secreta solo existe en el servidor de Supabase: la función usa `SUPABASE_SECRET_KEYS` o, en proyectos antiguos, `SUPABASE_SERVICE_ROLE_KEY`, que Supabase inyecta automáticamente. La app y el hosting (Cloudflare Pages y Vercel) no la tienen. La lógica de los pasos está en [`delete-account.ts`](../supabase/functions/delete-account/delete-account.ts), sin dependencias, y se prueba con Jest. `index.ts` es el punto de entrada de Deno y queda fuera del typecheck y del lint de la app.
+La clave secreta solo existe en el servidor de Supabase: la función usa `SUPABASE_SECRET_KEYS` o, en proyectos antiguos, `SUPABASE_SERVICE_ROLE_KEY`, que Supabase inyecta automáticamente. La app y el hosting (Cloudflare Pages) no la tienen. La lógica de los pasos está en [`delete-account.ts`](../supabase/functions/delete-account/delete-account.ts), sin dependencias, y se prueba con Jest. `index.ts` es el punto de entrada de Deno y queda fuera del typecheck y del lint de la app.
 
 Los tokens ya emitidos en otros dispositivos siguen siendo válidos hasta que caducan, aunque no dan acceso a nada: no quedan filas ni archivos, y no se pueden guardar CV nuevos porque el usuario ya no existe.
 
@@ -122,7 +137,7 @@ La página `/privacidad` ([privacy-screen.tsx](../src/features/privacy/presentat
 - qué datos se tratan y para qué;
 - que el análisis es local;
 - que en «Mis CV» solo se guarda lo que el usuario confirma, incluidos el archivo original y el texto extraído;
-- los proveedores: Supabase para autenticación, base de datos y archivos, en eu-west-1 (Irlanda, UE), Cloudflare Pages como alojamiento principal y Vercel como respaldo temporal, que pueden tratar datos técnicos de las visitas;
+- los proveedores: Supabase para autenticación, base de datos y archivos, en eu-west-1 (Irlanda, UE), y Cloudflare Pages como alojamiento, que puede tratar datos técnicos de las visitas;
 - la conservación;
 - cómo consultar y eliminar los CV y la cuenta;
 - cómo ejercer los derechos de protección de datos.
@@ -140,26 +155,26 @@ El texto no ha tenido revisión legal.
 
 Comparación con la información que el artículo 13 pide facilitar. No es asesoramiento legal ni garantiza el cumplimiento.
 
-| Información                                                   | Estado en `/privacidad`                                                                                                                                                                                                                                                                                                              |
-| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Identidad y contacto del responsable                          | Incluida (confirmada).                                                                                                                                                                                                                                                                                                               |
-| Delegado de protección de datos                               | No incluida. El responsable debe decidir si tiene que designarlo; si lo designa, hay que añadir su contacto.                                                                                                                                                                                                                         |
-| Fines del tratamiento                                         | Incluidos (cuenta, correos de acceso, «Mis CV»).                                                                                                                                                                                                                                                                                     |
-| **Base jurídica de cada fin**                                 | **Requiere decisión del responsable.** La página la indica como pendiente. Opciones a valorar: ejecución del servicio que el usuario solicita o consentimiento.                                                                                                                                                                      |
-| Interés legítimo, si se invoca                                | No aplica mientras no se elija esa base.                                                                                                                                                                                                                                                                                             |
-| Destinatarios o categorías                                    | Incluidos: Supabase, Cloudflare Pages y Vercel como proveedores. No se califica su papel jurídico (encargado del tratamiento) sin verificar los contratos.                                                                                                                                                                           |
-| **Transferencias internacionales**                            | **Pendiente de verificar.** Los datos de Supabase están en eu-west-1, pero Supabase, Cloudflare y Vercel son empresas de EE. UU. y no se ha comprobado dónde guardan Cloudflare y Vercel sus registros ni qué garantías aplican. La página indica que esta información está pendiente, sin afirmar ni negar que haya transferencias. |
-| Plazo de conservación                                         | Incluido.                                                                                                                                                                                                                                                                                                                            |
-| Derechos de acceso, rectificación, supresión y demás          | Incluidos, con el email de contacto.                                                                                                                                                                                                                                                                                                 |
-| Retirar el consentimiento                                     | Solo hace falta si la base elegida es el consentimiento. Ya existen los medios: eliminar el CV o la cuenta.                                                                                                                                                                                                                          |
-| Reclamación ante la autoridad de control                      | Incluida de forma genérica («autoridad de protección de datos competente»).                                                                                                                                                                                                                                                          |
-| Si facilitar los datos es obligatorio y qué pasa si no se dan | Incluido: la cuenta exige email y contraseña; sin ellos se puede analizar sin cuenta.                                                                                                                                                                                                                                                |
-| Decisiones automatizadas                                      | Incluido como hecho del producto: el análisis se calcula en el dispositivo, solo lo ve el usuario y JobRadar no lo usa para decidir.                                                                                                                                                                                                 |
+| Información                                                   | Estado en `/privacidad`                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Identidad y contacto del responsable                          | Incluida (confirmada).                                                                                                                                                                                                                                                                                             |
+| Delegado de protección de datos                               | No incluida. El responsable debe decidir si tiene que designarlo; si lo designa, hay que añadir su contacto.                                                                                                                                                                                                       |
+| Fines del tratamiento                                         | Incluidos (cuenta, correos de acceso, «Mis CV»).                                                                                                                                                                                                                                                                   |
+| **Base jurídica de cada fin**                                 | **Requiere decisión del responsable.** La página la indica como pendiente. Opciones a valorar: ejecución del servicio que el usuario solicita o consentimiento.                                                                                                                                                    |
+| Interés legítimo, si se invoca                                | No aplica mientras no se elija esa base.                                                                                                                                                                                                                                                                           |
+| Destinatarios o categorías                                    | Incluidos: Supabase y Cloudflare Pages como proveedores, y Vercel como alojamiento anterior. No se califica su papel jurídico (encargado del tratamiento) sin verificar los contratos.                                                                                                                             |
+| **Transferencias internacionales**                            | **Pendiente de verificar.** Los datos de Supabase están en eu-west-1, pero Supabase y Cloudflare son empresas de EE. UU. y no se ha comprobado dónde guarda Cloudflare sus registros ni qué garantías aplican. La página indica que esta información está pendiente, sin afirmar ni negar que haya transferencias. |
+| Plazo de conservación                                         | Incluido.                                                                                                                                                                                                                                                                                                          |
+| Derechos de acceso, rectificación, supresión y demás          | Incluidos, con el email de contacto.                                                                                                                                                                                                                                                                               |
+| Retirar el consentimiento                                     | Solo hace falta si la base elegida es el consentimiento. Ya existen los medios: eliminar el CV o la cuenta.                                                                                                                                                                                                        |
+| Reclamación ante la autoridad de control                      | Incluida de forma genérica («autoridad de protección de datos competente»).                                                                                                                                                                                                                                        |
+| Si facilitar los datos es obligatorio y qué pasa si no se dan | Incluido: la cuenta exige email y contraseña; sin ellos se puede analizar sin cuenta.                                                                                                                                                                                                                              |
+| Decisiones automatizadas                                      | Incluido como hecho del producto: el análisis se calcula en el dispositivo, solo lo ve el usuario y JobRadar no lo usa para decidir.                                                                                                                                                                               |
 
 Antes de publicar, el responsable debe:
 
 1. decidir y redactar la base jurídica de cada fin;
-2. verificar las transferencias internacionales y sus garantías, por ejemplo los acuerdos de tratamiento de datos (DPA) de Supabase, Cloudflare y Vercel;
+2. verificar las transferencias internacionales y sus garantías, por ejemplo los acuerdos de tratamiento de datos (DPA) de Supabase y Cloudflare;
 3. decidir si hace falta un delegado de protección de datos.
 
 ## Limitaciones conocidas
