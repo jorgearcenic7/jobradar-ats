@@ -59,7 +59,7 @@ const statusBadges: Record<ImportedCv['status'], { tone: BadgeTone; label: strin
   failed: { tone: 'danger', label: 'No se ha podido leer' },
 };
 
-type FieldActions = { onPick: () => void; pickDisabled: boolean; onPasteInstead: () => void };
+type FieldActions = { onPick: () => void; pickDisabled: boolean; onPasteInstead?: () => void };
 
 const formats = ['PDF con texto', 'Word (.docx)', 'Máx. 10 MB'];
 
@@ -137,9 +137,10 @@ function DocumentStatus({
   onPasteInstead,
 }: FieldActions & { cvImport: CvImport }) {
   const { state } = cvImport;
-  const pasteInstead = (
+  // Fuera del analizador (en «Mis CV») no hay texto pegado al que cambiar.
+  const pasteInstead = onPasteInstead ? (
     <Button label="Pegar texto en su lugar" variant="secondary" onPress={onPasteInstead} />
-  );
+  ) : undefined;
   switch (state.kind) {
     case 'empty':
       return null;
@@ -230,7 +231,8 @@ export type CvFileFieldProps = {
   cvImport: CvImport;
   /** Message when the analysis cannot start because of the CV. */
   error?: string;
-  onPasteInstead: () => void;
+  /** Cambia a pegar el texto; sin él, no se ofrece esa alternativa. */
+  onPasteInstead?: () => void;
 };
 
 /** Picks a PDF or DOCX, shows how its text was read and lets the user review that text. */

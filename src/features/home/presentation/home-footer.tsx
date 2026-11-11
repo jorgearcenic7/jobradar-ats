@@ -1,4 +1,5 @@
 // Pie de Inicio a todo el ancho: aplica él mismo el área segura inferior, como pide `Screen`.
+import { Link } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -27,6 +28,11 @@ export function HomeFooter() {
         <ThemedText step="footnote" color="textTertiary" style={styles.note}>
           El análisis se hace en tu dispositivo. Tus textos no se envían ni se guardan.
         </ThemedText>
+        <Link href="/privacidad">
+          <ThemedText step="footnote" color="textSecondary">
+            Privacidad
+          </ThemedText>
+        </Link>
       </View>
     </View>
   );

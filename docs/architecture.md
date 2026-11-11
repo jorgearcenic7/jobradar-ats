@@ -32,6 +32,10 @@ src/
       application/      # Caso de uso: de un archivo elegido a un CV importado
       infrastructure/   # Selector de archivos y lectores reales (web) o no disponibles (nativo)
       presentation/     # Campo del CV, estado de la importación y mensajes
+    my-cvs/             # «Mis CV» (v1.3): CV guardados en la cuenta (ver docs/mis-cv.md)
+      domain/           # Tipos, límites y validación del nombre
+      infrastructure/   # Tabla `cvs` y bucket privado `cvs` en Supabase
+      presentation/     # Pantalla, lista, guardado con confirmación y traspaso al analizador
   shared/navigation/    # Cabecera compartida con identidad y los enlaces Inicio / Analizar
   shared/ui/            # Componentes genéricos del sistema de diseño
     screen.tsx          # Contenedor de pantalla: fondo, áreas seguras, márgenes, scroll
@@ -524,6 +528,16 @@ Estilo SaaS minimalista (referencia: Linear y Vercel), sin cambios en el motor, 
 - **Analizar.** Stepper ligado a la sesión (CV con texto, oferta con texto y un resultado vigente), dos tarjetas en columnas cuando caben y una barra con la privacidad y «Analizar». El botón siempre se puede pulsar: la validación y el foco no cambian, y una ayuda («Falta añadir tu CV y la oferta») anticipa lo que falta. La zona de subida es un único botón que en web también acepta un archivo arrastrado, leído con los mismos lectores y límites que uno elegido (`importDropped`). El bloque «Solo desarrollo» solo existe con `__DEV__`.
 - **Resultados.** Conserva su estructura; recibe la cabecera nueva, el contenedor de 1120 px y el aspecto de los tokens (chips de estado, botones y tarjetas). Los recuentos de la cobertura forman una cuadrícula compacta y las tres recomendaciones prioritarias van en tarjetas con su número.
 - **Accesibilidad.** Los botones de React Native Web son elementos con `role="button"`, teclado y foco visible; los enlaces, `<a>`; los campos, `<input>` y `<textarea>` con etiqueta. «Archivo | Pegar texto» sigue siendo un `radiogroup` con flechas. Los bordes de 1 px de las tarjetas y los campos son tan suaves como pide el diseño: los campos se identifican también por su etiqueta.
+
+### Mis CV (v1.3)
+
+Detalle, migración y pruebas en [mis-cv.md](mis-cv.md). Las decisiones de arquitectura:
+
+- **Persistencia voluntaria.** Solo se guarda en la cuenta lo que el usuario confirma en `/mis-cv`. El analizador sigue sin escribir nada. Un CV guardado le llega como texto pegado, a través de un traspaso en memoria (`cv-selection.ts`) que la sesión del analizador recoge y vacía al montarse.
+- **Reutilización del importador.** `useCvImport({ keepOriginal: true })` conserva en memoria los bytes leídos para subir el original sin una segunda lectura; el analizador no lo activa. `CvFileField` acepta no ofrecer «Pegar texto».
+- **Seguridad en la base de datos.** El esquema vive en `supabase/migrations/` y el script de aislamiento en `supabase/tests/`. RLS, los permisos por columnas, la ruta generada y las políticas de Storage imponen las reglas aunque el cliente falle. El cliente repite los límites solo para avisar antes.
+- **Privacidad y baja.** `/privacidad` (módulo `privacy`, solo presentación) indica el responsable y el contacto, y describe qué se guarda, dónde, para qué, cuánto tiempo, cómo se elimina y cómo se ejercen los derechos (contenido en [mis-cv.md](mis-cv.md#información-de-privacidad)). Se enlaza desde el pie de Inicio, las pantallas de cuenta y «Mis CV». La baja la ejecuta la Edge Function `supabase/functions/delete-account`, la única pieza con clave secreta, en este orden: archivos por la Storage API, filas de `cvs` y usuario de Auth.
+- **Capas.** Como en `auth`, la presentación llama directamente a la infraestructura (`cv-library.ts`) sin una capa de aplicación, porque no hay reglas que coordinar más allá de guardar, listar, renombrar y borrar.
 
 ## Estructura planificada
 

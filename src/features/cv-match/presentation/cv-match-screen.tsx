@@ -90,6 +90,7 @@ export function CvMatchScreen({ onShowResults }: CvMatchScreenProps) {
             onPastedCvChange={session.setPastedCv}
             error={session.cvError}
             pastedRef={session.cvRef}
+            savedCvTitle={session.savedCvTitle}
           />
         </Card>
         <Card style={styles.panel}>

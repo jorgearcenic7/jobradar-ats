@@ -1,6 +1,6 @@
 /*
 Cabecera de la app: marca, los destinos y el recordatorio de privacidad. Resultados
-pertenece a Analizar y no añade una sección independiente.
+pertenece a Analizar y no añade una sección independiente. «Mis CV» solo aparece con sesión.
 
 Va a todo el ancho, en el hueco `header` de `Screen`, así que aplica ella misma el área segura
 superior y los márgenes. En la web queda fija arriba con un fondo translúcido.
@@ -21,7 +21,8 @@ import { ThemedText } from '@/shared/ui/themed-text';
 import { HeaderLayout, HeaderShell } from './header-layout';
 
 export type AppNavigationProps = {
-  section: 'home' | 'analysis' | 'account';
+  /** `privacy` no es un destino de la cabecera: ningún enlace queda marcado. */
+  section: 'home' | 'analysis' | 'my-cvs' | 'account' | 'privacy';
   /** Solo en Inicio: la acción «Analizar mi CV» en la cabecera. */
   onAnalyze?: () => void;
 };
@@ -56,6 +57,7 @@ export function AppNavigation({ section, onAnalyze }: AppNavigationProps) {
         [
           { key: 'home', href: '/', label: 'Inicio' },
           { key: 'analysis', href: '/analisis', label: 'Analizar' },
+          ...(session ? [{ key: 'my-cvs', href: '/mis-cv', label: 'Mis CV' } as const] : []),
           {
             key: 'account',
             href: '/mi-cuenta',

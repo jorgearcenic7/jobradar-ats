@@ -17,7 +17,7 @@ const subscribe = () => () => {};
 
 export function AuthScreen({ mode }: { mode: Mode }) {
   const { session, loading, configured } = useAuth();
-  const { verified } = useLocalSearchParams<{ verified?: string }>();
+  const { verified, cuenta } = useLocalSearchParams<{ verified?: string; cuenta?: string }>();
   const hydrated = useSyncExternalStore(
     subscribe,
     () => true,
@@ -125,6 +125,9 @@ export function AuthScreen({ mode }: { mode: Mode }) {
   return (
     <AuthFrame title={title}>
       {loading ? <ActivityIndicator accessibilityLabel="Cargando sesión" /> : null}
+      {mode === 'login' && cuenta === 'eliminada' && !session ? (
+        <Notice tone="success">Tu cuenta y tus CV guardados se han eliminado.</Notice>
+      ) : null}
       {updatePassword && !loading && !session ? (
         <Notice tone="warning">
           Necesitas un enlace de recuperación válido. Solicita uno nuevo.

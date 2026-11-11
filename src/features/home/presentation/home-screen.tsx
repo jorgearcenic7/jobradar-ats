@@ -93,7 +93,7 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
             </ThemedText>
           </View>
           <ThemedText step="footnote" color="textSecondary" style={styles.pillText}>
-            Tu CV no sale de tu dispositivo
+            Tu CV se analiza en tu dispositivo
           </ThemedText>
         </View>
 

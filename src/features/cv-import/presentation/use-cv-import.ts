@@ -13,6 +13,14 @@ export type CvImportDependencies = {
   readers: CvReaders;
 };
 
+export type CvImportOptions = {
+  /**
+   * Conserva en memoria los bytes del archivo importado para que el usuario pueda guardarlo
+   * después en «Mis CV». El analizador no lo activa: allí el archivo se descarta tras leerlo.
+   */
+  keepOriginal?: boolean;
+};
+
 export type CvFileState =
   | { kind: 'empty' }
   | { kind: 'reading'; fileName: string }
@@ -24,6 +32,8 @@ export type CvFileState =
       cv: ImportedCv;
       /** Changes with every new document, so results of another document are not shown as its own. */
       documentId: number;
+      /** Bytes del archivo leído; solo con `keepOriginal`. */
+      original: Uint8Array | null;
     };
 
 // Hydration status never changes after mount, so there is nothing to subscribe to.
@@ -42,27 +52,47 @@ export function useHydrated() {
  * State of the CV file import. The document and its text stay in memory: nothing is
  * stored or sent anywhere, and the original file is never modified.
  */
-export function useCvImportWith({ canPickFile, pickFile, readers }: CvImportDependencies) {
+export function useCvImportWith(
+  { canPickFile, pickFile, readers }: CvImportDependencies,
+  { keepOriginal = false }: CvImportOptions = {},
+) {
   const [state, setState] = useState<CvFileState>({ kind: 'empty' });
   const documents = useRef(0);
   const pending = useRef<{
     confirm: () => Promise<ImportedCv>;
     cancel: () => Promise<void>;
+    original: Uint8Array | null;
   } | null>(null);
   // What to restore when the user backs out of a long PDF.
   const beforeConfirmation = useRef<CvFileState>({ kind: 'empty' });
 
-  const showImported = (cv: ImportedCv) => {
+  const showImported = (cv: ImportedCv, original: Uint8Array | null) => {
     documents.current += 1;
-    setState({ kind: 'imported', cv, documentId: documents.current });
+    setState({ kind: 'imported', cv, documentId: documents.current, original });
   };
 
   // Elegido con el selector o soltado en la zona de subida, el archivo sigue el mismo camino.
   const importPicked = async (file: PickedFile) => {
     const previous = state;
     setState({ kind: 'reading', fileName: file.name });
-    const outcome = await importCvFile(file, readers);
-    if (outcome.kind === 'imported') showImported(outcome.cv);
+    /*
+    Los bytes se capturan al leerlos, sin una segunda lectura del archivo. Se guarda una copia:
+    PDF.js transfiere a su worker el buffer que recibe y lo deja vacío (`byteLength` 0), así que
+    conservar el mismo objeto enviaría a «Mis CV» un tamaño 0 y un archivo vacío.
+    */
+    let original: Uint8Array | null = null;
+    const tracked: PickedFile = keepOriginal
+      ? {
+          ...file,
+          readBytes: async () => {
+            const bytes = await file.readBytes();
+            original = bytes.slice();
+            return bytes;
+          },
+        }
+      : file;
+    const outcome = await importCvFile(tracked, readers);
+    if (outcome.kind === 'imported') showImported(outcome.cv, original);
     else if (outcome.kind === 'too-large') {
       setState({
         kind: 'too-large',
@@ -71,7 +101,7 @@ export function useCvImportWith({ canPickFile, pickFile, readers }: CvImportDepe
         maxBytes: outcome.maxBytes,
       });
     } else {
-      pending.current = { confirm: outcome.confirm, cancel: outcome.cancel };
+      pending.current = { confirm: outcome.confirm, cancel: outcome.cancel, original };
       beforeConfirmation.current = previous;
       setState({
         kind: 'needs-confirmation',
@@ -110,10 +140,10 @@ export function useCvImportWith({ canPickFile, pickFile, readers }: CvImportDepe
 
   const confirmLongPdf = async () => {
     if (state.kind !== 'needs-confirmation' || !pending.current) return;
-    const { confirm } = pending.current;
+    const { confirm, original } = pending.current;
     pending.current = null;
     setState({ kind: 'reading', fileName: state.fileName });
-    showImported(await confirm());
+    showImported(await confirm(), original);
   };
 
   const cancelLongPdf = async () => {
@@ -142,6 +172,8 @@ export function useCvImportWith({ canPickFile, pickFile, readers }: CvImportDepe
     /** Text for the analysis, or why there is none. */
     analysisInput: input,
     documentId: state.kind === 'imported' ? state.documentId : null,
+    /** Bytes del archivo importado, o `null` sin `keepOriginal` o sin documento. */
+    original: state.kind === 'imported' ? state.original : null,
   };
 }
 
