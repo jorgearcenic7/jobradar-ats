@@ -61,7 +61,7 @@ Las pruebas anteriores usan respuestas simuladas. Antes de guardar CV hay que co
 **Configuración de Supabase** (Dashboard del proyecto):
 
 1. Authentication → Sign In / Providers → Email: Email activado, **Confirm email**, **Secure email change** y **Secure password change** activados; **Minimum password length** = 8 o más.
-2. Authentication → URL Configuration: Site URL = dominio de producción. Redirect URLs solo con `https://<dominio>/auth/callback` y `https://<dominio>/auth/callback?flow=recovery`, sin comodines como `https://*.vercel.app/**` o `https://*.pages.dev/**`, que permitirían enviar los enlaces de recuperación a un dominio ajeno. Durante la migración a Cloudflare Pages conviven los callbacks de `jobradar-ats.pages.dev`, `jobradar-ats.vercel.app` y `localhost`; el orden de los cambios está en [deploy.md](deploy.md#supabase-cambio-de-origen-de-autenticación-manual).
+2. Authentication → URL Configuration: Site URL = dominio de producción. Redirect URLs solo con `https://<dominio>/auth/callback` y `https://<dominio>/auth/callback?flow=recovery`, sin comodines como `https://*.vercel.app/**` o `https://*.pages.dev/**`, que permitirían enviar los enlaces de recuperación a un dominio ajeno. Los callbacks son los de `jobradar-ats.pages.dev` y `localhost`; los de Vercel, el hosting anterior, se retiran según [deploy.md](deploy.md#supabase-origen-de-autenticación-manual).
 3. SQL Editor, consultas de solo lectura:
 
 ```sql
@@ -94,15 +94,10 @@ Resultado esperado en v1.2: ninguna fila en las cuatro consultas. Cualquier tabl
 7. Con A abierta, registrar B en una ventana privada y abrir el enlace de B en el navegador de A → «Este enlace es de otra cuenta…» y «Mi cuenta» sigue mostrando A.
 8. Borrar A y B en Authentication → Users.
 
-**GitHub:** <https://github.com/settings/security> debe indicar «Two-factor authentication: Enabled». En <https://github.com/settings/installations>, la app de Vercel debe tener acceso solo a este repositorio.
+**GitHub:** <https://github.com/settings/security> debe indicar «Two-factor authentication: Enabled». En <https://github.com/settings/installations>, la app de Cloudflare debe tener acceso solo a este repositorio, y la de Vercel, el hosting anterior, debe retirarse.
 
-**Cloudflare Pages** (hosting principal): variables, cuenta y acceso de GitHub en [deploy.md](deploy.md#cloudflare-pages-principal).
+**Cloudflare Pages** (hosting de la web): variables, cuenta y acceso de GitHub en [deploy.md](deploy.md#cloudflare-pages).
 
-**Vercel** (respaldo temporal, proyecto → Settings):
-
-- Environment Variables: solo `EXPO_PUBLIC_SUPABASE_URL` y `EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, en Production y, si se usan, en Preview; ningún `sb_secret_` ni `service_role`.
-- Deployment Protection: Vercel Authentication activada para Preview.
-- Git: conectado a este repositorio.
-- En la cuenta (Account Settings → Authentication), 2FA activado; en el equipo, solo los miembros esperados.
+**Vercel:** hosting anterior, sin configuración en el repositorio. Pasos para retirarlo en [deploy.md](deploy.md#retirada-de-vercel-proveedor-anterior).
 
 Referencias: [Expo SDK 58](https://docs.expo.dev/versions/v58.0.0/), [autenticación en Expo Router](https://docs.expo.dev/router/advanced/authentication/), [Supabase para React Native](https://supabase.com/docs/guides/auth/quickstarts/react-native), [contraseñas](https://supabase.com/docs/guides/auth/passwords).

@@ -133,4 +133,19 @@ describe('managing saved CVs', () => {
     expect(fake.rows).toEqual([]);
     expect(fake.objects.size).toBe(0);
   });
+
+  it('never leaves an orphan file: the row survives while its file still exists', async () => {
+    const fake = new FakeSupabase(userA);
+    const saved = await saveCv(fake.client, userA, newCv);
+
+    // Borrar solo la fila, como haría una petición directa a la Data API, falla en el servidor.
+    const direct = await fake.client.from('cvs').delete().eq('id', saved.id);
+    expect(direct.error).toMatchObject({ message: 'cv_file_still_exists' });
+
+    // Si Storage responde sin error pero no borra, la app informa del fallo y conserva el CV.
+    fake.silentRemove = true;
+    expect(await kindOf(deleteSavedCv(fake.client, saved))).toBe('request');
+    expect(fake.rows).toHaveLength(1);
+    expect(fake.objects.has(saved.filePath)).toBe(true);
+  });
 });

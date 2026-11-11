@@ -168,4 +168,22 @@ begin
 end;
 $$;
 
+-- A no puede borrar la fila de un CV mientras su archivo exista: dejaría el archivo huérfano.
+select set_config(
+  'request.jwt.claims',
+  json_build_object('sub', current_setting('test.a'), 'role', 'authenticated')::text,
+  true
+);
+do $$
+begin
+  begin
+    delete from public.cvs where id = current_setting('test.cv')::uuid;
+    raise exception 'FALLO: se ha borrado un CV dejando su archivo huérfano';
+  exception
+    when raise_exception then
+      if sqlerrm <> 'cv_file_still_exists' then raise; end if;
+  end;
+end;
+$$;
+
 rollback;
