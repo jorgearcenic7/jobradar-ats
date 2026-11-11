@@ -1,3 +1,4 @@
+import { Link } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -29,9 +30,15 @@ export function AuthFrame({ title, children }: { title: string; children: ReactN
           {children}
         </Card>
         <ThemedText step="footnote" color="textSecondary">
-          Tu email y tu sesión se gestionan con Supabase. Tu CV, las ofertas y los resultados siguen
-          en tu dispositivo y no se guardan en tu cuenta.
+          Tu email y tu sesión se gestionan con Supabase. El análisis, las ofertas y los resultados
+          siguen en tu dispositivo. En tu cuenta solo se guardan los CV que elijas guardar en «Mis
+          CV».
         </ThemedText>
+        <Link href="/privacidad">
+          <ThemedText step="footnote" color="primary">
+            Privacidad
+          </ThemedText>
+        </Link>
       </View>
     </Screen>
   );

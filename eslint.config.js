@@ -8,6 +8,14 @@ module.exports = defineConfig([
   // Must stay last: turns off stylistic rules that conflict with Prettier.
   eslintConfigPrettier,
   {
-    ignores: ['dist/*', 'web-build/*', '.expo/*', 'ios/*', 'android/*'],
+    // Los puntos de entrada de las Edge Functions son Deno (`Deno`, importaciones `npm:`).
+    ignores: [
+      'dist/*',
+      'web-build/*',
+      '.expo/*',
+      'ios/*',
+      'android/*',
+      'supabase/functions/*/index.ts',
+    ],
   },
 ]);

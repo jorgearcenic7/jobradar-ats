@@ -37,6 +37,8 @@ export type CvSectionProps = {
   error?: string;
   /** Campo del texto pegado, para llevar el foco a él si falta el CV. */
   pastedRef: Ref<TextInputInstance>;
+  /** Nombre del CV de «Mis CV» cuyo texto está pegado sin cambios. */
+  savedCvTitle?: string | null;
 };
 
 /** Qué se conserva en la modalidad que no está elegida, o `null` si no hay nada. */
@@ -58,6 +60,7 @@ export function CvSection({
   onPastedCvChange,
   error,
   pastedRef,
+  savedCvTitle,
 }: CvSectionProps) {
   const kept = cvImport.canPickFile ? keptContent(mode, cvImport, pastedCv) : null;
 
@@ -87,6 +90,11 @@ export function CvSection({
         />
       ) : (
         <View style={styles.pasted}>
+          {savedCvTitle ? (
+            <Notice tone="info">
+              {`Texto de «${savedCvTitle}», de Mis CV. Si lo editas, los cambios solo se usan en este análisis y no se guardan en tu cuenta.`}
+            </Notice>
+          ) : null}
           <TextField
             ref={pastedRef}
             label="Texto del CV"

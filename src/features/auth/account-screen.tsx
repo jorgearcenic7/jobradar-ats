@@ -5,6 +5,7 @@ import { ActivityIndicator, View } from 'react-native';
 import { useAuth } from './auth-provider';
 import { AuthFrame } from './auth-frame';
 import { getAuthClient } from './client';
+import { DeleteAccountSection } from './delete-account-section';
 import { authError } from './messages';
 import { Button } from '@/shared/ui/button';
 import { Notice } from '@/shared/ui/notice';
@@ -45,6 +46,9 @@ export function AccountScreen() {
           ) : null}
           <ThemedText step="headline">Sesión iniciada</ThemedText>
           <ThemedText selectable>{session.user.email}</ThemedText>
+          <Link href="/mis-cv">
+            <ThemedText color="primary">Mis CV</ThemedText>
+          </Link>
           <Link href="/recuperar">
             <ThemedText color="primary">Cambiar contraseña por email</ThemedText>
           </Link>
@@ -55,6 +59,7 @@ export function AccountScreen() {
             loading={busy}
             onPress={() => void signOut()}
           />
+          <DeleteAccountSection email={session.user.email ?? ''} />
         </>
       ) : null}
       <Link href="/analisis">

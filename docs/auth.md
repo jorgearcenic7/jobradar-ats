@@ -1,6 +1,6 @@
 # Autenticación v1.2
 
-La autenticación usa exclusivamente Supabase Auth; no hay tablas, Storage ni historial. El analizador sigue siendo público y local.
+La autenticación usa exclusivamente Supabase Auth. El analizador sigue siendo público y local. Desde la v1.3, «Mis CV» añade una tabla y un bucket privados, y «Mi cuenta» permite eliminar la cuenta mediante la Edge Function `delete-account`: ver [mis-cv.md](mis-cv.md).
 
 ## Configuración
 
@@ -56,6 +56,8 @@ El smoke verifica el contrato y la interfaz con respuestas controladas. La entre
 
 Las pruebas anteriores usan respuestas simuladas. Antes de guardar CV hay que comprobar el proyecto real.
 
+**Estado:** el responsable ha verificado en producción el registro, la confirmación, el acceso, la persistencia de la sesión, el cierre de sesión y la recuperación de contraseña. La prueba del enlace de otra cuenta (paso 7) no consta como realizada.
+
 **Configuración de Supabase** (Dashboard del proyecto):
 
 1. Authentication → Sign In / Providers → Email: Email activado, **Confirm email**, **Secure email change** y **Secure password change** activados; **Minimum password length** = 8 o más.
@@ -79,7 +81,7 @@ where table_schema = 'public' and grantee in ('anon', 'authenticated');
 select id, public, file_size_limit, allowed_mime_types from storage.buckets;
 ```
 
-Resultado esperado en v1.2: ninguna fila en las cuatro consultas. Cualquier tabla con `relrowsecurity = false` o un bucket público debe revisarse antes de v1.3.
+Resultado esperado en v1.2: ninguna fila en las cuatro consultas. Cualquier tabla con `relrowsecurity = false` o un bucket público debe revisarse antes de v1.3. Tras aplicar la migración de la v1.3, solo deben aparecer la tabla `cvs`, sus políticas y el bucket `cvs`, tal como se describe en [mis-cv.md](mis-cv.md).
 
 **Prueba real** en producción, con dos buzones de prueba A y B (datos ficticios):
 

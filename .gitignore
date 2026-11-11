@@ -42,9 +42,9 @@ coverage/
 # Playwright MCP: sus instantáneas guardan el texto de la página, incluido el de un CV cargado.
 .playwright-mcp/
 
+# Supabase CLI: estado local del proyecto vinculado; no se versiona.
+supabase/.temp/
+
 # generated native folders
 /ios
 /android
-
-# Supabase CLI: estado local del proyecto vinculado; no se versiona.
-supabase/.temp/

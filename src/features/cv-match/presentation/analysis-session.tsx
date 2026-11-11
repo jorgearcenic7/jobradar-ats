@@ -9,11 +9,23 @@ del dispositivo, a los registros ni a ningún servicio.
 
 Reúne los hooks existentes sin duplicar su lógica: `useCvImport` para el archivo, `useCvMatch`
 para la oferta, la validación y el resultado, y el texto pegado con la modalidad elegida.
+
+Un CV abierto desde «Mis CV» llega por un traspaso en memoria y entra como texto pegado: el
+analizador lo trata igual que cualquier otro texto y no escribe nada en la cuenta.
 */
-import { createContext, use, useRef, useState, type ReactNode, type RefObject } from 'react';
+import {
+  createContext,
+  use,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+  type RefObject,
+} from 'react';
 import type { TextInputInstance } from 'react-native';
 
 import { useCvImport, type CvImport } from '@/features/cv-import';
+import { clearCvSelection, peekCvSelection } from '@/features/my-cvs';
 
 import type { CvMode } from './cv-section';
 import { sampleCv } from './sample-texts';
@@ -25,6 +37,8 @@ export type AnalysisSession = {
   setCvMode: (mode: CvMode) => void;
   pastedCv: string;
   setPastedCv: (text: string) => void;
+  /** Nombre del CV de «Mis CV» cuyo texto está pegado sin cambios, o `null`. */
+  savedCvTitle: string | null;
   match: ReturnType<typeof useCvMatch>;
   /** Mensaje cuando el análisis no puede empezar por el CV. */
   cvError: string | undefined;
@@ -63,10 +77,13 @@ export function AnalysisSessionProvider({ children }: { children: ReactNode }) {
   const cvRef = useRef<TextInputInstance>(null);
   const offerRef = useRef<TextInputInstance>(null);
   const cvImport = useCvImport();
+  // Se lee sin retirarlo, porque el inicializador puede ejecutarse dos veces; el efecto lo retira.
+  const [savedCv] = useState(peekCvSelection);
+  useEffect(() => clearCvSelection(), []);
   // Uploading a PDF or DOCX is the main way in; pasting the text is the alternative, and the
   // only way where files cannot be imported yet (the native app).
-  const [cvMode, setCvMode] = useState<CvMode>(cvImport.canPickFile ? 'file' : 'paste');
-  const [pastedCv, setPastedCv] = useState('');
+  const [cvMode, setCvMode] = useState<CvMode>(savedCv || !cvImport.canPickFile ? 'paste' : 'file');
+  const [pastedCv, setPastedCv] = useState(savedCv?.text ?? '');
   const cv: CvInput =
     cvMode === 'paste' ? { text: pastedCv, sourceKey: 'paste' } : fileCvInput(cvImport);
   // El foco solo puede ir a un campo de Preparar montado; desde Resultados no hay ninguno.
@@ -78,6 +95,7 @@ export function AnalysisSessionProvider({ children }: { children: ReactNode }) {
     setCvMode,
     pastedCv,
     setPastedCv,
+    savedCvTitle: savedCv && pastedCv === savedCv.text ? savedCv.title : null,
     match,
     cvError: match.errors.includes('cv') ? cvErrorMessage(cvMode, cvImport) : undefined,
     cvReady: Boolean(cv.text?.trim()),
