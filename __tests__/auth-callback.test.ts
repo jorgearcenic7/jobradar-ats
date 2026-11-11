@@ -1,15 +1,24 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { completeAuthCallback } from '@/features/auth/callback';
+import { completeAuthCallback, OtherAccountError } from '@/features/auth/callback';
 
 const setSession = jest.fn();
 const exchangeCodeForSession = jest.fn();
-const client = { auth: { setSession, exchangeCodeForSession } } as unknown as SupabaseClient;
+const getSession = jest.fn();
+const getUser = jest.fn();
+const client = {
+  auth: { setSession, exchangeCodeForSession, getSession, getUser },
+} as unknown as SupabaseClient;
+const linkFor = (token: string) =>
+  `https://app.test/auth/callback#access_token=${token}&refresh_token=test-refresh&type=recovery`;
+const signedInAs = (id: string) =>
+  getSession.mockResolvedValue({ data: { session: { user: { id } } }, error: null });
 
 beforeEach(() => {
   jest.resetAllMocks();
   setSession.mockResolvedValue({ error: null });
   exchangeCodeForSession.mockResolvedValue({ error: null });
+  getSession.mockResolvedValue({ data: { session: null }, error: null });
 });
 
 it('confirms a signup and distinguishes recovery from normal sign-in', async () => {
@@ -61,4 +70,36 @@ it('does not navigate on a rejected session', async () => {
       'https://app.test/auth/callback#access_token=invalid&refresh_token=invalid',
     ),
   ).rejects.toThrow();
+});
+
+it('does not check the link owner when no account is signed in', async () => {
+  await completeAuthCallback(client, linkFor('test-access'));
+  expect(getUser).not.toHaveBeenCalled();
+  expect(setSession).toHaveBeenCalled();
+});
+
+it('keeps the signed-in account when a link belongs to another one', async () => {
+  signedInAs('user-a');
+  getUser.mockResolvedValue({ data: { user: { id: 'user-b' } }, error: null });
+  await expect(completeAuthCallback(client, linkFor('token-of-b'))).rejects.toBeInstanceOf(
+    OtherAccountError,
+  );
+  expect(getUser).toHaveBeenCalledWith('token-of-b');
+  expect(setSession).not.toHaveBeenCalled();
+});
+
+it('accepts a link of the signed-in account', async () => {
+  signedInAs('user-a');
+  getUser.mockResolvedValue({ data: { user: { id: 'user-a' } }, error: null });
+  await expect(completeAuthCallback(client, linkFor('token-of-a'))).resolves.toBe(
+    '/recuperar?verified=1',
+  );
+  expect(setSession).toHaveBeenCalled();
+});
+
+it('does not replace the session when the link owner cannot be verified', async () => {
+  signedInAs('user-a');
+  getUser.mockResolvedValue({ data: { user: null }, error: new Error('invalid token') });
+  await expect(completeAuthCallback(client, linkFor('invalid'))).rejects.toThrow();
+  expect(setSession).not.toHaveBeenCalled();
 });
