@@ -30,14 +30,17 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
-.env*.local
+# Archivos de entorno: ninguno se versiona, aunque hoy solo contengan valores públicos.
+.env*
 
 # typescript
 *.tsbuildinfo
 
 # test coverage
 coverage/
+
+# Playwright MCP: sus instantáneas guardan el texto de la página, incluido el de un CV cargado.
+.playwright-mcp/
 
 # generated native folders
 /ios

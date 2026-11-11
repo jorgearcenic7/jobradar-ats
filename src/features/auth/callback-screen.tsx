@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 
 import { AuthFrame } from './auth-frame';
-import { completeAuthCallback } from './callback';
+import { completeAuthCallback, OtherAccountError } from './callback';
 import { getAuthClient } from './client';
 import { Notice } from '@/shared/ui/notice';
 import { ThemedText } from '@/shared/ui/themed-text';
@@ -30,11 +30,13 @@ export function CallbackScreen() {
       .then((destination) => {
         if (active) router.replace(destination as '/mi-cuenta' | '/recuperar?verified=1');
       })
-      .catch(() => {
-        if (active)
-          setError(
-            'El enlace no es válido o ha caducado. Solicita un nuevo correo de confirmación o recuperación.',
-          );
+      .catch((cause) => {
+        if (!active) return;
+        setError(
+          cause instanceof OtherAccountError
+            ? 'Este enlace es de otra cuenta. Tu sesión actual sigue abierta y no se ha cambiado. Si quieres usar la otra cuenta, cierra sesión y vuelve a abrir el enlace.'
+            : 'El enlace no es válido o ha caducado. Solicita un nuevo correo de confirmación o recuperación.',
+        );
       });
     return () => {
       active = false;

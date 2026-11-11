@@ -4,4 +4,4 @@ dist/
 .expo/
 coverage/
 .playwright-mcp/
-.env*.local
+.env*
