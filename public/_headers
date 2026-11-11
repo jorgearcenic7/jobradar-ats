@@ -1,0 +1,12 @@
+# Cabeceras de Cloudflare Pages: las mismas que vercel.json aplica en Vercel.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: no-referrer
+  X-Frame-Options: DENY
+
+# Archivos con hash en el nombre: su contenido no cambia nunca.
+/_expo/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable

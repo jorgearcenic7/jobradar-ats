@@ -11,6 +11,8 @@ Este documento distingue lo **publicado**, lo **pendiente** y lo **condicionado*
 | v1.2    | Supabase Auth (registro, confirmación, acceso, sesión, recuperación) y refuerzo de seguridad | Publicada (PR #6 y #7)                |
 | v1.3    | «Mis CV», eliminación de cuenta y página de privacidad                                       | Rama `feat/v1.3-mis-cv`, sin fusionar |
 
+Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9), con Vercel como respaldo temporal. Ver [deploy.md](deploy.md).
+
 ## Situación actual (v1.3)
 
 - **Servicio gratuito y no comercial.**
@@ -18,7 +20,7 @@ Este documento distingue lo **publicado**, lo **pendiente** y lo **condicionado*
 - **Datos en Supabase**, región eu-west-1 (Irlanda, UE): cuentas, registros de «Mis CV» y archivos.
 - **Análisis ATS local**, en el dispositivo, y **almacenamiento voluntario** de CV con confirmación explícita.
 - **Seguridad:** Supabase Auth, RLS por propietario, bucket privado y eliminación de cuenta mediante la Edge Function `delete-account`. Detalle en [mis-cv.md](mis-cv.md).
-- **Web principal:** <https://jobradar-ats.vercel.app>.
+- **Web principal:** <https://jobradar-ats.pages.dev> (Cloudflare Pages). Respaldo temporal: <https://jobradar-ats.vercel.app>.
 
 ### Comprobado en Supabase real
 
@@ -31,8 +33,9 @@ Verificado por el responsable:
 
 ### Pendiente para publicar la v1.3
 
-1. Completar la información de privacidad aplicable ahora (ver [Cumplimiento y privacidad](#cumplimiento-y-privacidad)).
-2. Revisar y fusionar la rama `feat/v1.3-mis-cv`; Vercel publica `main`. Hasta entonces, la v1.3 no está en producción.
+1. Completar la información de privacidad aplicable ahora (ver [Cumplimiento y privacidad](#cumplimiento-y-privacidad)), incluida la mención de Cloudflare Pages como alojamiento en `/privacidad`.
+2. Añadir en Supabase los callbacks de `jobradar-ats.pages.dev` y repetir desde Cloudflare la prueba de Mis CV y de la baja de cuenta ([deploy.md](deploy.md#supabase-cambio-de-origen-de-autenticación-manual)).
+3. Revisar y fusionar la rama `feat/v1.3-mis-cv`; Cloudflare Pages publica `main`. Hasta entonces, la v1.3 no está en producción.
 
 ## Cumplimiento y privacidad
 
@@ -43,7 +46,7 @@ Esta sección organiza tareas. No afirma que se cumpla el RGPD ni sustituye una 
 La página `/privacidad` ya informa del responsable, el contacto, los fines, el análisis local, el guardado voluntario, los proveedores y la región de Supabase, la conservación, cómo consultar y eliminar los datos y cómo ejercer los derechos. La comparación con el artículo 13 está en [mis-cv.md](mis-cv.md#revisión-frente-al-artículo-13-del-rgpd). Queda pendiente:
 
 - [ ] **Bases jurídicas.** Las decide el responsable para cada fin: la cuenta y los correos de acceso, y «Mis CV». Opciones a valorar: la ejecución del servicio que el usuario solicita o su consentimiento. Mientras no se decidan, la página lo indica como pendiente.
-- [ ] **Transferencias internacionales.** Los datos de Supabase están en la UE, pero Supabase y Vercel son proveedores estadounidenses. Hay que verificar dónde tratan los datos (incluidos los registros de Vercel), sus subencargados y las garantías aplicables, sin dar por hechas garantías contractuales que no se hayan comprobado.
+- [ ] **Transferencias internacionales.** Los datos de Supabase están en la UE, pero Supabase, Cloudflare y Vercel son proveedores estadounidenses. Hay que verificar dónde tratan los datos (incluidos los registros de Cloudflare y de Vercel), sus subencargados y las garantías aplicables, sin dar por hechas garantías contractuales que no se hayan comprobado.
 - [ ] **Delegado de protección de datos:** decidir si corresponde.
 - [ ] **Revisión jurídica** del texto antes de publicarlo.
 
@@ -52,7 +55,7 @@ La página `/privacidad` ya informa del responsable, el contacto, los fines, el 
 Revisiones condicionadas: se aplicarán solo si el crecimiento, el riesgo o un uso comercial las hacen exigibles o recomendables.
 
 - **Datos:** revisar bases jurídicas, fines, minimización y plazos de conservación.
-- **Proveedores:** revisar los contratos de encargo del tratamiento (DPA) de Supabase, Vercel y cualquier otro encargado.
+- **Proveedores:** revisar los contratos de encargo del tratamiento (DPA) de Supabase, Cloudflare, Vercel y cualquier otro encargado.
 - **Transferencias:** verificar transferencias internacionales, subencargados y garantías aplicables.
 - **DPD:** evaluar si corresponde nombrar un delegado de protección de datos.
 - **EIPD:** valorar una evaluación de impacto cuando el riesgo lo exija.
@@ -63,19 +66,20 @@ Revisiones condicionadas: se aplicarán solo si el crecimiento, el riesgo o un u
 - **Condiciones:** términos de uso, licencia y condiciones comerciales antes de monetizar.
 - **Operación:** control de costes y cuotas, prevención de abuso, monitorización y copias de seguridad cuando aumenten los usuarios.
 - **IA externa:** antes de enviar CV a un modelo, revisar el proveedor, la retención, el uso para entrenamiento, las transferencias y el consentimiento.
-- **Seguridad operativa:** reforzar el control de acceso, la gestión de secretos y la protección de las cuentas de GitHub, Vercel y Supabase conforme aumente el riesgo.
+- **Seguridad operativa:** reforzar el control de acceso, la gestión de secretos y la protección de las cuentas de GitHub, Cloudflare, Vercel y Supabase conforme aumente el riesgo.
 
-## Dominio y correo
+## Hosting, dominio y correo
 
-| Elemento                    | Estado                                                                                                                                                                          |
-| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Web principal actual        | <https://jobradar-ats.vercel.app>                                                                                                                                               |
-| Dominio gratuito solicitado | `jobradar-ats.is-a.dev`, en el [PR #60903 de is-a-dev/register](https://github.com/is-a-dev/register/pull/60903). **Pendiente de comprobar si se ha aprobado; no está activo.** |
-| Correos de Supabase Auth    | Configuración actual sin cambios. **Resend no está integrado.**                                                                                                                 |
+| Elemento                    | Estado                                                                                                                                                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare Pages            | Hosting principal: <https://jobradar-ats.pages.dev>, despliega `main` con `npm run build:web`. Pasos pendientes en [deploy.md](deploy.md).                                                                              |
+| Vercel                      | Respaldo temporal (<https://jobradar-ats.vercel.app>). Se retirará cuando se complete la [lista previa](deploy.md#antes-de-retirar-vercel).                                                                             |
+| Dominio gratuito solicitado | `jobradar-ats.is-a.dev`, en el [PR #60903 de is-a-dev/register](https://github.com/is-a-dev/register/pull/60903). **Pendiente de comprobar si se ha aprobado; no está activo.** Hay que confirmar a qué hosting apunta. |
+| Correos de Supabase Auth    | Configuración actual sin cambios. **Resend no está integrado.**                                                                                                                                                         |
 
 Pasos pendientes:
 
-1. Comprobar la aprobación del PR y, si se aprueba, conectar el subdominio a Vercel. Después, actualizar la Site URL y las Redirect URLs de Supabase.
+1. Comprobar la aprobación del PR y, si se aprueba, conectarlo a Cloudflare Pages como dominio personalizado. Después, actualizar la Site URL y las Redirect URLs de Supabase.
 2. Comprobar si Resend permite verificar el subdominio y si is-a.dev permite crear los registros DNS necesarios (TXT y MX).
 3. Si es posible, configurar esos registros y conectar Resend como SMTP de Supabase Auth.
 4. Personalizar los correos de confirmación y recuperación con la identidad de JobRadar.
