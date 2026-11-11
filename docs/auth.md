@@ -56,6 +56,8 @@ El smoke verifica el contrato y la interfaz con respuestas controladas. La entre
 
 Las pruebas anteriores usan respuestas simuladas. Antes de guardar CV hay que comprobar el proyecto real.
 
+**Estado:** el responsable ha verificado en producción el registro, la confirmación, el acceso, la persistencia de la sesión, el cierre de sesión y la recuperación de contraseña. La prueba del enlace de otra cuenta (paso 7) no consta como realizada.
+
 **Configuración de Supabase** (Dashboard del proyecto):
 
 1. Authentication → Sign In / Providers → Email: Email activado, **Confirm email**, **Secure email change** y **Secure password change** activados; **Minimum password length** = 8 o más.

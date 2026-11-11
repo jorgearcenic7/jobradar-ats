@@ -5,6 +5,9 @@ consultarlos, eliminarlos o ejercer los derechos de protección de datos.
 Describe solo lo que hace el código: el análisis local, la sesión, el guardado voluntario de
 «Mis CV» y la baja de cuenta. Si cambia alguno de esos comportamientos, este texto debe cambiar
 con él (ver `docs/mis-cv.md`).
+
+La base jurídica y las transferencias internacionales aparecen como pendientes a propósito: las
+debe decidir o verificar el responsable, y bloquean la publicación (ver `docs/roadmap.md`).
 */
 import { Link } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
@@ -29,7 +32,7 @@ const sections: Section[] = [
   {
     title: 'Responsable',
     paragraphs: [
-      'El responsable de los datos que trata JobRadar ATS es Jorge Arce Nicolás. Para cualquier consulta sobre privacidad, escribe a:',
+      'JobRadar ATS es un servicio gratuito y no comercial. El responsable de los datos que trata es Jorge Arce Nicolás. Para cualquier consulta sobre privacidad, escribe a:',
     ],
     contact: true,
   },
@@ -41,6 +44,12 @@ const sections: Section[] = [
       'En «Mis CV», solo si decides guardar un CV, el archivo y su texto, para que puedas reutilizarlo en otros dispositivos.',
       'Para crear una cuenta necesitas un email y una contraseña. Si prefieres no darlos, puedes usar el analizador sin cuenta.',
       'JobRadar no comparte ni vende estos datos, no los usa para publicidad ni para entrenar modelos de IA, y no usa herramientas de analítica.',
+    ],
+  },
+  {
+    title: 'Base jurídica',
+    paragraphs: [
+      'Pendiente de confirmar por el responsable. Aquí se indicará la base jurídica de cada finalidad: la cuenta y sus correos de acceso, y «Mis CV».',
     ],
   },
   {
@@ -71,6 +80,7 @@ const sections: Section[] = [
       'Supabase: autenticación, base de datos y almacenamiento de archivos de los CV guardados. Los datos del proyecto están en la región eu-west-1 (Irlanda, Unión Europea). Al usar tu cuenta, Supabase también puede registrar datos técnicos de las peticiones, como la dirección IP.',
       'Vercel: alojamiento de la web. Al servir las páginas puede registrar datos técnicos de las visitas, como la dirección IP o el navegador, aunque no uses una cuenta.',
       'Estos datos técnicos los tratan los proveedores para prestar su servicio. No incluyen tu CV ni la oferta que analizas.',
+      'Supabase y Vercel son empresas de Estados Unidos. La información sobre posibles transferencias internacionales de datos y sus garantías está pendiente de verificar por el responsable.',
     ],
   },
   {

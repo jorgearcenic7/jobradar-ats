@@ -51,7 +51,7 @@ El script cubre:
 - nadie sube archivos a una carpeta ajena ni sin su CV;
 - B no ve los archivos de A.
 
-Se ha validado sobre Postgres 17 (PGlite) con stubs mínimos de `auth` y `storage`. También se probó que detecta tres fallos introducidos a propósito: lectura entre cuentas, subida a una carpeta ajena y `UPDATE` de todas las columnas. No se ha ejecutado contra el proyecto real.
+Se ha validado sobre Postgres 17 (PGlite) con stubs mínimos de `auth` y `storage`. También se probó que detecta tres fallos introducidos a propósito: lectura entre cuentas, subida a una carpeta ajena y `UPDATE` de todas las columnas. El responsable lo ha ejecutado en el proyecto real sin fallos.
 
 ## Prueba manual en producción
 
@@ -89,6 +89,8 @@ Los tokens ya emitidos en otros dispositivos siguen siendo válidos hasta que ca
 
 ### Configuración en Supabase
 
+**Estado:** la migración está aplicada y la función está desplegada en el proyecto real, según ha comprobado el responsable. Estos pasos sirven para repetir la configuración en otro proyecto.
+
 1. **Permisos.** En SQL Editor, ejecuta una vez [`supabase/migrations/20261112090000_cvs_service_role.sql`](../supabase/migrations/20261112090000_cvs_service_role.sql). Da a `service_role` permiso para contar y borrar filas de `cvs`, porque Supabase ya no lo concede automáticamente en las tablas nuevas.
 2. **Función**, por uno de estos dos caminos:
    - CLI, desde la raíz del repositorio: `npx supabase@latest login` y `npx supabase@latest functions deploy delete-account --project-ref <ref-del-proyecto>`. Sube los dos archivos.
@@ -97,6 +99,8 @@ Los tokens ya emitidos en otros dispositivos siguen siendo válidos hasta que ca
 4. No hace falta crear secretos ni tocar Vercel. La app llama a `<SUPABASE_URL>/functions/v1/delete-account`, a partir de las variables `EXPO_PUBLIC_*` que ya tiene.
 
 ### Prueba real de la baja
+
+**Estado:** realizada por el responsable con una cuenta de prueba. Se eliminaron el usuario de Auth, sus registros en PostgreSQL y sus archivos en Storage. La interfaz de la v1.3 sigue sin publicarse en Vercel.
 
 Con un buzón de prueba C, que no sea tu cuenta real:
 
@@ -136,21 +140,21 @@ El texto no ha tenido revisión legal.
 
 Comparación con la información que el artículo 13 pide facilitar. No es asesoramiento legal ni garantiza el cumplimiento.
 
-| Información                                                   | Estado en `/privacidad`                                                                                                                                                                                                                              |
-| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Identidad y contacto del responsable                          | Incluida (confirmada).                                                                                                                                                                                                                               |
-| Delegado de protección de datos                               | No incluida. El responsable debe decidir si tiene que designarlo; si lo designa, hay que añadir su contacto.                                                                                                                                         |
-| Fines del tratamiento                                         | Incluidos (cuenta, correos de acceso, «Mis CV»).                                                                                                                                                                                                     |
-| **Base jurídica de cada fin**                                 | **No incluida. Requiere decisión del responsable**: por ejemplo, ejecución del servicio que el usuario solicita, o consentimiento.                                                                                                                   |
-| Interés legítimo, si se invoca                                | No aplica mientras no se elija esa base.                                                                                                                                                                                                             |
-| Destinatarios o categorías                                    | Incluidos: Supabase y Vercel como proveedores. No se califica su papel jurídico (encargado del tratamiento) sin verificar los contratos.                                                                                                             |
-| **Transferencias internacionales**                            | **Pendiente de verificar.** Los datos de Supabase están en eu-west-1, pero Supabase y Vercel son empresas de EE. UU., y no se ha comprobado dónde guarda Vercel sus registros ni qué garantías aplican. La página no afirma ni niega transferencias. |
-| Plazo de conservación                                         | Incluido.                                                                                                                                                                                                                                            |
-| Derechos de acceso, rectificación, supresión y demás          | Incluidos, con el email de contacto.                                                                                                                                                                                                                 |
-| Retirar el consentimiento                                     | Solo hace falta si la base elegida es el consentimiento. Ya existen los medios: eliminar el CV o la cuenta.                                                                                                                                          |
-| Reclamación ante la autoridad de control                      | Incluida de forma genérica («autoridad de protección de datos competente»).                                                                                                                                                                          |
-| Si facilitar los datos es obligatorio y qué pasa si no se dan | Incluido: la cuenta exige email y contraseña; sin ellos se puede analizar sin cuenta.                                                                                                                                                                |
-| Decisiones automatizadas                                      | Incluido como hecho del producto: el análisis se calcula en el dispositivo, solo lo ve el usuario y JobRadar no lo usa para decidir.                                                                                                                 |
+| Información                                                   | Estado en `/privacidad`                                                                                                                                                                                                                                                                                    |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Identidad y contacto del responsable                          | Incluida (confirmada).                                                                                                                                                                                                                                                                                     |
+| Delegado de protección de datos                               | No incluida. El responsable debe decidir si tiene que designarlo; si lo designa, hay que añadir su contacto.                                                                                                                                                                                               |
+| Fines del tratamiento                                         | Incluidos (cuenta, correos de acceso, «Mis CV»).                                                                                                                                                                                                                                                           |
+| **Base jurídica de cada fin**                                 | **Requiere decisión del responsable.** La página la indica como pendiente. Opciones a valorar: ejecución del servicio que el usuario solicita o consentimiento.                                                                                                                                            |
+| Interés legítimo, si se invoca                                | No aplica mientras no se elija esa base.                                                                                                                                                                                                                                                                   |
+| Destinatarios o categorías                                    | Incluidos: Supabase y Vercel como proveedores. No se califica su papel jurídico (encargado del tratamiento) sin verificar los contratos.                                                                                                                                                                   |
+| **Transferencias internacionales**                            | **Pendiente de verificar.** Los datos de Supabase están en eu-west-1, pero Supabase y Vercel son empresas de EE. UU. y no se ha comprobado dónde guarda Vercel sus registros ni qué garantías aplican. La página indica que esta información está pendiente, sin afirmar ni negar que haya transferencias. |
+| Plazo de conservación                                         | Incluido.                                                                                                                                                                                                                                                                                                  |
+| Derechos de acceso, rectificación, supresión y demás          | Incluidos, con el email de contacto.                                                                                                                                                                                                                                                                       |
+| Retirar el consentimiento                                     | Solo hace falta si la base elegida es el consentimiento. Ya existen los medios: eliminar el CV o la cuenta.                                                                                                                                                                                                |
+| Reclamación ante la autoridad de control                      | Incluida de forma genérica («autoridad de protección de datos competente»).                                                                                                                                                                                                                                |
+| Si facilitar los datos es obligatorio y qué pasa si no se dan | Incluido: la cuenta exige email y contraseña; sin ellos se puede analizar sin cuenta.                                                                                                                                                                                                                      |
+| Decisiones automatizadas                                      | Incluido como hecho del producto: el análisis se calcula en el dispositivo, solo lo ve el usuario y JobRadar no lo usa para decidir.                                                                                                                                                                       |
 
 Antes de publicar, el responsable debe:
 
