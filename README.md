@@ -49,7 +49,7 @@ Principios del producto:
 
 ## Estado de las funcionalidades
 
-«Probado en local» quiere decir que hay pruebas automáticas (Jest) o recorridos en Chromium sobre la compilación web. «En producción», que funciona en el sitio publicado: [jobradar-ats.pages.dev](https://jobradar-ats.pages.dev) (Cloudflare Pages, principal) y [jobradar-ats.vercel.app](https://jobradar-ats.vercel.app) (respaldo temporal).
+«Probado en local» quiere decir que hay pruebas automáticas (Jest) o recorridos en Chromium sobre la compilación web. «En producción», que funciona en [jobradar-ats.pages.dev](https://jobradar-ats.pages.dev), publicado con Cloudflare Pages.
 
 | Funcionalidad                                                                                                           | Versión | Implementado | Probado en local | En producción          |
 | ----------------------------------------------------------------------------------------------------------------------- | ------- | ------------ | ---------------- | ---------------------- |
@@ -75,19 +75,19 @@ La interfaz de la v1.3 no está en producción: la rama no se ha fusionado en `m
 
 Versiones tomadas de [`package.json`](package.json).
 
-| Área              | Tecnología                                                                                                                 |
-| ----------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Plataforma        | Expo SDK 58 (`expo` ~58.0.22), React Native 0.88, React 19.3                                                               |
-| Web               | React Native Web 0.21, exportación estática (`web.output: "static"`)                                                       |
-| Navegación        | Expo Router 58, con rutas basadas en archivos en `src/app/`                                                                |
-| Lenguaje          | TypeScript 6 en modo `strict`                                                                                              |
-| Lectura de CV     | PDF.js (`pdfjs-dist` 6.4.299) para PDF y mammoth 1.13 para DOCX, en el navegador                                           |
-| Backend           | Supabase: Auth, PostgreSQL con RLS, Storage privado y Edge Functions (Deno), con `@supabase/supabase-js` 2.119             |
-| Sesión en nativo  | `expo-secure-store`                                                                                                        |
-| Alojamiento web   | Cloudflare Pages como sitio estático (`public/_headers`, `public/404.html`); Vercel como respaldo temporal (`vercel.json`) |
-| Pruebas           | Jest 30, `jest-expo` y React Native Testing Library 14                                                                     |
-| Calidad de código | ESLint 9 (`eslint-config-expo`) y Prettier 3                                                                               |
-| Interfaz          | Inter (fuente incluida con la app) e iconos con `expo-symbols`                                                             |
+| Área              | Tecnología                                                                                                     |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- |
+| Plataforma        | Expo SDK 58 (`expo` ~58.0.22), React Native 0.88, React 19.3                                                   |
+| Web               | React Native Web 0.21, exportación estática (`web.output: "static"`)                                           |
+| Navegación        | Expo Router 58, con rutas basadas en archivos en `src/app/`                                                    |
+| Lenguaje          | TypeScript 6 en modo `strict`                                                                                  |
+| Lectura de CV     | PDF.js (`pdfjs-dist` 6.4.299) para PDF y mammoth 1.13 para DOCX, en el navegador                               |
+| Backend           | Supabase: Auth, PostgreSQL con RLS, Storage privado y Edge Functions (Deno), con `@supabase/supabase-js` 2.119 |
+| Sesión en nativo  | `expo-secure-store`                                                                                            |
+| Alojamiento web   | Cloudflare Pages como sitio estático (`public/_headers`, `public/404.html`)                                    |
+| Pruebas           | Jest 30, `jest-expo` y React Native Testing Library 14                                                         |
+| Calidad de código | ESLint 9 (`eslint-config-expo`) y Prettier 3                                                                   |
+| Interfaz          | Inter (fuente incluida con la app) e iconos con `expo-symbols`                                                 |
 
 ## Arquitectura
 
@@ -166,9 +166,9 @@ npm run build:web   # expo export y paso posterior para Cloudflare; genera dist/
 
 `build:web` ejecuta `expo export --platform web` y después [`scripts/move-vendor-assets.cjs`](scripts/move-vendor-assets.cjs), que mueve los recursos de las dependencias de `dist/assets/node_modules/` a `dist/assets/vendor/`, porque Cloudflare Pages no publica esa carpeta.
 
-**Cloudflare Pages** es el hosting principal (<https://jobradar-ats.pages.dev>) y despliega automáticamente `main`. Las cabeceras de seguridad y caché están en `public/_headers`, y la página 404 en `public/404.html`. **Vercel** (<https://jobradar-ats.vercel.app>) se mantiene como respaldo temporal con [`vercel.json`](vercel.json). En los dos, las variables `EXPO_PUBLIC_*` se definen en el panel del proyecto.
+**Cloudflare Pages** es el hosting de la web (<https://jobradar-ats.pages.dev>) y despliega automáticamente `main`. Las cabeceras de seguridad y caché están en `public/_headers`, y la página 404 en `public/404.html`. Las variables `EXPO_PUBLIC_*` se definen en el panel del proyecto de Cloudflare.
 
-Configuración, cambio de origen en Supabase y cómo retirar Vercel: [docs/deploy.md](docs/deploy.md).
+Configuración, origen de autenticación en Supabase y retirada de Vercel, el hosting anterior: [docs/deploy.md](docs/deploy.md).
 
 ### Probar en iPhone desde Windows
 
@@ -223,14 +223,14 @@ Estas medidas reducen riesgos, pero no constituyen una garantía de seguridad ni
 
 ## Roadmap
 
-| Versión | Contenido                                                                  | Estado                         |
-| ------- | -------------------------------------------------------------------------- | ------------------------------ |
-| v1.0    | Analizador CV–oferta e importación PDF/DOCX en la web, publicado en Vercel | Publicada (PR #1)              |
-| v1.1    | Identidad visual, rediseño y mejoras de lectura de PDF                     | Publicada (PR #2 a #5)         |
-| v1.2    | Cuentas con Supabase Auth y refuerzo de seguridad de sesiones              | Publicada (PR #6 y #7)         |
-| v1.3    | Mis CV, eliminación de cuenta y página de privacidad                       | En rama, pendiente de publicar |
+| Versión | Contenido                                                                                     | Estado                         |
+| ------- | --------------------------------------------------------------------------------------------- | ------------------------------ |
+| v1.0    | Analizador CV–oferta e importación PDF/DOCX en la web, publicado en Vercel (hosting anterior) | Publicada (PR #1)              |
+| v1.1    | Identidad visual, rediseño y mejoras de lectura de PDF                                        | Publicada (PR #2 a #5)         |
+| v1.2    | Cuentas con Supabase Auth y refuerzo de seguridad de sesiones                                 | Publicada (PR #6 y #7)         |
+| v1.3    | Mis CV, eliminación de cuenta y página de privacidad                                          | En rama, pendiente de publicar |
 
-Infraestructura: la migración a Cloudflare Pages está fusionada (PR #9); Vercel queda como respaldo hasta completar la [lista de retirada](docs/deploy.md#antes-de-retirar-vercel).
+Infraestructura: la web se aloja en Cloudflare Pages desde la PR #9. Vercel, el hosting anterior, se ha retirado del repositorio; falta [retirarlo en remoto](docs/deploy.md#retirada-de-vercel-proveedor-anterior).
 
 Próximos pasos: completar la información de privacidad pendiente y publicar la v1.3, dominio `jobradar-ats.is-a.dev` (solicitado, pendiente de aprobación) y correos de Auth personalizados. Detalle, cumplimiento y planes condicionados al crecimiento en [docs/roadmap.md](docs/roadmap.md).
 
@@ -240,7 +240,7 @@ Próximos pasos: completar la información de privacidad pendiente y publicar la
 - [docs/architecture.md](docs/architecture.md): arquitectura, motor ATS, importación, decisiones y riesgos.
 - [docs/auth.md](docs/auth.md): configuración de Supabase Auth y verificación.
 - [docs/mis-cv.md](docs/mis-cv.md): «Mis CV», migraciones, aislamiento, baja de cuenta y privacidad.
-- [docs/deploy.md](docs/deploy.md): publicación en Cloudflare Pages, respaldo en Vercel y cambio de origen en Supabase.
+- [docs/deploy.md](docs/deploy.md): publicación en Cloudflare Pages, origen de autenticación en Supabase y retirada de Vercel.
 - [CLAUDE.md](CLAUDE.md) y [AGENTS.md](AGENTS.md): reglas de trabajo para asistentes de IA.
 
 ## Atribuciones de terceros

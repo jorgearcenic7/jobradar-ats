@@ -75,6 +75,8 @@ export class FakeSupabase {
   /** Orden de las operaciones, para comprobar qué se hizo y en qué orden. */
   log: string[] = [];
   sessionUserId: string | null;
+  /** Simula un `remove` que responde sin error pero no borra el archivo. */
+  silentRemove = false;
   private failures = new Map<Operation, Failure>();
   private nextId = 1;
 
@@ -139,6 +141,10 @@ export class FakeSupabase {
         return { data: updated.map(({ id }) => ({ id })), error: null };
       }
       case 'delete':
+        // Como el trigger `cvs_prevent_delete_with_file`: no se borra una fila con su archivo.
+        if (this.rows.some((row) => matches(row) && this.objects.has(row.file_path))) {
+          return { data: null, error: { code: 'P0001', message: 'cv_file_still_exists' } };
+        }
         this.rows = this.rows.filter((row) => !matches(row));
         return { data: null, error: null };
       case 'select': {
@@ -168,7 +174,7 @@ export class FakeSupabase {
         remove: async (paths: string[]) => {
           this.log.push('remove');
           const error = this.takeFailure('remove');
-          if (!error) paths.forEach((path) => this.objects.delete(path));
+          if (!error && !this.silentRemove) paths.forEach((path) => this.objects.delete(path));
           return { data: error ? null : [], error };
         },
       }),

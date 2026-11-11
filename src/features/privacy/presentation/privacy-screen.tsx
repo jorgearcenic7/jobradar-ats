@@ -78,9 +78,9 @@ const sections: Section[] = [
     title: 'Proveedores',
     paragraphs: [
       'Supabase: autenticación, base de datos y almacenamiento de archivos de los CV guardados. Los datos del proyecto están en la región eu-west-1 (Irlanda, Unión Europea). Al usar tu cuenta, Supabase también puede registrar datos técnicos de las peticiones, como la dirección IP.',
-      'Cloudflare Pages: alojamiento principal de la web. Vercel: alojamiento de respaldo temporal, que sirve la misma web mientras dura la migración. Al servir las páginas, ambos pueden registrar datos técnicos de las visitas, como la dirección IP o el navegador, aunque no uses una cuenta.',
+      'Cloudflare Pages: alojamiento de la web. Al servir las páginas puede registrar datos técnicos de las visitas, como la dirección IP o el navegador, aunque no uses una cuenta. Hasta noviembre de 2026 la web se alojó en Vercel.',
       'Estos datos técnicos los tratan los proveedores para prestar su servicio. No incluyen tu CV ni la oferta que analizas.',
-      'Supabase, Cloudflare y Vercel son empresas de Estados Unidos. La información sobre posibles transferencias internacionales de datos y sus garantías está pendiente de verificar por el responsable: aquí solo se indicarán las garantías que se hayan comprobado.',
+      'Supabase y Cloudflare son empresas de Estados Unidos. La información sobre posibles transferencias internacionales de datos y sus garantías está pendiente de verificar por el responsable: aquí solo se indicarán las garantías que se hayan comprobado.',
     ],
   },
   {

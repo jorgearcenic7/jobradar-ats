@@ -4,7 +4,6 @@ Paso posterior a `expo export --platform web` para Cloudflare Pages.
 Metro publica los recursos de las dependencias (la fuente Material Symbols de los iconos y las
 imágenes de expo-router) en `dist/assets/node_modules/...`. Cloudflare Pages no publica esa
 carpeta: en el despliegue esas rutas devuelven el HTML de la portada y los iconos no cargan.
-Vercel sí la sirve, así que solo es un problema de Cloudflare.
 
 El script mueve la carpeta a `dist/assets/vendor/` y sustituye la ruta en los archivos de texto
 de la exportación, donde Metro la escribe como `/assets/node_modules/`. Termina con error si

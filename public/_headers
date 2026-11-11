@@ -1,4 +1,4 @@
-# Cabeceras de Cloudflare Pages: las mismas que vercel.json aplica en Vercel.
+# Cabeceras de seguridad y caché de Cloudflare Pages.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
