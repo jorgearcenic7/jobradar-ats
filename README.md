@@ -18,7 +18,7 @@
 </div>
 
 > [!NOTE]
-> **Estado.** En producción está publicada la **v1.2** (analizador, importación de CV y cuentas con Supabase Auth). La **v1.3 «Mis CV»** está en la rama `feat/v1.3-mis-cv`, **pendiente de fusionar y publicar**. Detalle en [Estado de las funcionalidades](#estado-de-las-funcionalidades).
+> **Estado.** En producción está publicada la **v1.3** (analizador, importación de CV, cuentas con Supabase Auth, «Mis CV» y eliminación de cuenta) en Cloudflare Pages. Detalle en [Estado de las funcionalidades](#estado-de-las-funcionalidades).
 
 ## Índice
 
@@ -51,25 +51,24 @@ Principios del producto:
 
 «Probado en local» quiere decir que hay pruebas automáticas (Jest) o recorridos en Chromium sobre la compilación web. «En producción», que funciona en [jobradar-ats.pages.dev](https://jobradar-ats.pages.dev), publicado con Cloudflare Pages.
 
-| Funcionalidad                                                                                                           | Versión | Implementado | Probado en local | En producción          |
-| ----------------------------------------------------------------------------------------------------------------------- | ------- | ------------ | ---------------- | ---------------------- |
-| Analizador CV–oferta: requisitos, evidencias, cobertura explicable y recomendaciones                                    | v1.0    | Sí           | Sí               | Sí                     |
-| Análisis local y determinista: reglas fijas en TypeScript, sin IA ni servidor                                           | v1.0    | Sí           | Sí               | Sí                     |
-| Importación de CV en PDF y DOCX (web), con avisos de lectura y revisión del texto                                       | v1.0    | Sí           | Sí               | Sí                     |
-| Identidad visual, rediseño de la interfaz y temas claro y oscuro                                                        | v1.1    | Sí           | Sí               | Sí                     |
-| Cuentas con Supabase Auth: registro con confirmación, acceso, sesión y recuperación de contraseña                       | v1.2    | Sí           | Sí               | Sí                     |
-| **Mis CV**: guardar varios CV de forma voluntaria y analizarlos, renombrarlos o eliminarlos desde cualquier dispositivo | v1.3    | Sí           | Sí               | No (rama sin fusionar) |
-| **Eliminación de cuenta** con sus archivos y datos, mediante una Edge Function                                          | v1.3    | Sí           | Sí               | No (rama sin fusionar) |
-| **Página de privacidad** (`/privacidad`)                                                                                | v1.3    | Sí           | Sí               | No                     |
-| Importación de archivos en la app nativa (iOS y Android)                                                                | —       | No           | —                | —                      |
+| Funcionalidad                                                                                                           | Versión | Implementado | Probado en local | En producción |
+| ----------------------------------------------------------------------------------------------------------------------- | ------- | ------------ | ---------------- | ------------- |
+| Analizador CV–oferta: requisitos, evidencias, cobertura explicable y recomendaciones                                    | v1.0    | Sí           | Sí               | Sí            |
+| Análisis local y determinista: reglas fijas en TypeScript, sin IA ni servidor                                           | v1.0    | Sí           | Sí               | Sí            |
+| Importación de CV en PDF y DOCX (web), con avisos de lectura y revisión del texto                                       | v1.0    | Sí           | Sí               | Sí            |
+| Identidad visual, rediseño de la interfaz y temas claro y oscuro                                                        | v1.1    | Sí           | Sí               | Sí            |
+| Cuentas con Supabase Auth: registro con confirmación, acceso, sesión y recuperación de contraseña                       | v1.2    | Sí           | Sí               | Sí            |
+| **Mis CV**: guardar varios CV de forma voluntaria y analizarlos, renombrarlos o eliminarlos desde cualquier dispositivo | v1.3    | Sí           | Sí               | Sí            |
+| **Eliminación de cuenta** con sus archivos y datos, mediante una Edge Function                                          | v1.3    | Sí           | Sí               | Sí            |
+| **Página de privacidad** (`/privacidad`), con la base jurídica y las transferencias aún pendientes                      | v1.3    | Sí           | Sí               | Sí            |
+| Importación de archivos en la app nativa (iOS y Android)                                                                | —       | No           | —                | —             |
 
-Comprobaciones del responsable en el proyecto real de Supabase:
+Comprobaciones del responsable en el proyecto real de Supabase, registradas al cerrar la v1.3:
 
-- **Mis CV:** las dos migraciones están aplicadas, se ha guardado, reutilizado y eliminado CV desde el entorno local, y el script de aislamiento entre cuentas no ha dado fallos.
+- **Migraciones:** las tres de `supabase/migrations/` están aplicadas, y el script de aislamiento entre cuentas no ha dado fallos.
+- **Mis CV:** guardar, reutilizar y eliminar CV funciona con el proyecto real.
 - **Baja de cuenta:** la Edge Function `delete-account` está desplegada, y la baja de una cuenta de prueba eliminó el usuario de Auth, sus registros en PostgreSQL y sus archivos en Storage.
 - **Recuperación de contraseña en producción:** llega el correo, se establece la nueva contraseña y el cambio queda confirmado.
-
-La interfaz de la v1.3 no está en producción: la rama no se ha fusionado en `main`, que es lo que publica Cloudflare Pages.
 
 ## Tecnologías
 
@@ -166,7 +165,7 @@ npm run build:web   # expo export y paso posterior para Cloudflare; genera dist/
 
 `build:web` ejecuta `expo export --platform web` y después [`scripts/move-vendor-assets.cjs`](scripts/move-vendor-assets.cjs), que mueve los recursos de las dependencias de `dist/assets/node_modules/` a `dist/assets/vendor/`, porque Cloudflare Pages no publica esa carpeta.
 
-**Cloudflare Pages** es el hosting de la web (<https://jobradar-ats.pages.dev>) y despliega automáticamente `main`. Las cabeceras de seguridad y caché están en `public/_headers`, y la página 404 en `public/404.html`. Las variables `EXPO_PUBLIC_*` se definen en el panel del proyecto de Cloudflare.
+**Cloudflare Pages** es el hosting definitivo de la web (<https://jobradar-ats.pages.dev>) y despliega automáticamente `main`. Las cabeceras de seguridad y caché están en `public/_headers`, y la página 404 en `public/404.html`. Las variables `EXPO_PUBLIC_*` se definen en el panel del proyecto de Cloudflare.
 
 Configuración, origen de autenticación en Supabase y retirada de Vercel, el hosting anterior: [docs/deploy.md](docs/deploy.md).
 
@@ -223,16 +222,16 @@ Estas medidas reducen riesgos, pero no constituyen una garantía de seguridad ni
 
 ## Roadmap
 
-| Versión | Contenido                                                                                     | Estado                         |
-| ------- | --------------------------------------------------------------------------------------------- | ------------------------------ |
-| v1.0    | Analizador CV–oferta e importación PDF/DOCX en la web, publicado en Vercel (hosting anterior) | Publicada (PR #1)              |
-| v1.1    | Identidad visual, rediseño y mejoras de lectura de PDF                                        | Publicada (PR #2 a #5)         |
-| v1.2    | Cuentas con Supabase Auth y refuerzo de seguridad de sesiones                                 | Publicada (PR #6 y #7)         |
-| v1.3    | Mis CV, eliminación de cuenta y página de privacidad                                          | En rama, pendiente de publicar |
+| Versión | Contenido                                                                                     | Estado                       |
+| ------- | --------------------------------------------------------------------------------------------- | ---------------------------- |
+| v1.0    | Analizador CV–oferta e importación PDF/DOCX en la web, publicado en Vercel (hosting anterior) | Publicada (PR #1)            |
+| v1.1    | Identidad visual, rediseño y mejoras de lectura de PDF                                        | Publicada (PR #2 a #5)       |
+| v1.2    | Cuentas con Supabase Auth y refuerzo de seguridad de sesiones                                 | Publicada (PR #6 y #7)       |
+| v1.3    | Mis CV, eliminación de cuenta y página de privacidad                                          | Publicada (PR #8, #10 y #11) |
 
-Infraestructura: la web se aloja en Cloudflare Pages desde la PR #9. Vercel, el hosting anterior, se ha retirado del repositorio; falta [retirarlo en remoto](docs/deploy.md#retirada-de-vercel-proveedor-anterior).
+Infraestructura: Cloudflare Pages es el hosting definitivo de la web desde la PR #9. Vercel, el hosting anterior, se ha retirado del repositorio; no consta que se haya [retirado en remoto](docs/deploy.md#retirada-de-vercel-proveedor-anterior).
 
-Próximos pasos: completar la información de privacidad pendiente y publicar la v1.3, dominio `jobradar-ats.is-a.dev` (solicitado, pendiente de aprobación) y correos de Auth personalizados. Detalle, cumplimiento y planes condicionados al crecimiento en [docs/roadmap.md](docs/roadmap.md).
+Pendiente: completar la información de privacidad (bases jurídicas y transferencias internacionales), el dominio `jobradar-ats.is-a.dev` (solicitado en el [PR #61106 de is-a-dev/register](https://github.com/is-a-dev/register/pull/61106), pendiente de aprobación) y los correos de Auth personalizados. Detalle, cumplimiento y planes condicionados al crecimiento en [docs/roadmap.md](docs/roadmap.md).
 
 ## Documentación
 

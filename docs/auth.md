@@ -61,7 +61,7 @@ Las pruebas anteriores usan respuestas simuladas. Antes de guardar CV hay que co
 **Configuración de Supabase** (Dashboard del proyecto):
 
 1. Authentication → Sign In / Providers → Email: Email activado, **Confirm email**, **Secure email change** y **Secure password change** activados; **Minimum password length** = 8 o más.
-2. Authentication → URL Configuration: Site URL = dominio de producción. Redirect URLs solo con `https://<dominio>/auth/callback` y `https://<dominio>/auth/callback?flow=recovery`, sin comodines como `https://*.vercel.app/**` o `https://*.pages.dev/**`, que permitirían enviar los enlaces de recuperación a un dominio ajeno. Los callbacks son los de `jobradar-ats.pages.dev` y `localhost`; los de Vercel, el hosting anterior, se retiran según [deploy.md](deploy.md#supabase-origen-de-autenticación-manual).
+2. Authentication → URL Configuration: Site URL = dominio de producción (hoy `https://jobradar-ats.pages.dev`). Redirect URLs solo con `https://<dominio>/auth/callback` y `https://<dominio>/auth/callback?flow=recovery`, sin comodines como `https://*.vercel.app/**` o `https://*.pages.dev/**`, que permitirían enviar los enlaces de recuperación a un dominio ajeno. Los callbacks son los de `jobradar-ats.pages.dev` y `localhost`; los de Vercel, el hosting anterior, se retiran según [deploy.md](deploy.md#supabase-origen-de-autenticación-manual).
 3. SQL Editor, consultas de solo lectura:
 
 ```sql
@@ -96,7 +96,7 @@ Resultado esperado en v1.2: ninguna fila en las cuatro consultas. Cualquier tabl
 
 **GitHub:** <https://github.com/settings/security> debe indicar «Two-factor authentication: Enabled». En <https://github.com/settings/installations>, la app de Cloudflare debe tener acceso solo a este repositorio, y la de Vercel, el hosting anterior, debe retirarse.
 
-**Cloudflare Pages** (hosting de la web): variables, cuenta y acceso de GitHub en [deploy.md](deploy.md#cloudflare-pages).
+**Cloudflare Pages** (hosting definitivo de la web): variables, cuenta y acceso de GitHub en [deploy.md](deploy.md#cloudflare-pages).
 
 **Vercel:** hosting anterior, sin configuración en el repositorio. Pasos para retirarlo en [deploy.md](deploy.md#retirada-de-vercel-proveedor-anterior).
 
