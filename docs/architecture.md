@@ -10,7 +10,7 @@ Cada funcionalidad del producto (ofertas, currículums, análisis, candidaturas�
 
 ## Estructura actual
 
-Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button`, `TextField`, `ThemedText`, `Badge`, `Notice`, `EmptyState`, `Disclosure` y `SegmentedControl`) y los módulos de funcionalidad de la Fase A: `cv-match`, el analizador CV–oferta (capas `domain` y `presentation`), y `cv-import`, la importación de CV (las cuatro capas). El módulo `home` (Fase 4a.1, solo presentación) explica el producto y abre el analizador con «Analizar mi CV». Este tiene dos rutas, Preparar (`/analisis`) y Resultados (`/analisis/resultados`); la cabecera compartida de la Fase 4b.1 ofrece Inicio y Analizar, mientras que la ampliación de destinos de la Fase 3 sigue pendiente (ver [roadmap.md](roadmap.md)).
+Hoy el proyecto contiene la base técnica, el sistema de diseño de la Fase 2 (tokens y los componentes `Screen`, `Card`, `Icon`, `Button`, `TextField`, `ThemedText`, `Badge`, `Notice`, `EmptyState`, `Disclosure` y `SegmentedControl`) y los módulos de funcionalidad de la Fase A: `cv-match`, el analizador CV–oferta (capas `domain` y `presentation`), y `cv-import`, la importación de CV (las cuatro capas). El módulo `home` (Fase 4a.1, solo presentación) explica el producto y abre el analizador con «Analizar mi CV». Este tiene dos rutas, Preparar (`/analisis`) y Resultados (`/analisis/resultados`); la cabecera compartida de la Fase 4b.1 ofrece Inicio y Analizar, mientras que la ampliación de destinos de la Fase 3 sigue pendiente (ver [roadmap.md](roadmap.md)). Las versiones publicadas añaden `auth` (cuentas, v1.2), `my-cvs` y `privacy` (v1.3).
 
 ```text
 src/
@@ -21,6 +21,9 @@ src/
       _layout.tsx       # Sesión compartida del analizador y pila de sus dos pantallas
       index.tsx         # Preparar: monta la pantalla y abre Resultados tras analizar
       resultados.tsx    # Resultados: monta la pantalla con la vuelta a Preparar
+    acceso.tsx, registro.tsx, recuperar.tsx, mi-cuenta.tsx, auth/callback.tsx # Cuentas (v1.2)
+    mis-cv.tsx          # «Mis CV» (v1.3)
+    privacidad.tsx      # Información de privacidad (v1.3)
   features/
     home/presentation/  # Inicio: identidad, acción principal, pasos y metodología desplegable
     cv-match/           # Analizador CV–oferta (ver más abajo)
@@ -36,6 +39,8 @@ src/
       domain/           # Tipos, límites y validación del nombre
       infrastructure/   # Tabla `cvs` y bucket privado `cvs` en Supabase
       presentation/     # Pantalla, lista, guardado con confirmación y traspaso al analizador
+    auth/               # Supabase Auth (v1.2): cliente, sesión, pantallas, callback y baja de cuenta, sin capas (ver docs/auth.md)
+    privacy/presentation/ # Página /privacidad (v1.3)
   shared/navigation/    # Cabecera compartida con identidad y los enlaces Inicio / Analizar
   shared/ui/            # Componentes genéricos del sistema de diseño
     screen.tsx          # Contenedor de pantalla: fondo, áreas seguras, márgenes, scroll
@@ -511,11 +516,11 @@ Comprobado sobre la compilación de producción con un servidor local que emula 
 - Chromium con Playwright, a 390 y 1440 px y en claro y oscuro: Inicio → Preparar → Resultados con un PDF y un DOCX ficticios, «Editar CV u oferta» con la sesión conservada, carga directa y recarga de las tres rutas, Atrás y Adelante, confirmación de salida y Resultados vacío tras recargar. Sin desplazamiento horizontal ni errores de consola.
 - Firefox sin interfaz: las tres rutas se renderizan (captura previa a la hidratación).
 - Tráfico: solo peticiones `GET` al propio origen, sin parámetros; pdf.js y mammoth se descargan como fragmentos propios. Los bundles no contienen analítica, `sendBeacon`, `WebSocket` ni `EventSource`.
-- **Pendiente:** Safari en iPhone real (instalación, modo standalone, barra de estado, áreas seguras e importación de archivos) y el despliegue real en Vercel.
+- **Pendiente:** Safari en iPhone real (instalación, modo standalone, barra de estado, áreas seguras e importación de archivos). El despliegue en Vercel ya no aplica: el hosting es Cloudflare Pages.
 
 ### Migración a Cloudflare Pages
 
-Cloudflare Pages es el único hosting (<https://jobradar-ats.pages.dev>). Vercel, el anterior, se ha retirado del repositorio. La salida sigue siendo estática y no cambia la arquitectura. Detalle, pasos manuales y retirada de Vercel en [deploy.md](deploy.md).
+Cloudflare Pages es el hosting definitivo y único (<https://jobradar-ats.pages.dev>) y publica la v1.3. Vercel, el anterior, se ha retirado del repositorio. La salida sigue siendo estática y no cambia la arquitectura. Detalle, pasos manuales y retirada de Vercel en [deploy.md](deploy.md).
 
 - **`npm run build:web`.** Ejecuta `expo export` y [`scripts/move-vendor-assets.cjs`](../scripts/move-vendor-assets.cjs), que mueve `dist/assets/node_modules/` a `dist/assets/vendor/` y actualiza las referencias. En el despliegue real de Cloudflare, la fuente Material Symbols y las imágenes de expo-router de esa carpeta devolvían el HTML de la portada, y los iconos no aparecían.
 - **`public/_headers`.** Las cabeceras de seguridad y caché que antes aplicaba `vercel.json`. En Cloudflare faltaban `X-Frame-Options` y `Referrer-Policy: no-referrer`.
@@ -551,7 +556,7 @@ Detalle, migración y pruebas en [mis-cv.md](mis-cv.md). Las decisiones de arqui
 
 ## Estructura planificada
 
-> **Planificado.** Salvo `src/shared/theme/`, `src/shared/ui/`, `src/features/cv-match/` (`domain/` y `presentation/`) y `src/features/cv-import/` (las cuatro capas), ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
+> **Planificado.** Salvo las carpetas de [Estructura actual](#estructura-actual) (`src/shared/` y los módulos `home`, `cv-match`, `cv-import`, `auth`, `my-cvs` y `privacy`), ninguna de estas carpetas existe todavía y no se crearán vacías: cada una aparecerá cuando haya código que ponga en ella.
 
 ```text
 src/

@@ -4,16 +4,16 @@ Este documento distingue lo **publicado**, lo **pendiente** y lo **condicionado*
 
 ## Versiones
 
-| Versión | Contenido                                                                                        | Estado                                |
-| ------- | ------------------------------------------------------------------------------------------------ | ------------------------------------- |
-| v1.0    | Analizador CV–oferta, importación PDF/DOCX en la web y publicación estática en Vercel (anterior) | Publicada (PR #1)                     |
-| v1.1    | Identidad visual, rediseño de la interfaz y compatibilidad de lectura de PDF                     | Publicada (PR #2, #3, #4 y #5)        |
-| v1.2    | Supabase Auth (registro, confirmación, acceso, sesión, recuperación) y refuerzo de seguridad     | Publicada (PR #6 y #7)                |
-| v1.3    | «Mis CV», eliminación de cuenta y página de privacidad                                           | Rama `feat/v1.3-mis-cv`, sin fusionar |
+| Versión | Contenido                                                                                        | Estado                         |
+| ------- | ------------------------------------------------------------------------------------------------ | ------------------------------ |
+| v1.0    | Analizador CV–oferta, importación PDF/DOCX en la web y publicación estática en Vercel (anterior) | Publicada (PR #1)              |
+| v1.1    | Identidad visual, rediseño de la interfaz y compatibilidad de lectura de PDF                     | Publicada (PR #2, #3, #4 y #5) |
+| v1.2    | Supabase Auth (registro, confirmación, acceso, sesión, recuperación) y refuerzo de seguridad     | Publicada (PR #6 y #7)         |
+| v1.3    | «Mis CV», eliminación de cuenta, página de privacidad y protección de Storage                    | Publicada (PR #8, #10 y #11)   |
 
-Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9). Vercel, el hosting anterior, se ha retirado del repositorio. Ver [deploy.md](deploy.md).
+Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9), que es el hosting definitivo. Vercel, el hosting anterior, se ha retirado del repositorio. Ver [deploy.md](deploy.md).
 
-## Situación actual (v1.3)
+## Situación actual (v1.3, publicada)
 
 - **Servicio gratuito y no comercial.**
 - **Responsable:** Jorge Arce Nicolás. **Contacto:** jorgearcenic7@gmail.com.
@@ -24,21 +24,21 @@ Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9). Vercel, e
 
 ### Comprobado en Supabase real
 
-Verificado por el responsable:
+Verificado por el responsable al cerrar la v1.3:
 
-- Las migraciones `20261111120000_my_cvs.sql` y `20261112090000_cvs_service_role.sql` están aplicadas, y el script de aislamiento entre cuentas no da fallos.
-- Guardar, reutilizar y eliminar CV funciona desde el entorno local.
+- Las tres migraciones (`20261111120000_my_cvs.sql`, `20261112090000_cvs_service_role.sql` y `20261113090000_cvs_prevent_orphan_files.sql`) están aplicadas, y el script de aislamiento entre cuentas no da fallos.
+- Guardar, reutilizar y eliminar CV funciona con el proyecto real.
 - La Edge Function `delete-account` está desplegada. La baja de una cuenta de prueba eliminó el usuario de Auth, sus registros en PostgreSQL y sus archivos en Storage.
 - La recuperación de contraseña funciona en producción: llega el correo, se establece la nueva contraseña y el cambio queda confirmado.
+- Las pruebas reales de la v1.3 se han completado y la versión está publicada en Cloudflare Pages.
 
-### Pendiente para publicar la v1.3
+### Pendiente tras la v1.3
 
-1. Aplicar en Supabase la migración `20261113090000_cvs_prevent_orphan_files.sql`, que impide dejar archivos huérfanos y saltarse el límite de 20 CV ([mis-cv.md](mis-cv.md#aplicar-la-migración)).
-2. Comprobar el SMTP de Supabase Auth: el servidor integrado solo entrega correos a direcciones del equipo del proyecto.
-3. Completar la información de privacidad aplicable ahora (ver [Cumplimiento y privacidad](#cumplimiento-y-privacidad)).
-4. Añadir en Supabase los callbacks de `jobradar-ats.pages.dev` y repetir desde Cloudflare la prueba de Mis CV y de la baja de cuenta ([deploy.md](deploy.md#supabase-origen-de-autenticación-manual)).
-5. Retirar Vercel en remoto **antes de fusionar**: sin `vercel.json`, sus despliegues de `main` ya no tendrían su configuración ([deploy.md](deploy.md#retirada-de-vercel-proveedor-anterior)).
-6. Revisar y fusionar la rama `feat/v1.3-mis-cv`; Cloudflare Pages publica `main`. Hasta entonces, la v1.3 no está en producción.
+1. Completar la información de privacidad: la v1.3 se ha publicado con la base jurídica y las transferencias internacionales marcadas como pendientes en `/privacidad` (ver [Cumplimiento y privacidad](#cumplimiento-y-privacidad)).
+2. Dominio `jobradar-ats.is-a.dev`, pendiente de aprobación (ver [Hosting, dominio y correo](#hosting-dominio-y-correo)).
+3. Comprobar el SMTP de Supabase Auth: el servidor integrado solo entrega correos a direcciones del equipo del proyecto. No consta como revisado.
+4. Retirar Vercel en remoto: no consta que se haya desconectado ni eliminado el proyecto ([deploy.md](deploy.md#retirada-de-vercel-proveedor-anterior)).
+5. Prueba del enlace de confirmación de otra cuenta (paso 7 de [auth.md](auth.md#verificación-real-manual)), que no consta como realizada.
 
 ## Cumplimiento y privacidad
 
@@ -46,12 +46,12 @@ Esta sección organiza tareas. No afirma que se cumpla el RGPD ni sustituye una 
 
 ### Aplicable ahora (v1.3)
 
-La página `/privacidad` ya informa del responsable, el contacto, los fines, el análisis local, el guardado voluntario, los proveedores y la región de Supabase, la conservación, cómo consultar y eliminar los datos y cómo ejercer los derechos. La comparación con el artículo 13 está en [mis-cv.md](mis-cv.md#revisión-frente-al-artículo-13-del-rgpd). Queda pendiente:
+La página `/privacidad`, publicada con la v1.3, informa del responsable, el contacto, los fines, el análisis local, el guardado voluntario, los proveedores y la región de Supabase, la conservación, cómo consultar y eliminar los datos y cómo ejercer los derechos. La comparación con el artículo 13 está en [mis-cv.md](mis-cv.md#revisión-frente-al-artículo-13-del-rgpd). Queda pendiente:
 
 - [ ] **Bases jurídicas.** Las decide el responsable para cada fin: la cuenta y los correos de acceso, y «Mis CV». Opciones a valorar: la ejecución del servicio que el usuario solicita o su consentimiento. Mientras no se decidan, la página lo indica como pendiente.
 - [ ] **Transferencias internacionales.** Los datos de Supabase están en la UE, pero Supabase y Cloudflare son proveedores estadounidenses. Hay que verificar dónde tratan los datos (incluidos los registros de Cloudflare), sus subencargados y las garantías aplicables, sin dar por hechas garantías contractuales que no se hayan comprobado.
 - [ ] **Delegado de protección de datos:** decidir si corresponde.
-- [ ] **Revisión jurídica** del texto antes de publicarlo.
+- [ ] **Revisión jurídica** del texto, que se ha publicado sin ella.
 
 ### Si la aplicación crece o se comercializa
 
@@ -73,16 +73,16 @@ Revisiones condicionadas: se aplicarán solo si el crecimiento, el riesgo o un u
 
 ## Hosting, dominio y correo
 
-| Elemento                    | Estado                                                                                                                                                                                                                  |
-| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloudflare Pages            | Hosting de la web: <https://jobradar-ats.pages.dev>, despliega `main` con `npm run build:web`. Pasos pendientes en [deploy.md](deploy.md).                                                                              |
-| Vercel                      | Hosting anterior. Retirado del repositorio; falta desconectar y eliminar el proyecto remoto ([pasos](deploy.md#retirada-de-vercel-proveedor-anterior)).                                                                 |
-| Dominio gratuito solicitado | `jobradar-ats.is-a.dev`, en el [PR #60903 de is-a-dev/register](https://github.com/is-a-dev/register/pull/60903). **Pendiente de comprobar si se ha aprobado; no está activo.** Hay que confirmar a qué hosting apunta. |
-| Correos de Supabase Auth    | Configuración actual sin cambios. **Resend no está integrado.**                                                                                                                                                         |
+| Elemento                    | Estado                                                                                                                                                                     |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare Pages            | Hosting definitivo de la web: <https://jobradar-ats.pages.dev>, despliega `main` con `npm run build:web`. Publica la v1.3.                                                 |
+| Vercel                      | Hosting anterior. Retirado del repositorio; no consta que se haya desconectado ni eliminado el proyecto remoto ([pasos](deploy.md#retirada-de-vercel-proveedor-anterior)). |
+| Dominio gratuito solicitado | `jobradar-ats.is-a.dev`, en el [PR #61106 de is-a-dev/register](https://github.com/is-a-dev/register/pull/61106). **Pendiente de aprobación; no está activo.**             |
+| Correos de Supabase Auth    | Configuración actual sin cambios. **Resend no está integrado.**                                                                                                            |
 
 Pasos pendientes:
 
-1. Comprobar la aprobación del PR y, si se aprueba, conectarlo a Cloudflare Pages como dominio personalizado. Después, actualizar la Site URL y las Redirect URLs de Supabase.
+1. Esperar la aprobación del PR #61106 y, si se aprueba, conectar el subdominio a Cloudflare Pages como dominio personalizado. Después, actualizar la Site URL y las Redirect URLs de Supabase ([deploy.md](deploy.md#supabase-origen-de-autenticación-manual)).
 2. Comprobar si Resend permite verificar el subdominio y si is-a.dev permite crear los registros DNS necesarios (TXT y MX).
 3. Si es posible, configurar esos registros y conectar Resend como SMTP de Supabase Auth.
 4. Personalizar los correos de confirmación y recuperación con la identidad de JobRadar.
@@ -250,7 +250,7 @@ El analizador de la Fase A ya se abre desde Inicio. La Fase 4b.1 unifica los dos
 
 #### Fase 5b (PWA)
 
-Se llama **5b** para situarla después de la Fase 5 sin renumerar las fases acordadas. La v1.0 cubrió parte de su alcance: salida estática en Vercel con HTTPS, manifiesto e icono para «Añadir a pantalla de inicio», sin service worker. Alcance previsto:
+Se llama **5b** para situarla después de la Fase 5 sin renumerar las fases acordadas. La v1.0 cubrió parte de su alcance: salida estática con HTTPS (entonces en Vercel; hoy en Cloudflare Pages), manifiesto e icono para «Añadir a pantalla de inicio», sin service worker. Alcance previsto:
 
 1. **Estudio previo.** Pasar de `web.output: "server"` a salida estática si el alojamiento lo requiere; manifiesto web, iconos y service worker; limitaciones de las PWA en Safari para iOS (instalación con «Añadir a pantalla de inicio», almacenamiento y notificaciones).
 2. **Alojamiento.** Comparar opciones gratuitas con HTTPS compatibles con un repositorio privado. Las condiciones de los planes gratuitos deben comprobarse en el momento del estudio.

@@ -68,6 +68,8 @@ El script cubre:
 
 Se ha validado sobre Postgres 17 (PGlite) con stubs mínimos de `auth` y `storage`. También se probó que detecta tres fallos introducidos a propósito: lectura entre cuentas, subida a una carpeta ajena y `UPDATE` de todas las columnas. El responsable lo ha ejecutado en el proyecto real sin fallos.
 
+**Estado:** las tres migraciones están aplicadas en el proyecto real, según ha comprobado el responsable al cerrar la v1.3.
+
 ## Prueba manual en producción
 
 Usa dos buzones de prueba A y B y PDF/DOCX ficticios, en dos navegadores distintos (o uno normal y una ventana privada):
@@ -115,7 +117,7 @@ Los tokens ya emitidos en otros dispositivos siguen siendo válidos hasta que ca
 
 ### Prueba real de la baja
 
-**Estado:** realizada por el responsable con una cuenta de prueba. Se eliminaron el usuario de Auth, sus registros en PostgreSQL y sus archivos en Storage. La interfaz de la v1.3 sigue sin publicarse: llega a producción al fusionarse en `main`, que publica Cloudflare Pages.
+**Estado:** realizada por el responsable con una cuenta de prueba. Se eliminaron el usuario de Auth, sus registros en PostgreSQL y sus archivos en Storage. La v1.3 está publicada en Cloudflare Pages.
 
 Con un buzón de prueba C, que no sea tu cuenta real:
 
@@ -171,7 +173,7 @@ Comparación con la información que el artículo 13 pide facilitar. No es aseso
 | Si facilitar los datos es obligatorio y qué pasa si no se dan | Incluido: la cuenta exige email y contraseña; sin ellos se puede analizar sin cuenta.                                                                                                                                                                                                                              |
 | Decisiones automatizadas                                      | Incluido como hecho del producto: el análisis se calcula en el dispositivo, solo lo ve el usuario y JobRadar no lo usa para decidir.                                                                                                                                                                               |
 
-Antes de publicar, el responsable debe:
+La v1.3 se ha publicado con estos puntos indicados como pendientes en la página. Tareas pendientes del responsable:
 
 1. decidir y redactar la base jurídica de cada fin;
 2. verificar las transferencias internacionales y sus garantías, por ejemplo los acuerdos de tratamiento de datos (DPA) de Supabase y Cloudflare;

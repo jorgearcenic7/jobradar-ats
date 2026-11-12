@@ -2,11 +2,11 @@
 
 La web es estática (`web.output: "static"` en `app.json`): `expo export` genera un HTML por ruta y los recursos en `dist/`. No hay servidor ni funciones en el hosting. El backend es Supabase y no cambia con el hosting.
 
-| Hosting                 | Estado                                                                          | URL                              |
-| ----------------------- | ------------------------------------------------------------------------------- | -------------------------------- |
-| **Cloudflare Pages**    | Único hosting de la web                                                         | <https://jobradar-ats.pages.dev> |
-| Vercel                  | Proveedor anterior, retirado del repositorio; falta retirarlo en remoto         | —                                |
-| `jobradar-ats.is-a.dev` | Solicitado, **pendiente de aprobación**; no está activo ni integrado con Resend | —                                |
+| Hosting                 | Estado                                                                                                                                                                  | URL                              |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **Cloudflare Pages**    | Hosting definitivo y único de la web; publica la v1.3                                                                                                                   | <https://jobradar-ats.pages.dev> |
+| Vercel                  | Proveedor anterior, retirado del repositorio; no consta su retirada en remoto                                                                                           | —                                |
+| `jobradar-ats.is-a.dev` | Solicitado en el [PR #61106 de is-a-dev/register](https://github.com/is-a-dev/register/pull/61106), **pendiente de aprobación**; no está activo ni integrado con Resend | —                                |
 
 ## Compilación
 
@@ -57,7 +57,11 @@ En **Workers & Pages → jobradar-ats → Settings**:
 
 ## Supabase: origen de autenticación (manual)
 
-La app calcula la URL de retorno a partir del dominio que se esté usando, así que cada dominio necesita sus callbacks en Supabase. En **Authentication → URL Configuration**:
+La app calcula la URL de retorno a partir del dominio que se esté usando, así que cada dominio necesita sus callbacks en Supabase.
+
+**Estado:** la v1.3 está publicada en `jobradar-ats.pages.dev` y el responsable ha completado las pruebas reales. Quedan pendientes los pasos 4 y 5: no consta que se hayan quitado los callbacks de Vercel, y el subdominio sigue sin aprobar.
+
+En **Authentication → URL Configuration**:
 
 1. **Redirect URLs**, sin comodines: `https://jobradar-ats.pages.dev/auth/callback`, `https://jobradar-ats.pages.dev/auth/callback?flow=recovery` y las de `localhost` para desarrollo.
 2. **Prueba real en Cloudflare:** registro con confirmación, acceso, recarga con la sesión iniciada, cierre de sesión, recuperación de contraseña, Mis CV y baja de cuenta.
@@ -66,11 +70,11 @@ La app calcula la URL de retorno a partir del dominio que se esté usando, así 
    - para aceptar cualquier dirección de su mismo dominio;
    - en las plantillas de correo que usen `{{ .SiteURL }}`.
 4. **Quita los callbacks de Vercel** (`https://jobradar-ats.vercel.app/...`) cuando se complete la retirada de Vercel.
-5. **Si se aprueba `jobradar-ats.is-a.dev`:** añade sus dos callbacks, prueba como en el paso 2 y después cambia la Site URL a ese dominio.
+5. **Si se aprueba `jobradar-ats.is-a.dev`** (PR #61106): conéctalo a Cloudflare Pages como dominio personalizado, añade sus dos callbacks, prueba como en el paso 2 y después cambia la Site URL a ese dominio.
 
 ## Retirada de Vercel (proveedor anterior)
 
-Vercel alojó la web desde la v1.0 hasta la migración a Cloudflare Pages (PR #9). El repositorio ya no tiene su configuración: `vercel.json` y `.vercelignore` se han eliminado. El proyecto remoto sigue existiendo hasta completar estos pasos, que no se han hecho desde el repositorio:
+Vercel alojó la web desde la v1.0 hasta la migración a Cloudflare Pages (PR #9). El repositorio ya no tiene su configuración: `vercel.json` y `.vercelignore` se han eliminado. Estos pasos no se hacen desde el repositorio y no consta que se hayan completado; hasta entonces, el proyecto remoto sigue existiendo:
 
 1. **Parar los despliegues:** Vercel → proyecto → Settings → Git → **Disconnect**. Sin `vercel.json`, los despliegues automáticos de `main` ya no aplicarían las cabeceras ni el comando de compilación del proyecto.
 2. **Eliminar el proyecto:** Settings → General → Delete Project. La URL `jobradar-ats.vercel.app` dejará de funcionar, incluidos los enlaces antiguos y los correos ya enviados que apunten a ella.
