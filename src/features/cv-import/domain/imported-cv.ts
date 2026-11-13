@@ -19,6 +19,7 @@ export type Extraction = {
   text: string;
   pages?: PageLetters[];
   multiColumnPages?: number[];
+  reorderedColumnPages?: number[];
 };
 
 /** Builds the imported CV from a successful extraction: normalized text, issues and status. */
@@ -34,6 +35,7 @@ export function createImportedCv(
       text,
       pages: extraction.pages,
       multiColumnPages: extraction.multiColumnPages,
+      reorderedColumnPages: extraction.reorderedColumnPages,
     },
     thresholds,
   );

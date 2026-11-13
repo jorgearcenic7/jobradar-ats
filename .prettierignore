@@ -2,6 +2,9 @@
 node_modules/
 package-lock.json
 
+# Modelo semántico preparado para desarrollo
+public/semantic/
+
 # Expo and build output
 .expo/
 dist/

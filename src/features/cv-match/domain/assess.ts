@@ -26,7 +26,7 @@ import {
 import { withoutDates, type CvUnit } from './cv-structure';
 import { asksGeneralExperience, workExperience } from './work-periods';
 import { explicitExperienceRole } from './experience-role';
-import type { CatalogIndex } from './skill-catalog';
+import { isEscoSynonym, type CatalogIndex } from './skill-catalog';
 import { containsAny, countWords, type TermMatch } from './text';
 import type {
   CefrLevel,
@@ -35,11 +35,20 @@ import type {
   EvidenceRole,
   EvidenceSignal,
   OfferRequirement,
+  PartialEvidence,
   RequirementStatus,
 } from './types';
 
-/** Resultado de evaluar un requisito: estado, motivo legible y evidencias literales del CV. */
-export type Assessment = { status: RequirementStatus; reason: string; evidence: Evidence[] };
+/**
+ * Resultado de evaluar un requisito: estado, motivo legible y evidencias literales del CV.
+ * `partial` solo informa de una evidencia parcial verificable; no cambia el estado.
+ */
+export type Assessment = {
+  status: RequirementStatus;
+  reason: string;
+  evidence: Evidence[];
+  partial?: PartialEvidence;
+};
 
 type Requirement<Kind extends OfferRequirement['kind']> = Extract<OfferRequirement, { kind: Kind }>;
 
@@ -233,6 +242,21 @@ function isHedged(normalized: string) {
 }
 
 /**
+ * Si una frase del CV niega algo, lo presenta como aprendizaje o como conocimiento teórico, en
+ * cualquier punto de la frase. Lo usa el análisis semántico, que no sabe a qué término se
+ * refiere la frase y por eso descarta la frase completa: una relación semántica nunca debe
+ * apoyarse en «No tengo experiencia con…» ni en «Estoy aprendiendo…».
+ */
+export function isQualifiedSentence(normalized: string): boolean {
+  return (
+    containsAny(normalized, negationCues) ||
+    containsAny(normalized, learningCues) ||
+    isHedged(normalized) ||
+    /(^|[^a-z])nos/.test(normalized)
+  );
+}
+
+/**
  * «Tecnologías: React, Docker, AWS» o «Docker, Kubernetes, Git»: una enumeración, no una
  * descripción de uso.
  */
@@ -318,7 +342,12 @@ function assessConcept(
     ) {
       role = 'support';
     }
-    evidence.push(evidenceOf(unit, role));
+    const item = evidenceOf(unit, role);
+    // `normalize` conserva la longitud, así que la posición sirve también en el texto literal.
+    if (isEscoSynonym(concept, unit.normalized.slice(match.start, match.end))) {
+      item.escoSynonym = unit.text.slice(match.start, match.end);
+    }
+    evidence.push(item);
   }
 
   const has = (role: EvidenceRole) => evidence.some((item) => item.role === role);
@@ -431,11 +460,14 @@ function assessLanguage(
     );
   }
   // Un nivel conocido inferior al pedido no cumple el requisito: en los idiomas no hay crédito
-  // parcial.
-  return result(
-    'missing',
-    `El CV indica un nivel ${cvLevel} de ${name}, inferior al ${requirement.level} que pide la oferta.`,
-  );
+  // parcial. Se informa de la evidencia parcial sin puntuarla.
+  return {
+    ...result(
+      'missing',
+      `El CV indica un nivel ${cvLevel} de ${name}, inferior al ${requirement.level} que pide la oferta.`,
+    ),
+    partial: { achieved: cvLevel, required: requirement.level },
+  };
 }
 
 /*
@@ -606,7 +638,13 @@ function assessYears(
         .find((item) => item.qualifier === 'more-than') ??
       statements.find((item) => item.years === most)!;
     const declared = `${strongest.qualifier === 'more-than' ? 'más de ' : strongest.qualifier === 'at-least' ? 'al menos ' : ''}${most}`;
+    // Años declarados por debajo de los pedidos: evidencia parcial, solo informativa.
+    const partial =
+      !supported && most > 0 && most < requirement.years
+        ? { achieved: `${declared} años`, required: `${requirement.years} años` }
+        : undefined;
     return {
+      ...(partial && { partial }),
       status: supported ? 'supported' : uncertain ? 'mentioned' : 'missing',
       reason: supported
         ? strict
@@ -667,7 +705,16 @@ function assessYears(
           .filter((p) => p.relevant)
           .flatMap((p) => (p.context ? [p.context, p.unit] : [p.unit])),
       );
+      // Periodos que suman menos de lo pedido: evidencia parcial, solo informativa.
+      const partial =
+        !supported && dated.minimumMonths > 0
+          ? {
+              achieved: `${dated.minimumMonths} meses`,
+              required: `${requirement.years * 12} meses`,
+            }
+          : undefined;
       return {
+        ...(partial && { partial }),
         status: supported ? 'supported' : 'mentioned',
         reason: `Periodos laborales reconocidos: ${ranges}. La unión ${requirement.role ? `relevante para «${requirement.role}» ` : ''}sin solapamientos acredita como mínimo ${dated.minimumMonths} meses (referencia ${dated.reference}; no se suma el mes final).${uncertainty} ${supported ? 'Permite' : 'No permite'} ${strict ? 'superar' : 'alcanzar'} los ${requirement.years} años que pide la oferta.`,
         evidence: [

@@ -7,7 +7,11 @@ import type { CvUnit } from './cv-structure';
 import { containsAny, normalize } from './text';
 import { isRoleHeader } from './experience-role';
 
-const months = [
+/*
+Meses en español e inglés, completos y abreviados («ene.», «Sept», «Aug»), ya normalizados. Una
+abreviatura solo cuenta seguida de un año, porque el patrón de fechas siempre lo exige.
+*/
+const spanishMonths = [
   'enero',
   'febrero',
   'marzo',
@@ -21,7 +25,45 @@ const months = [
   'noviembre',
   'diciembre',
 ];
-const endpoint = `(?:${months.join('|')})\\s+\\d{4}|\\d{1,2}/\\d{4}|\\d{4}`;
+const englishMonths = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+];
+const abbreviations = [
+  ['ene', 'jan'],
+  ['feb'],
+  ['mar'],
+  ['abr', 'apr'],
+  ['may'],
+  ['jun'],
+  ['jul'],
+  ['ago', 'aug'],
+  ['sep', 'sept'],
+  ['oct'],
+  ['nov'],
+  ['dic', 'dec'],
+];
+const monthIndex = new Map<string, number>([
+  ...spanishMonths.map((name, month): [string, number] => [name, month]),
+  ...englishMonths.map((name, month): [string, number] => [name, month]),
+  ...abbreviations.flatMap((names, month) => names.map((name): [string, number] => [name, month])),
+  ['setiembre', 8],
+]);
+// Los nombres más largos primero, para que «septiembre» no se lea como «sep».
+const monthPattern = [...monthIndex.keys()].sort((a, b) => b.length - a.length).join('|');
+const endpoint = `(?:${monthPattern})\\.?(?:\\s+de)?\\s+\\d{4}|\\d{1,2}/\\d{4}|\\d{4}`;
+// Final abierto de un periodo: «actualidad», «presente», «hoy», «present», «current»…
+const ongoing = '(?:la\\s+)?actualidad|presente|actual|hoy|present|current|now|today';
 const excluded = [
   'curso',
   'formacion',
@@ -52,11 +94,16 @@ type Period = {
 };
 
 function bound(text: string, reference: number): Bound | null {
-  if (text === 'actualidad') return { earliest: reference, latest: reference, yearOnly: false };
-  const named = new RegExp(`^(${months.join('|')})\\s+(\\d{4})$`).exec(text);
+  if (new RegExp(`^(?:${ongoing})$`).test(text))
+    return { earliest: reference, latest: reference, yearOnly: false };
+  const named = new RegExp(`^(${monthPattern})\\.?(?:\\s+de)?\\s+(\\d{4})$`).exec(text);
   const numeric = /^(\d{1,2})\/(\d{4})$/.exec(text);
   const year = Number(named?.[2] ?? numeric?.[2] ?? text);
-  const month = named ? months.indexOf(named[1]) : numeric ? Number(numeric[1]) - 1 : null;
+  const month = named
+    ? (monthIndex.get(named[1]) ?? null)
+    : numeric
+      ? Number(numeric[1]) - 1
+      : null;
   if (
     !Number.isInteger(year) ||
     year < 1900 ||
@@ -91,7 +138,7 @@ export function workExperience(units: CvUnit[], referenceDate: Date, role?: stri
     const line = normalize(unit.sourceLine ?? unit.text);
     const excludedLine = containsAny(line, excluded);
     const pattern = new RegExp(
-      `(^|[^\\p{L}\\d/])(${endpoint})\\s*(?:[–—-]|\\ba\\b|\\bhasta\\b)\\s*(${endpoint}|actualidad)(?=$|[^\\p{L}\\d/])`,
+      `(^|[^\\p{L}\\d/])(${endpoint})\\s*(?:[–—-]|\\ba\\b|\\bhasta\\b|\\bto\\b|\\buntil\\b)\\s*(${endpoint}|${ongoing})(?=$|[^\\p{L}\\d/])`,
       'gu',
     );
     const ranges = [...unit.normalized.matchAll(pattern)];

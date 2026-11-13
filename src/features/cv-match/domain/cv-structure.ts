@@ -57,6 +57,10 @@ const sectionHeadings: [CvSectionKind, string[]][] = [
       'work experience',
       'professional experience',
       'employment history',
+      'employment',
+      'work history',
+      'career history',
+      'professional background',
     ],
   ],
   [
@@ -68,6 +72,10 @@ const sectionHeadings: [CvSectionKind, string[]][] = [
       'cursos',
       'certifications',
       'courses',
+      'licencias y certificaciones',
+      'licenses and certifications',
+      'licenses & certifications',
+      'training',
     ],
   ],
   [
@@ -81,6 +89,8 @@ const sectionHeadings: [CvSectionKind, string[]][] = [
       'titulaciones',
       'education',
       'academic background',
+      'education and training',
+      'academic qualifications',
     ],
   ],
   [
@@ -98,10 +108,29 @@ const sectionHeadings: [CvSectionKind, string[]][] = [
       'stack',
       'skills',
       'technical skills',
+      'key skills',
+      'core skills',
+      'soft skills',
+      'competencies',
+      'core competencies',
+      'technologies',
+      'tech stack',
+      'tools',
     ],
   ],
-  ['languages', ['idiomas', 'lenguas', 'languages']],
-  ['projects', ['proyectos', 'proyectos personales', 'portfolio', 'portafolio', 'projects']],
+  ['languages', ['idiomas', 'lenguas', 'languages', 'language skills']],
+  [
+    'projects',
+    [
+      'proyectos',
+      'proyectos personales',
+      'portfolio',
+      'portafolio',
+      'projects',
+      'personal projects',
+      'side projects',
+    ],
+  ],
   [
     'profile',
     [
@@ -116,6 +145,8 @@ const sectionHeadings: [CvSectionKind, string[]][] = [
       'summary',
       'profile',
       'about me',
+      'professional summary',
+      'personal profile',
     ],
   ],
 ];
@@ -134,11 +165,24 @@ function headingKind(text: string): CvSectionKind | null {
   return best?.kind ?? null;
 }
 
+/*
+Las plantillas de diseño escriben a veces los encabezados con letras separadas
+(«E X P E R I E N C I A»), y los PDF así generados se extraen igual. Solo se juntan las letras de
+una línea formada únicamente por letras sueltas, con dos espacios o más entre palabras.
+*/
+function joinSpacedLetters(text: string): string {
+  if (!/^\p{L}(?: {1,3}\p{L})+$/u.test(text) || !/\p{L} \p{L} \p{L}/u.test(text)) return text;
+  return text
+    .split(/ {2,}/)
+    .map((word) => word.replace(/ /g, ''))
+    .join(' ');
+}
+
 function sectionHeading(
   line: { text: string; bulleted: boolean },
   index: CatalogIndex,
 ): CvSectionKind | null {
-  const normalized = normalize(line.text);
+  const normalized = normalize(joinSpacedLetters(line.text.trim()));
   if (line.bulleted || namesAnyTerm(normalized, index)) return null;
   const endsWithColon = /:\s*$/.test(normalized);
   const text = normalized

@@ -68,6 +68,14 @@ export function splitSentences(text: string): string[] {
       /^(?:de\s+)?\d{1,2}\s*\+?\s*anos\b/.test(normalize(text.slice(boundary.lastIndex)))
     )
       continue;
+    // «ene. 2019 – actualidad»: un mes abreviado seguido de un año forma parte de una fecha.
+    if (
+      /\b(?:ene|feb|mar|abr|may|jun|jul|ago|sep|sept|oct|nov|dic|jan|apr|aug|dec)\.$/.test(
+        normalize(text.slice(start, match.index + 1)),
+      ) &&
+      /^(?:de\s+)?(?:19|20)\d{2}\b/.test(text.slice(boundary.lastIndex))
+    )
+      continue;
     sentences.push(text.slice(start, match.index + 1).trim());
     start = match.index + match[0].length;
   }

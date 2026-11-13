@@ -84,9 +84,18 @@ export type Evidence = {
   section: CvSectionKind;
   role: EvidenceRole;
   signals: EvidenceSignal[];
+  /** El término literal del CV cuando coincide por un sinónimo de ESCO y no por el nombre habitual. */
+  escoSynonym?: string;
 };
 
 export type RequirementStatus = 'supported' | 'mentioned' | 'missing' | 'not-evaluable';
+
+/**
+ * Evidencia parcial verificable de un requisito que no se cumple del todo: un nivel de idioma o
+ * unos años inferiores a los pedidos, con las frases del CV que lo indican. Es informativa: no
+ * cambia el estado ni los puntos del requisito.
+ */
+export type PartialEvidence = { achieved: string; required: string };
 
 export type RequirementAssessment = {
   requirement: OfferRequirement;
@@ -94,6 +103,7 @@ export type RequirementAssessment = {
   /** Why the requirement got its status, in plain language. */
   reason: string;
   evidence: Evidence[];
+  partial?: PartialEvidence;
   /** Points earned and weight in the coverage; `null` when the requirement is not evaluated. */
   contribution: { points: number; weight: number } | null;
 };

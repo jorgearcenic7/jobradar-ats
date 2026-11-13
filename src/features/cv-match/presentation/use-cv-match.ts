@@ -57,6 +57,8 @@ export function useCvMatch(cv: CvInput, focusField: (field: InputField) => void)
     offerText,
     errors: attempted ? missing : [],
     result: cvReplaced ? null : (analysis?.result ?? null),
+    /** Texto del CV del último análisis: el análisis semántico busca en él, no en el actual. */
+    analyzedCvText: cvReplaced ? null : (analysis?.cvText ?? null),
     comparison,
     offerChanged,
     cvReplaced,

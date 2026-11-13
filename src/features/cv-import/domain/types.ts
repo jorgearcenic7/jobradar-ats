@@ -43,6 +43,8 @@ export type ExtractionIssue =
   | { code: 'unreadable-characters'; level: 'error' | 'warning'; ratio: number }
   | { code: 'pages-without-text'; level: 'warning'; pages: number[] }
   | { code: 'reading-order'; level: 'warning'; pages: number[] }
+  | { code: 'columns-reordered'; level: 'uncertain'; pages: number[] }
+  | { code: 'fragmented-lines'; level: 'uncertain' }
   | { code: 'little-text'; level: 'uncertain'; letters: number; lettersPerPage: number | null };
 
 /** Status of a document whose text was extracted. */

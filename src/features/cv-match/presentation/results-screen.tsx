@@ -22,6 +22,8 @@ import { ThemedText } from '@/shared/ui/themed-text';
 import { AnalysisResults } from './analysis-results';
 import { useAnalysisSession } from './analysis-session';
 import { ResultsPage } from './results-layout';
+import { SemanticPanel } from './semantic-panel';
+import { useSemanticReview } from './use-semantic-review';
 
 const isWeb = process.env.EXPO_OS === 'web';
 
@@ -32,7 +34,8 @@ export type ResultsScreenProps = {
 
 export function ResultsScreen({ onEdit }: ResultsScreenProps) {
   const { match } = useAnalysisSession();
-  const { result, comparison, offerChanged, isOutdated, cvReplaced } = match;
+  const { result, comparison, offerChanged, isOutdated, cvReplaced, analyzedCvText } = match;
+  const semantic = useSemanticReview(result, analyzedCvText);
   const titleRef = useRef<ComponentRef<typeof View>>(null);
 
   useEffect(() => {
@@ -82,7 +85,19 @@ export function ResultsScreen({ onEdit }: ResultsScreenProps) {
         </View>
 
         {result ? (
-          <AnalysisResults result={result} comparison={comparison} offerChanged={offerChanged} />
+          <AnalysisResults
+            result={result}
+            comparison={comparison}
+            offerChanged={offerChanged}
+            semanticReview={semantic.state.kind === 'ready' ? semantic.state.review : undefined}
+            semanticPanel={
+              <SemanticPanel
+                state={semantic.state}
+                onActivate={() => void semantic.activate()}
+                onRemove={() => void semantic.remove()}
+              />
+            }
+          />
         ) : cvReplaced ? (
           <EmptyState
             title="Has cambiado de CV"

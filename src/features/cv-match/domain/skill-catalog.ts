@@ -1,4 +1,5 @@
-import { compileTerms, findTerms, type Term } from './text';
+import { escoSynonyms } from './esco-synonyms';
+import { compileTerms, findTerms, normalize, type Term } from './text';
 
 /**
  * Concepts the analysis can recognize. The structure follows ESCO's split between
@@ -7,12 +8,17 @@ import { compileTerms, findTerms, type Term } from './text';
  *
  * Aliases are compared after lowercasing and removing accents. Anything that is not
  * in a catalog is reported as not evaluable instead of being guessed.
+ *
+ * Desde la v1.4, el catálogo por defecto añade a algunos conceptos sinónimos revisados de ESCO
+ * (ver `esco-synonyms.ts`). Se guardan también en `esco` para poder indicar al usuario que una
+ * evidencia coincide por un sinónimo y no por el nombre habitual.
  */
 export type SkillConcept = {
   id: string;
   kind: 'skill' | 'knowledge' | 'transversal';
   label: string;
   aliases: string[];
+  esco?: { uri: string; labels: string[] };
 };
 
 export type LanguageConcept = {
@@ -42,8 +48,7 @@ const transversal = (id: string, label: string, aliases: string[]): SkillConcept
   aliases,
 });
 
-/** Initial catalog: software development. Extend it or pass another one to the analysis. */
-export const skillCatalog: readonly SkillConcept[] = [
+const baseCatalog: readonly SkillConcept[] = [
   skill('javascript', 'JavaScript', ['javascript', 'ecmascript']),
   skill('typescript', 'TypeScript', ['typescript']),
   skill('react', 'React', ['react', 'react.js', 'reactjs']),
@@ -120,6 +125,20 @@ export const skillCatalog: readonly SkillConcept[] = [
     'problem solving',
   ]),
 ];
+
+/** Initial catalog: software development. Extend it or pass another one to the analysis. */
+export const skillCatalog: readonly SkillConcept[] = baseCatalog.map((concept) => {
+  const esco = escoSynonyms[concept.id];
+  if (!esco) return concept;
+  const own = new Set(concept.aliases.map(normalize));
+  const labels = esco.labels.filter((label) => !own.has(normalize(label)));
+  return { ...concept, aliases: [...concept.aliases, ...labels], esco: { uri: esco.uri, labels } };
+});
+
+/** Si una coincidencia del texto normalizado es un sinónimo de ESCO del concepto. */
+export function isEscoSynonym(concept: SkillConcept | undefined, matched: string): boolean {
+  return Boolean(concept?.esco?.labels.some((label) => normalize(label) === matched));
+}
 
 const languageCatalog: readonly LanguageConcept[] = [
   { id: 'en', label: 'inglés', aliases: ['ingles', 'english'] },

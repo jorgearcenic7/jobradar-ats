@@ -1,7 +1,8 @@
-import { useRef, useState, type ComponentRef } from 'react';
+import { useRef, useState, type ComponentRef, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { AnalysisComparison } from '@/features/cv-match/domain/compare';
+import type { SemanticReview } from '@/features/cv-match/domain/semantic-candidates';
 import type { AnalysisResult, RequirementStatus } from '@/features/cv-match/domain/types';
 import { space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
@@ -23,9 +24,19 @@ type AnalysisResultsProps = {
   result: AnalysisResult;
   comparison: AnalysisComparison | null;
   offerChanged: boolean;
+  /** Bloque del análisis semántico opcional, tras las recomendaciones. */
+  semanticPanel?: ReactNode;
+  /** Posibles relaciones semánticas por requisito; no cambian ningún estado. */
+  semanticReview?: SemanticReview;
 };
 
-export function AnalysisResults({ result, comparison, offerChanged }: AnalysisResultsProps) {
+export function AnalysisResults({
+  result,
+  comparison,
+  offerChanged,
+  semanticPanel,
+  semanticReview,
+}: AnalysisResultsProps) {
   const [filter, setFilter] = useState<RequirementFilter>('all');
   const [otherExpanded, setOtherExpanded] = useState(false);
   const allFilterRef = useRef<ComponentRef<typeof View>>(null);
@@ -49,6 +60,7 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
 
           {/* Lo accionable va primero: las recomendaciones, antes del detalle de cada requisito. */}
           <RecommendationList recommendations={result.recommendations} />
+          {semanticPanel}
         </>
       }
       requirements={
@@ -98,7 +110,11 @@ export function AnalysisResults({ result, comparison, offerChanged }: AnalysisRe
                   </ThemedText>
                   <View role="list" style={styles.group}>
                     {items.map((item) => (
-                      <RequirementItem key={item.requirement.id} assessment={item} />
+                      <RequirementItem
+                        key={item.requirement.id}
+                        assessment={item}
+                        related={semanticReview?.[item.requirement.id]}
+                      />
                     ))}
                   </View>
                 </>

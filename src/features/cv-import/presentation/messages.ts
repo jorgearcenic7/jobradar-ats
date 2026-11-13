@@ -43,6 +43,10 @@ export function issueMessage(issue: ExtractionIssue): string {
       return `${listPages(issue.pages)} no ${issue.pages.length > 1 ? 'contienen' : 'contiene'} texto. Si incluyen contenido escaneado, no se analizará.`;
     case 'reading-order':
       return `${listPages(issue.pages)} parece tener varias columnas: revisa que el texto esté en el orden correcto.`;
+    case 'columns-reordered':
+      return `${listPages(issue.pages)} tiene dos columnas que el PDF mezclaba línea a línea: JobRadar las ha leído una detrás de otra. Revisa que el texto esté completo y en orden.`;
+    case 'fragmented-lines':
+      return 'Muchas líneas del texto extraído tienen solo una o dos palabras: el diseño del documento puede haberse leído a trozos. Revisa el texto antes de analizar.';
     case 'little-text':
       return 'Se ha extraído poco texto. Si tu CV es breve es normal; si no, revisa que no falte nada.';
   }

@@ -34,6 +34,13 @@ export type QualityThresholds = {
    * CV usually holds well over 1,000 letters; much less may mean parts are images of text.
    */
   littleTextLettersPerPage: number;
+  /**
+   * Líneas con texto a partir de las cuales se comprueba si están rotas, y media de palabras por
+   * línea por debajo de la cual se avisa. Un CV corrido ronda las 8 palabras por línea; un diseño
+   * que el lector parte en trozos (tablas, cajas, letras sueltas) baja de 2,5.
+   */
+  shortLinesMinLines: number;
+  shortLinesMaxWordsPerLine: number;
 };
 
 export const defaultQualityThresholds: QualityThresholds = {
@@ -41,6 +48,8 @@ export const defaultQualityThresholds: QualityThresholds = {
   unreadableErrorRatio: 0.3,
   littleTextLetters: 250,
   littleTextLettersPerPage: 250,
+  shortLinesMinLines: 30,
+  shortLinesMaxWordsPerLine: 2.5,
 };
 
 export type ExtractionInput = {
@@ -49,6 +58,7 @@ export type ExtractionInput = {
   /** Letters per page, for formats with pages. */
   pages?: PageLetters[];
   multiColumnPages?: number[];
+  reorderedColumnPages?: number[];
 };
 
 const levelOrder: IssueLevel[] = ['error', 'warning', 'uncertain'];
@@ -70,7 +80,7 @@ function unreadableRatio(text: string) {
  * taken as proof of a scanned document.
  */
 export function assessExtraction(
-  { format, text, pages, multiColumnPages = [] }: ExtractionInput,
+  { format, text, pages, multiColumnPages = [], reorderedColumnPages = [] }: ExtractionInput,
   thresholds: QualityThresholds = defaultQualityThresholds,
 ): ExtractionIssue[] {
   const issues: ExtractionIssue[] = [];
@@ -104,6 +114,9 @@ export function assessExtraction(
   if (multiColumnPages.length > 0) {
     issues.push({ code: 'reading-order', level: 'warning', pages: multiColumnPages });
   }
+  if (reorderedColumnPages.length > 0) {
+    issues.push({ code: 'columns-reordered', level: 'uncertain', pages: reorderedColumnPages });
+  }
 
   // An error already explains the problem; the note would only repeat it.
   if (!issues.some((issue) => issue.level === 'error')) {
@@ -120,6 +133,18 @@ export function assessExtraction(
       lettersPerPage !== null && lettersPerPage < thresholds.littleTextLettersPerPage;
     if (littleOverall || littlePerPage) {
       issues.push({ code: 'little-text', level: 'uncertain', letters, lettersPerPage });
+    }
+
+    // Muchas líneas de una o dos palabras: el diseño se ha leído a trozos y puede faltar contexto.
+    const lines = text.split('\n').filter((line) => line.trim());
+    const wordsPerLine =
+      lines.reduce((total, line) => total + line.trim().split(/\s+/).length, 0) /
+      Math.max(lines.length, 1);
+    if (
+      lines.length >= thresholds.shortLinesMinLines &&
+      wordsPerLine < thresholds.shortLinesMaxWordsPerLine
+    ) {
+      issues.push({ code: 'fragmented-lines', level: 'uncertain' });
     }
   }
 
