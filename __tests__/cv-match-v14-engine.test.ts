@@ -31,11 +31,14 @@ describe('work periods in more formats', () => {
   });
 
   it('keeps an abbreviated month and its year in the same sentence', () => {
-    expect(splitSentences('Tiendas Ejemplo · ene. 2019 – actualidad. Atención al público.')).toEqual(
-      ['Tiendas Ejemplo · ene. 2019 – actualidad.', 'Atención al público.'],
-    );
+    expect(
+      splitSentences('Tiendas Ejemplo · ene. 2019 – actualidad. Atención al público.'),
+    ).toEqual(['Tiendas Ejemplo · ene. 2019 – actualidad.', 'Atención al público.']);
     // Sin un año detrás, el punto sigue cerrando la frase.
-    expect(splitSentences('Turno de mar. Luego, tarde.')).toEqual(['Turno de mar.', 'Luego, tarde.']);
+    expect(splitSentences('Turno de mar. Luego, tarde.')).toEqual([
+      'Turno de mar.',
+      'Luego, tarde.',
+    ]);
   });
 
   it('does not change the points of a period that was already read', () => {
@@ -122,7 +125,9 @@ describe('ESCO synonyms', () => {
     }
     for (const [id, { labels }] of Object.entries(escoSynonyms)) {
       const concept = skillCatalog.find((item) => item.id === id)!;
-      expect(concept.esco?.labels).toEqual(labels.filter((label) => concept.aliases.includes(label)));
+      expect(concept.esco?.labels).toEqual(
+        labels.filter((label) => concept.aliases.includes(label)),
+      );
     }
   });
 });
@@ -161,10 +166,7 @@ describe('informative partial evidence', () => {
   });
 
   it('does not report a mere mention as partial evidence', () => {
-    const result = analyze(
-      'Habilidades\nReact.',
-      'Requisitos\n- 3 años de experiencia con React.',
-    );
+    const result = analyze('Habilidades\nReact.', 'Requisitos\n- 3 años de experiencia con React.');
     expect(requirement(result, 'years:3:react').partial).toBeUndefined();
   });
 

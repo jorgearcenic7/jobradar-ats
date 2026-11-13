@@ -7,6 +7,7 @@ principales; la protección de salida se monta en el layout del analizador.
 */
 import { StyleSheet, View } from 'react-native';
 
+import { cleanOfferText } from '@/features/cv-match/domain/offer-cleanup';
 import type { AnalysisResult } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
 import { radius, space } from '@/shared/theme';
@@ -22,6 +23,7 @@ import { AnalysisStepper } from './analysis-stepper';
 import { useAnalysisSession } from './analysis-session';
 import { CvSection } from './cv-section';
 import { formatPercent } from './labels';
+import { OfferCleanupNotice } from './offer-cleanup-notice';
 import { OfferSection } from './offer-section';
 
 function statusMessage(result: AnalysisResult | null, isOutdated: boolean) {
@@ -104,6 +106,7 @@ export function CvMatchScreen({ onShowResults }: CvMatchScreenProps) {
             }
             fieldRef={session.offerRef}
           />
+          <OfferCleanupNotice cleanup={cleanOfferText(match.offerText)} moment="before" />
         </Card>
       </View>
 

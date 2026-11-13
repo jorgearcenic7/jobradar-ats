@@ -20,6 +20,7 @@ import { Screen } from '@/shared/ui/screen';
 import { ThemedText } from '@/shared/ui/themed-text';
 
 import { AnalysisResults } from './analysis-results';
+import { OfferCleanupNotice } from './offer-cleanup-notice';
 import { useAnalysisSession } from './analysis-session';
 import { ResultsPage } from './results-layout';
 import { SemanticPanel } from './semantic-panel';
@@ -84,6 +85,7 @@ export function ResultsScreen({ onEdit }: ResultsScreenProps) {
           </View>
         </View>
 
+        {result ? <OfferCleanupNotice cleanup={match.offerCleanup} moment="after" /> : null}
         {result ? (
           <AnalysisResults
             result={result}

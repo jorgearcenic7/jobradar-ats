@@ -53,7 +53,10 @@ export function SemanticPanel({ state, onActivate, onRemove }: SemanticPanelProp
         <ThemedText step="footnote" color="textSecondary">
           {state.reason === 'unsupported'
             ? 'Este navegador no permite ejecutar el modelo. El análisis habitual funciona igual.'
-            : 'Esta versión de JobRadar no incluye el modelo. El análisis habitual funciona igual.'}
+            : `Esta versión de JobRadar no incluye el modelo. El análisis habitual funciona igual.${
+                // En desarrollo, el modelo se prepara aparte una sola vez (ver metro.config.js).
+                __DEV__ ? ' En desarrollo, ejecuta «npm run semantic:dev» y recarga la página.' : ''
+              }`}
         </ThemedText>
       );
       break;

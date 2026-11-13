@@ -16,8 +16,6 @@ module.exports = defineConfig([
       'ios/*',
       'android/*',
       'supabase/functions/*/index.ts',
-      // Modelo y runtime semánticos copiados por scripts/prepare-semantic-model.cjs.
-      'public/semantic/*',
     ],
   },
 ]);

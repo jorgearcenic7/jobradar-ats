@@ -9,9 +9,6 @@ dist/
 web-build/
 expo-env.d.ts
 
-# Modelo semántico preparado para el servidor de desarrollo (npm run semantic:dev)
-public/semantic/
-
 # Native
 .kotlin/
 *.orig.*

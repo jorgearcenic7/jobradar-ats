@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { analyzeMatch } from '@/features/cv-match/domain/analyze-match';
 import { compareAnalyses, type AnalysisComparison } from '@/features/cv-match/domain/compare';
 import { missingInputs, type InputField } from '@/features/cv-match/domain/input';
+import { cleanOfferText, type OfferCleanup } from '@/features/cv-match/domain/offer-cleanup';
 import type { AnalysisResult } from '@/features/cv-match/domain/types';
 
 import { sampleOffer } from './sample-texts';
@@ -15,7 +16,14 @@ export type CvInput = {
   sourceKey: string;
 };
 
-type Analysis = { result: AnalysisResult; cvText: string; offerText: string; sourceKey: string };
+type Analysis = {
+  result: AnalysisResult;
+  cvText: string;
+  offerText: string;
+  sourceKey: string;
+  /** Lo que se dejó fuera de la oferta al analizar (páginas de LinkedIn). */
+  offerCleanup: OfferCleanup;
+};
 
 /**
  * State of the analysis. Everything stays in memory: the texts are never stored nor sent
@@ -41,12 +49,14 @@ export function useCvMatch(cv: CvInput, focusField: (field: InputField) => void)
       return false;
     }
     setAttempted(false);
-    const result = analyzeMatch(cv.text, offerText);
+    // Se analiza la oferta sin el contenido ajeno de la página; el texto del usuario no cambia.
+    const offerCleanup = cleanOfferText(offerText);
+    const result = analyzeMatch(cv.text, offerCleanup.text);
     // Comparing only makes sense for versions of the CV against the same offer.
     const sameOffer = analysis?.offerText === offerText;
     setComparison(analysis && sameOffer ? compareAnalyses(analysis.result, result) : null);
     setOfferChanged(analysis !== null && !sameOffer);
-    setAnalysis({ result, cvText: cv.text, offerText, sourceKey: cv.sourceKey });
+    setAnalysis({ result, cvText: cv.text, offerText, sourceKey: cv.sourceKey, offerCleanup });
     return true;
   };
 
@@ -57,6 +67,7 @@ export function useCvMatch(cv: CvInput, focusField: (field: InputField) => void)
     offerText,
     errors: attempted ? missing : [],
     result: cvReplaced ? null : (analysis?.result ?? null),
+    offerCleanup: cvReplaced ? null : (analysis?.offerCleanup ?? null),
     /** Texto del CV del último análisis: el análisis semántico busca en él, no en el actual. */
     analyzedCvText: cvReplaced ? null : (analysis?.cvText ?? null),
     comparison,

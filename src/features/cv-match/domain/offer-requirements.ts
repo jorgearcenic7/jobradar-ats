@@ -79,6 +79,8 @@ const requiredWords = [
   'necesario',
   'necesaria',
   'must have',
+  'must haves',
+  'must-haves',
   'required',
   'minimos',
   'minimum',
@@ -91,6 +93,9 @@ const requirementHeadingWords = [
   'que pedimos',
   'que necesitamos',
   'qualifications',
+  'what you will need',
+  'what you need',
+  'what we need',
 ];
 
 const preferredWords = [
@@ -102,7 +107,11 @@ const preferredWords = [
   'deseable',
   'deseables',
   'nice to have',
+  'nice to haves',
+  'nice-to-have',
+  'nice-to-haves',
   'plus',
+  'pluses',
   'bonus',
   'preferred',
   'preferible',
@@ -131,6 +140,14 @@ const descriptionHeadingWords = [
   'tu dia a dia',
   'responsibilities',
   'what you will do',
+  'what you will be doing',
+  'about the role',
+  'the role',
+  'your role',
+  'role overview',
+  'job description',
+  'tu rol',
+  'tus funciones',
   'descripcion',
   'el puesto',
   'sobre el puesto',
@@ -157,6 +174,7 @@ const profileHeadingWords = [
   'what we are looking for',
   "what we're looking for",
   'what you bring',
+  'what you will bring',
   'you have',
 ];
 
@@ -231,6 +249,8 @@ const ignoredHeadingWords = [
   'compensation',
   'salario',
   'salary',
+  'pay range',
+  'pay transparency',
   'ubicacion',
   'localizacion',
   'location',
@@ -376,18 +396,23 @@ function headingOf(
     .replace(/^[#¿¡\s]+/, '')
     .trim();
   if (!text || text.includes(':') || /[.,;]$/.test(text) || countWords(text) > 6) return null;
+  // «What You'll Do» y «What You’ll Bring» se comparan como «what you will do» y «… bring».
+  const expanded = text
+    .replace(/[’']ll\b/g, ' will')
+    .replace(/[’']re\b/g, ' are')
+    .replace(/[’']ve\b/g, ' have');
 
-  if (containsAny(text, ignoredHeadingWords)) return { role: 'excluded' };
-  const stated = statedImportance(text);
+  if (containsAny(expanded, ignoredHeadingWords)) return { role: 'excluded' };
+  const stated = statedImportance(expanded);
   if (stated) return { role: 'requirements', importance: stated };
   // «Requisitos» sin ningún matiz se entiende como una lista de requisitos obligatorios.
-  if (containsAny(text, requirementHeadingWords)) {
+  if (containsAny(expanded, requirementHeadingWords)) {
     return { role: 'requirements', importance: 'required' };
   }
-  if (containsAny(text, profileHeadingWords)) {
+  if (containsAny(expanded, profileHeadingWords)) {
     return { role: 'requirements', importance: 'unclassified' };
   }
-  if (containsAny(text, descriptionHeadingWords)) return { role: 'description' };
+  if (containsAny(expanded, descriptionHeadingWords)) return { role: 'description' };
 
   const looksLikeHeading = endsWithColon || (introducesList && /^[#¿¡\s]*\p{Lu}/u.test(line.text));
   if (!looksLikeHeading) return null;
@@ -564,7 +589,7 @@ type DemandClause = {
 /** Solo listas técnicas delimitadas: no intenta adivinar competencias dentro de prosa. */
 function technicalList(text: string, index: CatalogIndex) {
   const prefix =
-    /^(?:(?:experiencia|conocimientos?|dominio|manejo)\s+(?:con|en|de)\s+|(?:imprescindible|valorable|deseable|obligatorio|se requiere|se valorara)\s*:?\s+)/.exec(
+    /^(?:(?:experiencia|conocimientos?|dominio|manejo)\s+(?:con|en|de)\s+|(?:(?:hands-on|strong|solid|proven)\s+)?(?:experience|knowledge|proficiency|expertise|familiarity)\s+(?:with|in|of)\s+|(?:imprescindible|valorable|deseable|obligatorio|se requiere|se valorara)\s*:?\s+)/.exec(
       normalize(text),
     );
   const body = text
@@ -572,7 +597,7 @@ function technicalList(text: string, index: CatalogIndex) {
     .trim()
     .replace(/[.;!?]+$/, '')
     .trim();
-  const parts = body.split(/\s+(?:y|o|u)\s+|,\s*/i);
+  const parts = body.split(/\s+(?:y|o|u|and|or)\s+|,\s*/i);
   if (parts.length < 2) return null;
   const items: { text: string; known: boolean }[] = [];
   for (const part of parts) {
@@ -598,11 +623,12 @@ function hasAlternative(text: string, index: CatalogIndex): boolean {
   const matches = findTerms(normalized, index.conceptTerms);
   if (
     matches.some(
-      (match, i) => i > 0 && /\b(?:o|u)\b/.test(normalized.slice(matches[i - 1].end, match.start)),
+      (match, i) =>
+        i > 0 && /\b(?:o|u|or)\b/.test(normalized.slice(matches[i - 1].end, match.start)),
     )
   )
     return true;
-  return /\s+(?:o|u)\s+/.test(normalized) && technicalList(text, index) !== null;
+  return /\s+(?:o|u|or)\s+/.test(normalized) && technicalList(text, index) !== null;
 }
 
 /** Mantiene «; basta con uno» unido al grupo sin cambiar la segmentación del CV. */

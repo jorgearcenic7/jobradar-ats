@@ -84,6 +84,18 @@ const baseCatalog: readonly SkillConcept[] = [
   skill('jira', 'Jira', ['jira']),
   skill('linux', 'Linux', ['linux']),
   skill('excel', 'Excel', ['excel']),
+  // Datos y analítica (v1.4): herramientas habituales en ofertas de ingeniería y análisis de datos.
+  skill('spark', 'Apache Spark', ['spark', 'apache spark', 'pyspark', 'spark sql']),
+  skill('databricks', 'Databricks', ['databricks']),
+  skill('airflow', 'Apache Airflow', ['airflow', 'apache airflow']),
+  skill('dbt', 'dbt', ['dbt']),
+  skill('snowflake', 'Snowflake', ['snowflake']),
+  skill('kafka', 'Apache Kafka', ['kafka', 'apache kafka']),
+  skill('terraform', 'Terraform', ['terraform']),
+  skill('scala', 'Scala', ['scala']),
+  skill('pandas', 'pandas', ['pandas']),
+  skill('tableau', 'Tableau', ['tableau']),
+  skill('power-bi', 'Power BI', ['power bi', 'powerbi']),
   knowledge('rest-api', 'API REST', ['api rest', 'apis rest', 'rest api', 'rest apis', 'restful']),
   knowledge('ci-cd', 'Integración y despliegue continuos', [
     'ci/cd',

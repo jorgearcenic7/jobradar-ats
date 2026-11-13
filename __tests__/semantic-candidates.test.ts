@@ -35,7 +35,7 @@ const offer = `Requisitos
 - Pruebas unitarias.
 - Trabajo en equipo.
 - Experiencia en testing automatizado de interfaces.
-- Experiencia con Tableau.
+- Experiencia con Qlik.
 - Inglés C1.
 - 5 años de experiencia profesional.`;
 
@@ -50,7 +50,7 @@ describe('semantic targets', () => {
       'Pruebas unitarias',
       'Trabajo en equipo',
       'Experiencia en testing automatizado de interfaces.',
-      'Experiencia con Tableau.',
+      'Experiencia con Qlik.',
     ]);
   });
 
@@ -59,12 +59,10 @@ describe('semantic targets', () => {
   });
 
   it('requires the named terms of an unrecognized requirement in the CV sentence', () => {
-    expect(targets.queries.find((query) => query.text.includes('Tableau'))?.namedTerms).toEqual([
-      'tableau',
+    expect(targets.queries.find((query) => query.text.includes('Qlik'))?.namedTerms).toEqual([
+      'qlik',
     ]);
-    expect(targets.queries.find((query) => query.text.includes('testing'))?.namedTerms).toEqual(
-      [],
-    );
+    expect(targets.queries.find((query) => query.text.includes('testing'))?.namedTerms).toEqual([]);
   });
 
   it('leaves out the profile, the header, languages and qualified sentences', () => {
@@ -93,9 +91,9 @@ describe('semantic candidates', () => {
   const fixed: SemanticTargets = {
     queries: [
       { requirementId: 'a', text: 'A', namedTerms: [] },
-      { requirementId: 'b', text: 'B', namedTerms: ['tableau'] },
+      { requirementId: 'b', text: 'B', namedTerms: ['qlik'] },
     ],
-    passages: ['uno', 'dos con tableau', 'tres', 'cuatro', 'cinco'].map((text) => ({
+    passages: ['uno', 'dos con qlik', 'tres', 'cuatro', 'cinco'].map((text) => ({
       text,
       normalized: text,
       section: 'experience' as const,
@@ -109,11 +107,11 @@ describe('semantic candidates', () => {
   const review = selectSemanticCandidates(fixed, (q, p) => scores[q][p]);
 
   it('proposes the sentences that stand out over the median, best first', () => {
-    expect(review.a.map((item) => item.text)).toEqual(['uno', 'dos con tableau']);
+    expect(review.a.map((item) => item.text)).toEqual(['uno', 'dos con qlik']);
   });
 
   it('drops sentences that do not contain the named terms', () => {
-    expect(review.b.map((item) => item.text)).toEqual(['dos con tableau']);
+    expect(review.b.map((item) => item.text)).toEqual(['dos con qlik']);
   });
 
   it('proposes nothing below the margin or the floor', () => {

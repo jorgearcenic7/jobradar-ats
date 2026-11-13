@@ -205,7 +205,7 @@ describe('alternative and partial technical requirements', () => {
   it.each([
     'Experiencia con Docker o Kubernetes; basta con uno.',
     'Experiencia con Docker o Kubernetes.',
-    'Experiencia con SQL o Databricks.',
+    'Experiencia con SQL o Teradata.',
   ])(
     'retains an alternative group for review without penalizing the other option: %s',
     (sentence) => {
@@ -237,10 +237,10 @@ describe('alternative and partial technical requirements', () => {
   });
 
   it.each([
-    'Experiencia con SQL y Databricks.',
-    'Experiencia con Databricks y SQL.',
-    'Experiencia con SQL, Python y Databricks.',
-    'Experiencia con SQL y Databricks y Databricks.',
+    'Experiencia con SQL y Teradata.',
+    'Experiencia con Teradata y SQL.',
+    'Experiencia con SQL, Python y Teradata.',
+    'Experiencia con SQL y Teradata y Teradata.',
   ])('preserves the known requirements and isolates the unknown item: %s', (sentence) => {
     const result = analyzeMatch(cv, `Requisitos\n- ${sentence}`);
     const sql = assessment(result, 'concept:sql');
@@ -253,7 +253,7 @@ describe('alternative and partial technical requirements', () => {
     const reviews = result.requirements.filter((i) => i.requirement.kind === 'review');
     expect(reviews).toHaveLength(1);
     expect(reviews[0]).toMatchObject({
-      requirement: { label: 'Databricks', cause: 'partial-recognition', sources: [sentence] },
+      requirement: { label: 'Teradata', cause: 'partial-recognition', sources: [sentence] },
       status: 'not-evaluable',
       contribution: null,
     });
@@ -267,9 +267,9 @@ describe('alternative and partial technical requirements', () => {
   });
 
   it.each([
-    ['Usamos SQL y Databricks en el producto.', 0, 1],
-    ['Funciones\n- Mantener servicios con SQL y Databricks.', 1, 0],
-    ['Sobre nosotros\n- Usamos SQL y Databricks.', 0, 0],
+    ['Usamos SQL y Teradata en el producto.', 0, 1],
+    ['Funciones\n- Mantener servicios con SQL y Teradata.', 1, 0],
+    ['Sobre nosotros\n- Usamos SQL y Teradata.', 0, 0],
     ['Requisitos\n- SQL y ganas de aprender.', 1, 0],
   ])(
     'does not invent partial requirements from unsafe or contextual text: %s',
