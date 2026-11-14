@@ -13,7 +13,7 @@ import { AppNavigation } from '@/shared/navigation/app-navigation';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
 import { Disclosure } from '@/shared/ui/disclosure';
-import { Icon, type IconName } from '@/shared/ui/icon';
+import { Icon } from '@/shared/ui/icon';
 import { Screen } from '@/shared/ui/screen';
 import { ThemedText } from '@/shared/ui/themed-text';
 
@@ -22,31 +22,25 @@ import { HomeFooter } from './home-footer';
 
 const isWeb = process.env.EXPO_OS === 'web';
 
-const steps: { title: string; description: string; icon: IconName }[] = [
+const steps: { title: string; description: string }[] = [
   {
     title: 'Añade tu CV',
     description: isWeb
       ? 'Un PDF con texto o un Word (.docx), o pega el texto directamente.'
       : 'Pega el texto de tu CV. La importación de archivos en iOS y Android está pendiente.',
-    icon: 'uploadFile',
   },
   {
     title: 'Pega la oferta',
     description: 'Completa, sin recortar: los requisitos se leen de su texto.',
-    icon: 'contentPaste',
   },
   {
     title: 'Consulta los resultados',
     description: 'Revisa qué requisitos respalda tu CV, sus evidencias y qué puedes mejorar.',
-    icon: 'search',
   },
 ];
 
-const checks = [
-  'PDF con texto o Word (.docx)',
-  'O pega el texto directamente',
-  'Nada se guarda ni se envía',
-];
+// La privacidad ya está en la píldora de arriba y en el pie: aquí solo los formatos admitidos.
+const checks = ['PDF con texto o Word (.docx)', 'O pega el texto directamente'];
 
 /*
 Solo web: el titular crece con la ventana entre 40 y 68 px. React Native solo admite números en
@@ -138,43 +132,40 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
       <ExampleResultCard />
 
       <View ref={stepsRef} style={styles.section}>
-        <View style={styles.sectionHeading}>
-          <ThemedText step="caption" color="accentText" style={[styles.eyebrow, styles.centered]}>
-            CÓMO FUNCIONA
+        <View ref={stepsTitleRef} tabIndex={-1} style={styles.focusTarget}>
+          <ThemedText
+            step="section"
+            accessibilityRole="header"
+            aria-level={2}
+            style={styles.centered}>
+            Tres pasos, sin registro
           </ThemedText>
-          <View ref={stepsTitleRef} tabIndex={-1} style={styles.focusTarget}>
-            <ThemedText
-              step="section"
-              accessibilityRole="header"
-              aria-level={2}
-              style={styles.centered}>
-              Tres pasos, sin registro
-            </ThemedText>
-          </View>
         </View>
+        {/*
+        Una secuencia, no tres tarjetas: cada paso arranca en una línea con su número. En escritorio
+        se leen de izquierda a derecha; en el móvil, de arriba abajo, como una lista numerada.
+        */}
         <View role="list" style={styles.stepGrid}>
           {steps.map((step, index) => (
-            <Card key={step.title} role="listitem" style={styles.step}>
-              <View style={styles.stepTop}>
-                <View style={[styles.iconSquare, { backgroundColor: theme.accentSubtle }]}>
-                  <Icon name={step.icon} color="onAccentSubtle" />
-                </View>
-                {/* El orden ya lo da la lista; el número es solo visual. */}
-                <ThemedText
-                  step="footnote"
-                  color="textTertiary"
-                  style={styles.stepNumber}
-                  aria-hidden
-                  accessibilityElementsHidden
-                  importantForAccessibility="no-hide-descendants">
-                  {String(index + 1).padStart(2, '0')}
+            <View
+              key={step.title}
+              role="listitem"
+              style={[styles.step, { borderTopColor: theme.border }]}>
+              {/* El orden ya lo da la lista; el número es solo visual. */}
+              <View
+                style={[styles.stepNumber, { backgroundColor: theme.accentSubtle }]}
+                aria-hidden
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants">
+                <ThemedText step="footnote" color="onAccentSubtle" style={styles.stepNumberText}>
+                  {index + 1}
                 </ThemedText>
               </View>
               <ThemedText step="headline">{step.title}</ThemedText>
               <ThemedText step="callout" color="textSecondary">
                 {step.description}
               </ThemedText>
-            </Card>
+            </View>
           ))}
         </View>
       </View>
@@ -226,9 +217,6 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
           aria-level={2}
           style={[styles.centered, styles.ctaTitle]}>
           ¿Tu CV está a la altura de la oferta?
-        </ThemedText>
-        <ThemedText step="body" color="ctaTextSecondary" style={styles.centered}>
-          Compruébalo ahora, sin que tus datos salgan de tu dispositivo.
         </ThemedText>
         <Button
           label="Analizar mi CV"
@@ -285,28 +273,32 @@ const styles = StyleSheet.create({
   },
   check: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   // La cabecera fija de la web no tapa el título al llegar desde «Cómo funciona».
-  section: { gap: space[8], scrollMarginTop: 96 } as object,
-  sectionHeading: { alignItems: 'center', gap: space[2] },
-  eyebrow: { fontWeight: 600, letterSpacing: 1 },
+  section: { gap: space[10], scrollMarginTop: 96 } as object,
   // El título recibe el foco por programa; no se dibuja un anillo porque no es interactivo.
-  focusTarget: { maxWidth: '100%', outlineStyle: 'solid', outlineWidth: 0 },
-  stepGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: space[4] },
-  step: { flexBasis: 260, flexGrow: 1, minWidth: 0, gap: space[2], padding: space[6] },
-  stepTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: space[2],
+  focusTarget: {
+    maxWidth: '100%',
+    alignSelf: 'center',
+    outlineStyle: 'solid',
+    outlineWidth: 0,
   },
-  iconSquare: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.icon,
-    borderCurve: 'continuous',
+  stepGrid: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space[8], rowGap: space[6] },
+  step: {
+    flexBasis: 260,
+    flexGrow: 1,
+    minWidth: 0,
+    gap: space[2],
+    paddingTop: space[5],
+    borderTopWidth: 1,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    marginBottom: space[2],
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  stepNumber: { fontVariant: ['tabular-nums'], fontWeight: 500 },
+  stepNumberText: { fontWeight: 600, fontVariant: ['tabular-nums'] },
   limits: { gap: space[3], padding: space[6] },
   limitRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space[3] },
   flexText: { flex: 1, minWidth: 0 },

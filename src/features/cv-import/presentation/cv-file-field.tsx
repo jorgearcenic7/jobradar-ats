@@ -11,7 +11,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
-import { radius, space } from '@/shared/theme';
+import { radius, space, webTransition } from '@/shared/theme';
 import type { BadgeTone } from '@/shared/ui/badge';
 import { Button } from '@/shared/ui/button';
 import { Disclosure } from '@/shared/ui/disclosure';
@@ -96,6 +96,7 @@ function Dropzone({
           const active = dragging || ((pressed || hovered) && !pickDisabled);
           return [
             styles.dropzone,
+            dropzoneTransition,
             {
               borderColor: invalid ? theme.danger : active ? theme.primary : theme.dropzoneBorder,
               backgroundColor: active ? theme.surfaceSelected : theme.dropzoneBackground,
@@ -259,7 +260,8 @@ export function CvFileField({ cvImport, error, onPasteInstead }: CvFileFieldProp
       : cv?.status === 'needs-review';
 
   return (
-    <View>
+    // Crece con su tarjeta para que la zona de subida llegue hasta abajo cuando hay sitio.
+    <View style={styles.field}>
       {showDropzone ? (
         <Dropzone
           onPick={cvImport.pick}
@@ -316,7 +318,13 @@ export function CvFileField({ cvImport, error, onPasteInstead }: CvFileFieldProp
   );
 }
 
+// Al pasar el puntero o arrastrar un archivo, el acento entra suave: confirma que soltar funcionará.
+const dropzoneTransition = webTransition(['background-color', 'border-color']);
+
 const styles = StyleSheet.create({
+  field: {
+    flexGrow: 1,
+  },
   block: {
     gap: space[3],
   },
@@ -324,6 +332,7 @@ const styles = StyleSheet.create({
     marginTop: space[3],
   },
   dropzone: {
+    flexGrow: 1,
     minHeight: 240,
     alignItems: 'center',
     justifyContent: 'center',

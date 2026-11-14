@@ -21,7 +21,7 @@ import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
-import { layout, radius, space, type ThemeColor } from '@/shared/theme';
+import { layout, radius, space, webTransition, type ThemeColor } from '@/shared/theme';
 import { focusRing, isKeyboardFocus } from '@/shared/ui/focus-ring';
 import { Icon, type IconName } from '@/shared/ui/icon';
 import { ThemedText } from '@/shared/ui/themed-text';
@@ -32,6 +32,8 @@ export type SegmentedOption<T extends string> = {
   label: string;
   /** Icono decorativo delante de la etiqueta. */
   icon?: IconName;
+  /** Recuento tras la etiqueta, en cifras tabulares. Se lee como «Etiqueta (n)». */
+  count?: number;
 };
 
 export type SegmentedControlProps<T extends string> = {
@@ -40,6 +42,13 @@ export type SegmentedControlProps<T extends string> = {
   options: readonly SegmentedOption<T>[];
   value: T;
   onChange: (value: T) => void;
+  /**
+   * `compact`: texto más pequeño y opciones de al menos 120 px que pasan a otra fila cuando no
+   * caben, por ejemplo cuatro filtros en el móvil (dos filas de dos).
+   */
+  size?: 'regular' | 'compact';
+  /** Recibe cada opción montada, para que quien usa el control pueda devolverle el foco. */
+  optionRef?: (value: T, node: { focus: () => void } | null) => void;
 };
 
 // Tecla del teclado → posición relativa o absoluta de la opción que se elige.
@@ -59,7 +68,10 @@ export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  size = 'regular',
+  optionRef,
 }: SegmentedControlProps<T>) {
+  const compact = size === 'compact';
   const theme = useTheme();
   const [keyboardFocus, setKeyboardFocus] = useState<T | null>(null);
   const optionRefs = useRef<({ focus: () => void } | null)[]>([]);
@@ -78,7 +90,7 @@ export function SegmentedControl<T extends string>({
     <View
       role="radiogroup"
       aria-label={accessibilityLabel}
-      style={[styles.group, { backgroundColor: theme.neutralSubtle }]}>
+      style={[styles.group, compact && styles.wrap, { backgroundColor: theme.neutralSubtle }]}>
       {options.map((option, index) => {
         const selected = option.value === value;
         const color: ThemeColor = selected ? 'text' : 'textSecondary';
@@ -87,10 +99,13 @@ export function SegmentedControl<T extends string>({
             key={option.value}
             ref={(node) => {
               optionRefs.current[index] = node;
+              optionRef?.(option.value, node);
             }}
             role="radio"
             aria-checked={selected}
-            accessibilityLabel={option.label}
+            accessibilityLabel={
+              option.count === undefined ? option.label : `${option.label} (${option.count})`
+            }
             /*
             Solo web: la opción elegida es la única parada de tabulación del grupo. React Native
             Web solo atiende a `tabIndex` en `Pressable`; `focusable` no lo cambia.
@@ -105,6 +120,8 @@ export function SegmentedControl<T extends string>({
             // `hovered` solo llega en la web (React Native Web); los tipos de React Native no lo declaran.
             style={({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => [
               styles.option,
+              compact && styles.compactOption,
+              optionTransition,
               selected
                 ? { backgroundColor: theme.segmentActive, boxShadow: theme.shadowSegment }
                 : (pressed || hovered) && { backgroundColor: theme.border },
@@ -112,10 +129,18 @@ export function SegmentedControl<T extends string>({
             ]}>
             {option.icon ? <Icon name={option.icon} size="sm" color={color} /> : null}
             <ThemedText
-              step="callout"
+              step={compact ? 'footnote' : 'callout'}
               color={color}
               style={[styles.label, { fontWeight: selected ? 600 : 500 }]}>
               {option.label}
+              {option.count === undefined ? null : (
+                <ThemedText
+                  step={compact ? 'footnote' : 'callout'}
+                  color={selected ? 'textSecondary' : 'textTertiary'}
+                  style={styles.count}>
+                  {` ${option.count}`}
+                </ThemedText>
+              )}
             </ThemedText>
           </Pressable>
         );
@@ -157,4 +182,11 @@ const styles = StyleSheet.create({
     minWidth: 0,
     textAlign: 'center',
   },
+  wrap: { flexWrap: 'wrap' },
+  // 120 px: cuatro filtros caben en una fila en escritorio y en dos filas de dos en el móvil.
+  compactOption: { minWidth: 120, paddingHorizontal: space[2] },
+  count: { fontVariant: ['tabular-nums'], fontWeight: 500 },
 });
+
+// El fondo de la opción bajo el puntero entra y sale suave; la elección es inmediata.
+const optionTransition = webTransition(['background-color']);

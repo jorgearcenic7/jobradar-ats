@@ -11,6 +11,7 @@ type PlatformSymbols = { ios: SFSymbol; android: AndroidSymbol; web: AndroidSymb
  * screen needs them.
  */
 export const iconSymbols = {
+  account: { ios: 'person.crop.circle', android: 'account_circle', web: 'account_circle' },
   add: { ios: 'plus', android: 'add', web: 'add' },
   arrowForward: { ios: 'arrow.right', android: 'arrow_forward', web: 'arrow_forward' },
   check: { ios: 'checkmark', android: 'check', web: 'check' },

@@ -1,6 +1,9 @@
 /*
-Un requisito como fila compacta que se despliega: el nombre, la insignia de estado, la importancia
-y los puntos están siempre a la vista; la explicación y las evidencias, al expandirla.
+Un requisito como fila compacta que se despliega, dentro de la superficie de su grupo de estado:
+el icono del estado, el nombre, la importancia y los puntos están siempre a la vista; la
+explicación y las evidencias, al expandirla. El estado no se repite como texto en cada fila
+porque ya lo dice el título del grupo; el icono lo recuerda sin depender del color y el nombre
+accesible lo incluye completo.
 
 Cada fila guarda su propio estado, así que varias pueden estar abiertas a la vez. La cabecera es
 una vista personalizada dentro del `Disclosure`, que exige un nombre accesible explícito: lo
@@ -17,9 +20,9 @@ import { StyleSheet, View } from 'react-native';
 import type { SemanticCandidate } from '@/features/cv-match/domain/semantic-candidates';
 import type { RequirementAssessment } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
-import { radius, space } from '@/shared/theme';
-import { Card } from '@/shared/ui/card';
+import { space } from '@/shared/theme';
 import { Disclosure } from '@/shared/ui/disclosure';
+import { Icon } from '@/shared/ui/icon';
 import { ThemedText } from '@/shared/ui/themed-text';
 
 import {
@@ -30,7 +33,7 @@ import {
   sectionLabels,
   statusLabels,
 } from './labels';
-import { StatusBadge } from './status-badge';
+import { statusTones } from './status-badge';
 
 // A requirement can match hundreds of lines of a long CV; a few are enough to explain it.
 const VISIBLE_EVIDENCE = 3;
@@ -39,9 +42,15 @@ type RequirementItemProps = {
   assessment: RequirementAssessment;
   /** Frases del CV que el análisis semántico propone revisar para este requisito. */
   related?: readonly SemanticCandidate[];
+  /** Dibuja la línea que la separa de la fila anterior de su grupo. */
+  separated?: boolean;
 };
 
-export function RequirementItem({ assessment, related = [] }: RequirementItemProps) {
+export function RequirementItem({
+  assessment,
+  related = [],
+  separated = false,
+}: RequirementItemProps) {
   const theme = useTheme();
   const [expanded, setExpanded] = useState(false);
   const { requirement, status, reason, evidence, contribution, partial } = assessment;
@@ -58,22 +67,26 @@ export function RequirementItem({ assessment, related = [] }: RequirementItemPro
   }`;
 
   return (
-    <Card role="listitem" style={styles.card}>
+    <View
+      role="listitem"
+      style={[styles.row, separated && { borderTopWidth: 1, borderTopColor: theme.divider }]}>
       <Disclosure
         accessibilityLabel={`${name}. ${statusLabels[status]}. ${summary}`}
         expanded={expanded}
         onToggle={setExpanded}
         header={
           <View style={styles.header}>
-            <View style={styles.titleRow}>
-              <ThemedText step="headline" style={styles.title}>
+            <View style={styles.icon}>
+              <Icon name={statusTones[status].icon} size="sm" color={statusTones[status].color} />
+            </View>
+            <View style={styles.text}>
+              <ThemedText step="callout" style={styles.title}>
                 {name}
               </ThemedText>
-              <StatusBadge status={status} />
+              <ThemedText step="footnote" color="textSecondary">
+                {summary}
+              </ThemedText>
             </View>
-            <ThemedText step="footnote" color="textSecondary">
-              {summary}
-            </ThemedText>
           </View>
         }>
         <View style={styles.details}>
@@ -141,31 +154,38 @@ export function RequirementItem({ assessment, related = [] }: RequirementItemPro
           </View>
         </View>
       </Disclosure>
-    </Card>
+    </View>
   );
 }
 
+// El detalle arranca alineado con el nombre, no con el icono (16 px de icono y 12 de hueco).
+const textInset = 16 + space[3];
+
 const styles = StyleSheet.create({
-  card: {
-    gap: 0,
-    paddingVertical: 0,
-    borderRadius: radius.md,
+  row: {
+    paddingHorizontal: space[4],
   },
   header: {
-    gap: space[1],
-  },
-  titleRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: space[2],
+    alignItems: 'flex-start',
+    gap: space[3],
+  },
+  // Centra el icono de 16 px con la primera línea del nombre (23 px de interlineado).
+  icon: {
+    paddingTop: 3,
+  },
+  text: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
   title: {
-    flexShrink: 1,
+    fontWeight: 600,
   },
   details: {
     gap: space[3],
-    paddingBottom: space[3],
+    paddingLeft: textInset,
+    paddingBottom: space[4],
   },
   block: {
     gap: space[2],

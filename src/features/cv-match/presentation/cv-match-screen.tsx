@@ -240,12 +240,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: space[4],
   },
+  // Puede encogerse por debajo de su base: en el móvil la tarjeta deja menos de 280 px.
   privacy: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space[2],
     flexBasis: 280,
     flexGrow: 3,
+    flexShrink: 1,
     minWidth: 0,
   },
   submit: {

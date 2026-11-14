@@ -1,7 +1,8 @@
 /*
-En la web, CSS centra la navegación entre la marca y el bloque de la derecha, y en pantallas
-estrechas deja que cada grupo pase a otra línea. Como en Resultados, la distribución no consulta
-la ventana en el render, así que el HTML del servidor y el del cliente coinciden.
+En la web, CSS centra la navegación entre la marca y la acción en escritorio, y en el móvil deja
+una sola fila con la marca a la izquierda y la navegación a la derecha. Como en Resultados, la
+distribución no consulta la ventana en el render, así que el HTML del servidor y el del cliente
+coinciden.
 */
 import type { HeaderLayoutProps, HeaderShellProps } from './header-layout';
 
@@ -23,15 +24,12 @@ export function HeaderShell({ backgroundColor, borderColor, children }: HeaderSh
   );
 }
 
-export function HeaderLayout({ brand, nav, note, action }: HeaderLayoutProps) {
+export function HeaderLayout({ brand, nav, action }: HeaderLayoutProps) {
   return (
     <div className="app-header-layout">
       {brand}
       {nav}
-      <div className="app-header-aside">
-        <div className="app-header-note">{note}</div>
-        {action}
-      </div>
+      {action ? <div className="app-header-action">{action}</div> : null}
     </div>
   );
 }

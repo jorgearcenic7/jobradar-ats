@@ -6,8 +6,6 @@ import { space } from '@/shared/theme';
 export type HeaderLayoutProps = {
   brand: ReactNode;
   nav: ReactNode;
-  /** Nota breve a la derecha; en la web se oculta en pantallas muy estrechas. */
-  note: ReactNode;
   action?: ReactNode;
 };
 
@@ -26,14 +24,16 @@ export function HeaderShell({ backgroundColor, borderColor, children }: HeaderSh
   );
 }
 
-// iOS y Android: una fila que pasa a la siguiente línea lo que no quepa.
-export function HeaderLayout({ brand, nav, note, action }: HeaderLayoutProps) {
+/*
+iOS y Android: una fila con la marca a la izquierda y la navegación a la derecha. La navegación ya
+llega compacta en pantallas estrechas; si aun así no cupiera, pasa a la línea siguiente.
+*/
+export function HeaderLayout({ brand, nav, action }: HeaderLayoutProps) {
   return (
     <View style={styles.row}>
       {brand}
-      {nav}
       <View style={styles.aside}>
-        {note}
+        {nav}
         {action}
       </View>
     </View>
@@ -56,7 +56,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     alignItems: 'center',
     justifyContent: 'space-between',
-    columnGap: space[4],
+    columnGap: space[3],
     rowGap: space[2],
   },
 });

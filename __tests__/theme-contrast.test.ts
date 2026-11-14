@@ -55,6 +55,10 @@ const textPairs: Pair[] = [
   ['ctaTextSecondary', 'ctaBackground'],
   // Opción activa del selector segmentado y opción con el puntero encima.
   ['text', 'segmentActive'],
+  // Recuentos de los filtros de requisitos: en la opción activa y en las demás.
+  ['textSecondary', 'segmentActive'],
+  ['textTertiary', 'neutralSubtle'],
+  ['textTertiary', 'border'],
   ['textSecondary', 'border'],
   // Zona de subida del CV, con su enlace en el acento.
   ['text', 'dropzoneBackground'],
@@ -82,6 +86,8 @@ const controlPairs: Pair[] = [
   // Borde de los campos de texto (oferta y «Pegar texto») sobre su superficie y sobre la página.
   ['inputBorder', 'surface'],
   ['inputBorder', 'background'],
+  // La marca del logo es un gráfico: se distingue de su casilla con 3:1 en los dos temas.
+  ['logoMark', 'accentSubtle'],
 ];
 
 /*
@@ -98,6 +104,10 @@ const decorativePairs: Pair[] = [
   ['divider', 'surface'],
   ['headerBorder', 'surface'],
   ['dropzoneBorder', 'dropzoneBackground'],
+  // Pistas de la barra de cobertura: acompañan a una leyenda con texto, nunca van solas.
+  ['successTrack', 'surface'],
+  ['warningTrack', 'surface'],
+  ['dangerTrack', 'surface'],
 ];
 
 describe.each(['light', 'dark'] as const)('%s palette contrast', (scheme) => {

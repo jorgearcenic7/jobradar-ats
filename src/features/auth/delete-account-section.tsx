@@ -5,7 +5,7 @@ Pide dos confirmaciones: abrir el aviso y escribir el email de la cuenta. Solo e
 pulsar «Eliminar definitivamente». Si el servidor se detiene a mitad, el mensaje dice qué se ha
 borrado y qué no, y el aviso sigue abierto para reintentar.
 */
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -13,6 +13,7 @@ import { space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
 import { Notice } from '@/shared/ui/notice';
 import { TextField } from '@/shared/ui/text-field';
+import { TextLink } from '@/shared/ui/text-link';
 import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 import { getAuthClient } from './client';
@@ -116,11 +117,11 @@ export function DeleteAccountSection({ email }: { email: string }) {
         </>
       )}
       <View aria-live="polite">{error ? <Notice tone="danger">{error}</Notice> : null}</View>
-      <Link href="/privacidad">
-        <ThemedText step="footnote" color="primary">
-          Qué datos se guardan y cómo se eliminan
-        </ThemedText>
-      </Link>
+      <TextLink
+        href="/privacidad"
+        step="footnote"
+        label="Qué datos se guardan y cómo se eliminan"
+      />
     </View>
   );
 }

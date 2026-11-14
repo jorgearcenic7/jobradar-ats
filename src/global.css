@@ -3,7 +3,24 @@
  * env() values apply here instead. They take effect once the viewport uses viewport-fit=cover.
  * The container's layout is inline in `src/shared/ui/screen.tsx`, so it doesn't wait for this file.
  */
+/* Igual que la meta de `+html.tsx`: barras de desplazamiento y controles nativos siguen el tema. */
+:root {
+  color-scheme: light dark;
+}
+
 .screen-safe-area {
   padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
     env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+
+/*
+Con «reducir movimiento» las transiciones de `webTransition` se vuelven inmediatas. El cambio de
+estado se sigue viendo por el color; solo desaparece el recorrido.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0ms !important;
+  }
 }

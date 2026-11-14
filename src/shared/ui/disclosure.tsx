@@ -6,8 +6,9 @@ Es controlado: el estado lo guarda quien lo usa (`expanded`) y la cabecera solo 
 requisito en otro lugar, y cada instancia es independiente sin coordinar nada.
 
 No tiene fondo, borde ni relleno lateral, para que encaje dentro de una `Card` o en una lista
-que ya dibuja sus separadores. Tampoco tiene animación: el contenido aparece y desaparece al
-instante, lo que evita movimiento innecesario y no depende de `prefers-reduced-motion`.
+que ya dibuja sus separadores. El contenido aparece y desaparece al
+instante, sin movimiento; en la web solo la flecha gira con una transición breve, que «reducir
+movimiento» anula.
 
 Accesibilidad:
 
@@ -25,7 +26,7 @@ import { useState, type ReactElement, type ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
-import { layout, radius, space } from '@/shared/theme';
+import { layout, motion, radius, space, webTransition } from '@/shared/theme';
 import { focusRing, isKeyboardFocus } from '@/shared/ui/focus-ring';
 import { Icon } from '@/shared/ui/icon';
 import { ThemedText } from '@/shared/ui/themed-text';
@@ -36,6 +37,12 @@ type DisclosureBaseProps = {
   onToggle: (expanded: boolean) => void;
   /** Contenido que se muestra solo mientras el bloque está expandido. */
   children: ReactNode;
+  /**
+   * Nivel de encabezado de la cabecera, cuando el bloque es una sección de la página. El botón
+   * queda dentro del encabezado, como en el patrón de acordeón de WAI-ARIA, y la sección sigue
+   * apareciendo al recorrer los encabezados.
+   */
+  headingLevel?: 2 | 3;
 };
 
 type DisclosureHeaderProps =
@@ -64,39 +71,53 @@ export function Disclosure({
   expanded,
   onToggle,
   children,
+  headingLevel,
 }: DisclosureProps) {
   const theme = useTheme();
   const [focusVisible, setFocusVisible] = useState(false);
   const isText = typeof header === 'string';
 
+  const toggle = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={isText ? header : accessibilityLabel}
+      aria-expanded={expanded}
+      onPress={() => onToggle(!expanded)}
+      onFocus={(event) => setFocusVisible(isKeyboardFocus(event))}
+      onBlur={() => setFocusVisible(false)}
+      style={[styles.header, focusVisible && { ...focusRing, outlineColor: theme.focusRing }]}>
+      <View style={styles.headerContent}>
+        {isText ? (
+          <ThemedText step="callout" style={styles.headerText}>
+            {header}
+          </ThemedText>
+        ) : (
+          header
+        )}
+      </View>
+      {/* Apunta hacia abajo cuando se puede expandir y hacia arriba cuando se puede contraer. */}
+      <View style={[chevronTransition, expanded && styles.chevronExpanded]}>
+        <Icon name="chevronDown" color="textSecondary" />
+      </View>
+    </Pressable>
+  );
+
   return (
     <View>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={isText ? header : accessibilityLabel}
-        aria-expanded={expanded}
-        onPress={() => onToggle(!expanded)}
-        onFocus={(event) => setFocusVisible(isKeyboardFocus(event))}
-        onBlur={() => setFocusVisible(false)}
-        style={[styles.header, focusVisible && { ...focusRing, outlineColor: theme.focusRing }]}>
-        <View style={styles.headerContent}>
-          {isText ? (
-            <ThemedText step="callout" style={styles.headerText}>
-              {header}
-            </ThemedText>
-          ) : (
-            header
-          )}
+      {headingLevel ? (
+        <View role="heading" aria-level={headingLevel}>
+          {toggle}
         </View>
-        {/* Apunta hacia abajo cuando se puede expandir y hacia arriba cuando se puede contraer. */}
-        <View style={expanded && styles.chevronExpanded}>
-          <Icon name="chevronDown" color="textSecondary" />
-        </View>
-      </Pressable>
+      ) : (
+        toggle
+      )}
       {expanded ? children : null}
     </View>
   );
 }
+
+// Solo gira la flecha (200 ms, solo web): señala el cambio sin retrasar el contenido.
+const chevronTransition = webTransition(['transform'], motion.duration.base);
 
 const styles = StyleSheet.create({
   header: {
