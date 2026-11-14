@@ -24,6 +24,11 @@ export default function Root({ children }: PropsWithChildren) {
         <meta name="description" content="Compara tu CV con una oferta, requisito a requisito." />
         <meta name="application-name" content="JobRadar ATS" />
         <meta name="apple-mobile-web-app-title" content="JobRadar ATS" />
+        {/*
+          La app sigue el tema del sistema. Así las barras de desplazamiento, la selección y los
+          controles nativos del navegador también pasan a oscuro, no solo lo que pinta la app.
+        */}
+        <meta name="color-scheme" content="light dark" />
         {/* El color de la barra del navegador sigue el fondo de cada tema. */}
         <meta
           name="theme-color"

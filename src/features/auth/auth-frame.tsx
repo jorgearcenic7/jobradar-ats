@@ -1,4 +1,3 @@
-import { Link } from 'expo-router';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
@@ -8,6 +7,7 @@ import { space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
 import { Notice } from '@/shared/ui/notice';
 import { Screen } from '@/shared/ui/screen';
+import { TextLink } from '@/shared/ui/text-link';
 import { ThemedText } from '@/shared/ui/themed-text';
 
 export function AuthFrame({ title, children }: { title: string; children: ReactNode }) {
@@ -34,11 +34,7 @@ export function AuthFrame({ title, children }: { title: string; children: ReactN
           siguen en tu dispositivo. En tu cuenta solo se guardan los CV que elijas guardar en «Mis
           CV».
         </ThemedText>
-        <Link href="/privacidad">
-          <ThemedText step="footnote" color="primary">
-            Privacidad
-          </ThemedText>
-        </Link>
+        <TextLink href="/privacidad" step="footnote" label="Privacidad" />
       </View>
     </Screen>
   );

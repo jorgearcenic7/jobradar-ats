@@ -1,5 +1,5 @@
 import * as Linking from 'expo-linking';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, View } from 'react-native';
 
@@ -7,7 +7,7 @@ import { AuthFrame } from './auth-frame';
 import { completeAuthCallback, OtherAccountError } from './callback';
 import { getAuthClient } from './client';
 import { Notice } from '@/shared/ui/notice';
-import { ThemedText } from '@/shared/ui/themed-text';
+import { TextLink } from '@/shared/ui/text-link';
 
 export function CallbackScreen() {
   const [error, setError] = useState('');
@@ -53,12 +53,8 @@ export function CallbackScreen() {
       </View>
       {error ? (
         <>
-          <Link href="/acceso">
-            <ThemedText color="primary">Acceder o reenviar confirmación</ThemedText>
-          </Link>
-          <Link href="/recuperar">
-            <ThemedText color="primary">Solicitar recuperación</ThemedText>
-          </Link>
+          <TextLink href="/acceso" label="Acceder o reenviar confirmación" />
+          <TextLink href="/recuperar" label="Solicitar recuperación" />
         </>
       ) : null}
     </AuthFrame>

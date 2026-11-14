@@ -18,7 +18,8 @@ const filters = [
   ['supported', 'Respaldados'],
 ] as const;
 const groupOrder = ['supported', 'mentioned', 'missing', 'not-evaluable'] as const;
-const chip = (label: string) => screen.getByRole('button', { name: new RegExp(`^${label} \\(`) });
+// Cada filtro es una opción de un grupo de botones de opción, con su recuento en el nombre.
+const chip = (label: string) => screen.getByRole('radio', { name: new RegExp(`^${label} \\(`) });
 const rows = () =>
   screen
     .queryAllByRole('button')
@@ -45,8 +46,7 @@ describe('Requirement filters', () => {
         (item) => value === 'all' || item.status === value,
       ).length;
       expect(chip(label)).toHaveAccessibleName(`${label} (${count})`);
-      expect(chip(label).props['aria-pressed']).toBe(value === 'all');
-      expect(chip(label).props.accessibilityState.selected).toBe(value === 'all');
+      expect(chip(label).props.accessibilityState?.checked).toBe(value === 'all');
     }
     expect(others()).toBeCollapsed();
     expect(rows()).toHaveLength(result.coverage.evaluated);
@@ -69,7 +69,7 @@ describe('Requirement filters', () => {
       expect(rowNames().map((name) => name.split('. ')[0])).toEqual(
         expected.map((item) => displayLabel(item.requirement.label)),
       );
-      expect(chip(label).props['aria-pressed']).toBe(true);
+      expect(chip(label).props.accessibilityState?.checked).toBe(true);
     },
   );
 
@@ -80,7 +80,7 @@ describe('Requirement filters', () => {
     const initial = rowNames();
     for (const label of ['Respaldados', 'No acreditados', 'Sin evidencia suficiente', 'Todos']) {
       await user.press(chip(label));
-      expect(filters.filter(([, text]) => chip(text).props['aria-pressed'])).toEqual([
+      expect(filters.filter(([, text]) => chip(text).props.accessibilityState?.checked)).toEqual([
         filters.find(([, text]) => text === label),
       ]);
     }
@@ -119,7 +119,7 @@ describe('Requirement filters', () => {
       missingOnly.requirements.filter((r) => r.status === 'not-evaluable').length,
     );
     await userEvent.setup().press(screen.getByRole('button', { name: 'Ver todos los requisitos' }));
-    expect(chip('Todos').props['aria-pressed']).toBe(true);
+    expect(chip('Todos').props.accessibilityState?.checked).toBe(true);
     expect(rows()).toHaveLength(missingOnly.requirements.length);
     expect(screen.queryByText('No hay requisitos con este estado')).not.toBeOnTheScreen();
   });
@@ -241,21 +241,19 @@ describe('Requirement filters', () => {
     async (scheme) => {
       mockedUseColorScheme.mockReturnValue(scheme);
       await renderResults();
+      // Al menos 120 px: cuatro opciones en una fila en escritorio y dos filas de dos en el móvil.
       for (const [, label] of filters) {
-        expect(chip(label)).toHaveStyle({ minHeight: 44, minWidth: 44, maxWidth: '100%' });
+        expect(chip(label)).toHaveStyle({ minHeight: 44, minWidth: 120 });
       }
-      expect(chip('Todos')).toHaveStyle({
-        borderColor: palettes[scheme].primary,
-        backgroundColor: palettes[scheme].surfaceSelected,
-      });
-      expect(screen.getByText(/^Todos \(/)).toHaveStyle({ color: palettes[scheme].text });
+      expect(chip('Todos')).toHaveStyle({ backgroundColor: palettes[scheme].segmentActive });
+      expect(screen.getByText(/^Todos \d+$/)).toHaveStyle({ color: palettes[scheme].text });
       await fireEvent(chip('No acreditados'), 'focus', { target: { matches: () => true } });
       expect(chip('No acreditados')).toHaveStyle({
         outlineWidth: 2,
         outlineColor: palettes[scheme].focusRing,
       });
       await userEvent.setup().press(chip('No acreditados'));
-      expect(chip('No acreditados').props['aria-pressed']).toBe(true);
+      expect(chip('No acreditados').props.accessibilityState?.checked).toBe(true);
     },
   );
 });

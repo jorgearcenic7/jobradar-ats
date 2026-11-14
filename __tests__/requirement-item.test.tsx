@@ -43,11 +43,31 @@ describe('RequirementItem', () => {
     },
   );
 
-  it('does not repeat the status as text next to its badge', async () => {
+  it('leaves the status text to its group title but keeps it in the accessible name', async () => {
     const item = byStatus('supported');
     await render(<RequirementItem assessment={item} />);
 
-    expect(screen.getAllByText('Respaldado')).toHaveLength(1);
+    // El título del grupo ya dice el estado; la fila solo lleva su icono.
+    expect(screen.queryByText('Respaldado')).not.toBeOnTheScreen();
+    expect(header(/./).props.accessibilityLabel).toContain('. Respaldado. ');
+  });
+
+  it('draws a separator only when it follows another row of its group', async () => {
+    const item = byStatus('supported');
+    // La fila no es un elemento accesible por sí misma: se busca por su rol de lista.
+    // `queryAll` no incluye la raíz, que aquí es la propia fila.
+    const row = () =>
+      [screen.root!, ...screen.root!.queryAll(() => true)].find(
+        (node) => node.props.role === 'listitem',
+      );
+    const { rerender } = await render(<RequirementItem assessment={item} />);
+    expect(row()).not.toHaveStyle({ borderTopWidth: 1 });
+
+    await rerender(<RequirementItem assessment={item} separated />);
+    expect(row()).toHaveStyle({
+      borderTopWidth: 1,
+      borderTopColor: palettes.light.divider,
+    });
   });
 
   it('shows the whole explanation, the CV evidence and the offer source when expanded', async () => {

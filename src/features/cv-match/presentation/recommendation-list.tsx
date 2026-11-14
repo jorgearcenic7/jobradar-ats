@@ -11,29 +11,23 @@ import { StyleSheet, View } from 'react-native';
 import type { Recommendation } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
 import { radius, space } from '@/shared/theme';
-import { Button } from '@/shared/ui/button';
 import { StepNumber } from '@/shared/ui/step-number';
+import { TextButton } from '@/shared/ui/text-link';
 import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 /** Cuántas recomendaciones se ven sin pedir más. */
 export const PRIORITY_RECOMMENDATIONS = 3;
 
 /*
-Las prioritarias van en tarjetas; las demás, en filas sobre el fondo, para que la jerarquía se vea
-sin leer los números.
+Todas van en una sola superficie, una fila por recomendación y separadas por una línea fina. El
+número ya marca la prioridad; las tres primeras no necesitan una tarjeta cada una.
 */
 function Item({ message, number }: { message: string; number: number }) {
   const theme = useTheme();
-  const priority = number <= PRIORITY_RECOMMENDATIONS;
   return (
     <View
       role="listitem"
-      style={[
-        styles.item,
-        priority
-          ? [styles.priority, { backgroundColor: theme.surface, borderColor: theme.border }]
-          : styles.secondary,
-      ]}>
+      style={[styles.item, number > 1 && { borderTopWidth: 1, borderTopColor: theme.divider }]}>
       <StepNumber value={number} />
       <ThemedText step="callout" style={styles.text}>
         {/* Las citas destacan el requisito al recorrer la lista, sin reescribir el mensaje. */}
@@ -54,6 +48,7 @@ function Item({ message, number }: { message: string; number: number }) {
 }
 
 export function RecommendationList({ recommendations }: { recommendations: Recommendation[] }) {
+  const theme = useTheme();
   const [showAll, setShowAll] = useState(false);
   const messages = [...new Set(recommendations.map((item) => item.message))];
   const priority = messages.slice(0, PRIORITY_RECOMMENDATIONS);
@@ -65,7 +60,9 @@ export function RecommendationList({ recommendations }: { recommendations: Recom
       {messages.length === 0 ? (
         <ThemedText step="callout">No hay recomendaciones para esta oferta.</ThemedText>
       ) : (
-        <View role="list" style={styles.list}>
+        <View
+          role="list"
+          style={[styles.list, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           {priority.map((message, index) => (
             <Item key={message} message={message} number={index + 1} />
           ))}
@@ -81,11 +78,9 @@ export function RecommendationList({ recommendations }: { recommendations: Recom
         </View>
       )}
       {rest.length > 0 ? (
-        <Button
+        <TextButton
           label={showAll ? 'Ver solo las 3 primeras' : `Ver todas (${messages.length})`}
-          variant="secondary"
           onPress={() => setShowAll(!showAll)}
-          style={styles.more}
         />
       ) : null}
       <ThemedText step="footnote" color="textSecondary">
@@ -100,22 +95,16 @@ const styles = StyleSheet.create({
     gap: space[3],
   },
   list: {
-    gap: space[2],
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    borderCurve: 'continuous',
+    overflow: 'hidden',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: space[3],
-  },
-  priority: {
     padding: space[4],
-    borderWidth: 1,
-    borderRadius: radius.md,
-    borderCurve: 'continuous',
-  },
-  secondary: {
-    paddingVertical: space[2],
-    paddingHorizontal: space[4],
   },
   text: {
     flex: 1,
@@ -123,8 +112,4 @@ const styles = StyleSheet.create({
     paddingTop: 1,
   },
   subject: { fontWeight: 600 },
-  more: {
-    alignSelf: 'flex-start',
-    paddingVertical: space[2],
-  },
 });

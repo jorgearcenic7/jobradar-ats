@@ -176,7 +176,7 @@ describe('CoverageBar', () => {
 
     expect(
       screen.getByRole('image', {
-        name: 'DistribuciÃ³n de puntos de cobertura. No hay requisitos evaluables.',
+        name: 'Distribución de puntos de cobertura. No hay requisitos evaluables.',
       }),
     ).toBeOnTheScreen();
     expect(screen.queryByTestId('coverage-segment-supported', includeHiddenElements)).toBeNull();
@@ -200,19 +200,19 @@ describe.each(['light', 'dark'] as const)('CoverageBar in the %s theme', (scheme
     );
 
     expect(screen.getByTestId('coverage-segment-supported', includeHiddenElements)).toHaveStyle({
-      backgroundColor: palettes[scheme].successSubtle,
+      backgroundColor: palettes[scheme].successTrack,
     });
     expect(screen.getByTestId('coverage-earned-supported', includeHiddenElements)).toHaveStyle({
-      backgroundColor: palettes[scheme].success,
+      backgroundColor: palettes[scheme].successDot,
     });
     expect(screen.getByTestId('coverage-segment-mentioned', includeHiddenElements)).toHaveStyle({
-      backgroundColor: palettes[scheme].warningSubtle,
+      backgroundColor: palettes[scheme].warningTrack,
     });
     expect(screen.getByTestId('coverage-earned-mentioned', includeHiddenElements)).toHaveStyle({
-      backgroundColor: palettes[scheme].warning,
+      backgroundColor: palettes[scheme].warningDot,
     });
     expect(screen.getByTestId('coverage-segment-missing', includeHiddenElements)).toHaveStyle({
-      backgroundColor: palettes[scheme].dangerSubtle,
+      backgroundColor: palettes[scheme].dangerTrack,
     });
   });
 });
@@ -247,6 +247,6 @@ describe('CoverageSummary integration', () => {
     expect(
       screen.getByText(/No se ha podido evaluar ning.n requisito de esta oferta/),
     ).toBeOnTheScreen();
-    expect(screen.queryByRole('image', { name: /DistribuciÃ³n de puntos/ })).toBeNull();
+    expect(screen.queryByRole('image', { name: /Distribución de puntos/ })).toBeNull();
   });
 });

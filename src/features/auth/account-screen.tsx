@@ -1,4 +1,4 @@
-import { Link, Redirect, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 
@@ -9,6 +9,7 @@ import { DeleteAccountSection } from './delete-account-section';
 import { authError } from './messages';
 import { Button } from '@/shared/ui/button';
 import { Notice } from '@/shared/ui/notice';
+import { TextLink } from '@/shared/ui/text-link';
 import { ThemedText } from '@/shared/ui/themed-text';
 
 export function AccountScreen() {
@@ -46,12 +47,8 @@ export function AccountScreen() {
           ) : null}
           <ThemedText step="headline">Sesión iniciada</ThemedText>
           <ThemedText selectable>{session.user.email}</ThemedText>
-          <Link href="/mis-cv">
-            <ThemedText color="primary">Mis CV</ThemedText>
-          </Link>
-          <Link href="/recuperar">
-            <ThemedText color="primary">Cambiar contraseña por email</ThemedText>
-          </Link>
+          <TextLink href="/mis-cv" label="Mis CV" />
+          <TextLink href="/recuperar" label="Cambiar contraseña por email" />
           <View aria-live="polite">{error ? <Notice tone="danger">{error}</Notice> : null}</View>
           <Button
             label="Cerrar sesión"
@@ -62,9 +59,7 @@ export function AccountScreen() {
           <DeleteAccountSection email={session.user.email ?? ''} />
         </>
       ) : null}
-      <Link href="/analisis">
-        <ThemedText color="primary">Ir al analizador</ThemedText>
-      </Link>
+      <TextLink href="/analisis" label="Ir al analizador" />
     </AuthFrame>
   );
 }

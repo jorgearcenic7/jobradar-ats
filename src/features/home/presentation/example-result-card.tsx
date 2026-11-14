@@ -4,21 +4,26 @@ estático, que se presenta siempre como «Ejemplo ilustrativo». No sale del mot
 análisis del usuario, y no se mezcla con datos reales.
 
 Los estados usan las mismas etiquetas y tonos que `status-badge.tsx` del analizador; se repiten
-aquí porque Inicio no depende de ese módulo.
+aquí porque Inicio no depende de ese módulo. La barra es la misma de Resultados y reparte los
+puntos con la regla que explica «Cómo se calcula la cobertura» (1, 0,5 o 0 por requisito).
 */
 import { StyleSheet, View } from 'react-native';
 
 import { useTheme } from '@/hooks/use-theme';
 import { radius, space, type ThemeColor } from '@/shared/theme';
-import { Badge, type BadgeTone } from '@/shared/ui/badge';
+import { Badge } from '@/shared/ui/badge';
+import { SegmentedBar, type SegmentedBarTone } from '@/shared/ui/segmented-bar';
 import { ThemedText } from '@/shared/ui/themed-text';
 
 type ExampleStatus = 'supported' | 'mentioned' | 'missing';
 
-const statuses: Record<ExampleStatus, { label: string; tone: BadgeTone; dot: ThemeColor }> = {
-  supported: { label: 'Respaldado', tone: 'success', dot: 'successDot' },
-  mentioned: { label: 'Sin evidencia suficiente', tone: 'warning', dot: 'warningDot' },
-  missing: { label: 'No acreditado', tone: 'danger', dot: 'dangerDot' },
+const statuses: Record<
+  ExampleStatus,
+  { label: string; tone: SegmentedBarTone; dot: ThemeColor; points: number }
+> = {
+  supported: { label: 'Respaldado', tone: 'success', dot: 'successDot', points: 1 },
+  mentioned: { label: 'Sin evidencia suficiente', tone: 'warning', dot: 'warningDot', points: 0.5 },
+  missing: { label: 'No acreditado', tone: 'danger', dot: 'dangerDot', points: 0 },
 };
 
 const requirements: { name: string; detail: string; status: ExampleStatus }[] = [
@@ -41,6 +46,12 @@ const requirements: { name: string; detail: string; status: ExampleStatus }[] = 
 ];
 
 const supported = requirements.filter((item) => item.status === 'supported').length;
+
+// Un tramo por estado: vale tantos puntos como requisitos tiene y se rellena con los que aporta.
+const barSegments = (Object.keys(statuses) as ExampleStatus[]).map((status) => {
+  const count = requirements.filter((item) => item.status === status).length;
+  return { key: status, tone: statuses[status].tone, weight: count, fill: statuses[status].points };
+});
 
 export function ExampleResultCard() {
   const theme = useTheme();
@@ -94,15 +105,8 @@ export function ExampleResultCard() {
             ))}
           </View>
         </View>
-        {/* Un tramo por requisito, con el color de su estado; las cifras ya están en el texto. */}
-        <View style={styles.bar} aria-hidden accessibilityElementsHidden>
-          {requirements.map((item) => (
-            <View
-              key={item.name}
-              style={[styles.segment, { backgroundColor: theme[statuses[item.status].dot] }]}
-            />
-          ))}
-        </View>
+        {/* Las cifras ya están en el texto; la barra solo las dibuja. */}
+        <SegmentedBar segments={barSegments} />
       </View>
 
       <View role="list">
@@ -159,12 +163,24 @@ const styles = StyleSheet.create({
     gap: space[3],
   },
   figure: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: space[2] },
-  figureValue: { fontSize: 28, lineHeight: 34, fontWeight: 700, letterSpacing: -0.6 },
-  legend: { flexDirection: 'row', flexWrap: 'wrap', columnGap: space[4], rowGap: space[1] },
+  figureValue: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: 700,
+    letterSpacing: -0.6,
+    fontVariant: ['tabular-nums'],
+  },
+  // Puede encogerse por debajo de su contenido: así sus elementos pasan de línea y no se cortan.
+  legend: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    flexShrink: 1,
+    minWidth: 0,
+    columnGap: space[4],
+    rowGap: space[1],
+  },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
   dot: { width: 8, height: 8, borderRadius: 2 },
-  bar: { flexDirection: 'row', gap: space[1], height: 10 },
-  segment: { flex: 1, borderRadius: radius.full },
   row: {
     flexDirection: 'row',
     flexWrap: 'wrap',

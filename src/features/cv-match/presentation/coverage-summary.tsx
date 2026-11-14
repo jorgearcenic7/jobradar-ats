@@ -12,7 +12,7 @@ import type {
   RequirementStatus,
 } from '@/features/cv-match/domain/types';
 import { useTheme } from '@/hooks/use-theme';
-import { radius, space } from '@/shared/theme';
+import { space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
 import { Disclosure } from '@/shared/ui/disclosure';
 import { Icon } from '@/shared/ui/icon';
@@ -59,25 +59,23 @@ export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps)
         <CoverageBar assessments={assessments} showLegend={false} />
       )}
 
-      {/* Cuadrícula de 2 × 2 a cualquier anchura: cada recuento con su icono, su cifra y su estado. */}
-      <View role="list" style={styles.counts}>
+      {/*
+      Leyenda en línea en lugar de una tarjeta por estado: cada recuento con su icono, su cifra y
+      su estado, que pasan a la línea siguiente cuando no caben.
+      */}
+      <View role="list" style={[styles.counts, { borderTopColor: theme.divider }]}>
         {order.map((status) => (
           <View
             key={status}
             role="listitem"
             accessible
             accessibilityLabel={`${statusLabels[status]}: ${coverage.counts[status]}${status === 'not-evaluable' ? ' (fuera del porcentaje)' : ''}`}
-            style={[
-              styles.count,
-              { backgroundColor: theme.background, borderColor: theme.border },
-            ]}>
-            <View style={styles.countTop}>
-              <Icon name={statusTones[status].icon} size="sm" color={statusTones[status].color} />
-              <ThemedText step="headline" style={styles.countValue}>
-                {coverage.counts[status]}
-              </ThemedText>
-            </View>
-            <ThemedText step="footnote" color="textSecondary">
+            style={styles.count}>
+            <Icon name={statusTones[status].icon} size="sm" color={statusTones[status].color} />
+            <ThemedText step="footnote" style={styles.countValue}>
+              {coverage.counts[status]}
+            </ThemedText>
+            <ThemedText step="footnote" color="textSecondary" style={styles.countLabel}>
               {statusLabels[status]}
               {status === 'not-evaluable' ? ' (fuera del porcentaje)' : ''}
             </ThemedText>
@@ -121,22 +119,16 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
+  // Compacto: en el móvil la primera recomendación debe quedar lo más arriba posible.
   counts: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: space[2],
+    columnGap: space[4],
+    rowGap: space[2],
+    paddingTop: space[3],
+    borderTopWidth: 1,
   },
-  count: {
-    flexBasis: '40%',
-    flexGrow: 1,
-    minWidth: 0,
-    // Compacto: en el móvil la primera recomendación debe quedar lo más arriba posible.
-    paddingVertical: space[2],
-    paddingHorizontal: space[3],
-    borderWidth: 1,
-    borderRadius: radius.md,
-    borderCurve: 'continuous',
-  },
-  countTop: { flexDirection: 'row', alignItems: 'center', gap: space[2] },
-  countValue: { fontVariant: ['tabular-nums'] },
+  count: { flexDirection: 'row', alignItems: 'center', gap: space[1] + 2, maxWidth: '100%' },
+  countValue: { fontVariant: ['tabular-nums'], fontWeight: 600 },
+  countLabel: { flexShrink: 1 },
 });

@@ -121,7 +121,9 @@ export function CvSection({
 }
 
 const styles = StyleSheet.create({
+  // Ocupa toda la tarjeta: la de la oferta suele ser más alta y la zona de subida se estira.
   section: {
+    flexGrow: 1,
     gap: space[4],
   },
   heading: {

@@ -1,20 +1,25 @@
 /*
 Bloque de Resultados que ofrece el análisis semántico opcional.
 
+Es secundario: queda plegado mientras no se usa, con una línea que resume su estado, y se abre solo
+mientras descarga, analiza, muestra su resultado o falla. Plegado o abierto, explica lo mismo y
+ofrece las mismas acciones; su cabecera es un encabezado de sección con el botón dentro.
+
 Antes de descargar nada explica qué hace, cuánto ocupa y que el CV no sale del dispositivo.
 Mientras trabaja informa del progreso en una región que los lectores de pantalla anuncian. Al
 terminar resume cuántos requisitos tienen posibles relaciones, que se muestran en cada
 requisito separadas de las evidencias acreditadas. Si el dispositivo no lo admite, lo dice sin
 bloquear nada.
 */
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { space } from '@/shared/theme';
 import { Button } from '@/shared/ui/button';
 import { Card } from '@/shared/ui/card';
+import { Disclosure } from '@/shared/ui/disclosure';
 import { Notice } from '@/shared/ui/notice';
-import { Heading, ThemedText } from '@/shared/ui/themed-text';
+import { ThemedText } from '@/shared/ui/themed-text';
 
 import type { SemanticErrorCode, SemanticState } from './use-semantic-review';
 
@@ -38,7 +43,35 @@ type SemanticPanelProps = {
   onRemove: () => void;
 };
 
+/** Una línea con el estado, visible también con el bloque plegado. */
+function statusLine(state: SemanticState): string {
+  switch (state.kind) {
+    case 'checking':
+    case 'unavailable':
+      return 'No disponible en esta versión';
+    case 'idle':
+      return state.downloaded
+        ? 'Opcional · modelo ya guardado'
+        : 'Opcional · no cambia la cobertura';
+    case 'loading':
+      return 'Descargando el modelo…';
+    case 'analyzing':
+      return 'Buscando relaciones…';
+    case 'ready': {
+      const found = Object.keys(state.review).length;
+      return found === 0
+        ? 'Sin relaciones claras'
+        : `${found} ${found === 1 ? 'requisito' : 'requisitos'} con posibles relaciones`;
+    }
+    case 'error':
+      return 'No se ha podido completar';
+  }
+}
+
 export function SemanticPanel({ state, onActivate, onRemove }: SemanticPanelProps) {
+  // `null` mientras el usuario no lo pliega ni lo despliega: entonces decide el estado.
+  const [open, setOpen] = useState<boolean | null>(null);
+
   // En la app nativa no existe esta función: no se anuncia algo que nunca estará disponible.
   if (state.kind === 'checking' || (state.kind === 'unavailable' && process.env.EXPO_OS !== 'web'))
     return null;
@@ -125,22 +158,57 @@ export function SemanticPanel({ state, onActivate, onRemove }: SemanticPanelProp
       break;
   }
 
+  const active =
+    state.kind === 'loading' ||
+    state.kind === 'analyzing' ||
+    state.kind === 'ready' ||
+    state.kind === 'error';
+  const status = statusLine(state);
+
   return (
     <Card style={styles.card}>
-      <Heading level={2}>Relaciones semánticas · experimental</Heading>
-      <ThemedText step="footnote" color="textSecondary">
-        {intro}
-      </ThemedText>
-      <View aria-live="polite" style={styles.body}>
-        {body}
-      </View>
+      <Disclosure
+        headingLevel={2}
+        accessibilityLabel={`Relaciones semánticas, experimental. ${status}`}
+        expanded={open ?? active}
+        onToggle={setOpen}
+        header={
+          <View style={styles.header}>
+            <ThemedText step="callout" style={styles.title}>
+              Relaciones semánticas · experimental
+            </ThemedText>
+            <ThemedText step="footnote" color="textSecondary">
+              {status}
+            </ThemedText>
+          </View>
+        }>
+        <View style={styles.content}>
+          <ThemedText step="footnote" color="textSecondary">
+            {intro}
+          </ThemedText>
+          <View aria-live="polite" style={styles.body}>
+            {body}
+          </View>
+        </View>
+      </Disclosure>
     </Card>
   );
 }
 
 const styles = StyleSheet.create({
+  // Sin relleno vertical propio: la cabecera del desplegable ya reserva sus 44 px.
   card: {
+    paddingVertical: space[1],
+  },
+  header: {
+    gap: 2,
+  },
+  title: {
+    fontWeight: 600,
+  },
+  content: {
     gap: space[3],
+    paddingBottom: space[3],
   },
   body: {
     gap: space[3],

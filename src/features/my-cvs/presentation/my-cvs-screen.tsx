@@ -8,7 +8,7 @@ documento importado, las confirmaciones pendientes y la lista de la cuenta anter
 Guardar es siempre voluntario y explícito. El análisis sigue siendo local: «Analizar» solo
 descarga el texto guardado y lo lleva al analizador, que funciona igual que sin cuenta.
 */
-import { Link, Redirect, router } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { useAuth } from '@/features/auth/auth-provider';
@@ -20,6 +20,7 @@ import { Card } from '@/shared/ui/card';
 import { EmptyState } from '@/shared/ui/empty-state';
 import { Notice } from '@/shared/ui/notice';
 import { Screen } from '@/shared/ui/screen';
+import { TextLink } from '@/shared/ui/text-link';
 import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 import { savedCvLimits, type SavedCv } from '../domain/saved-cv';
@@ -45,11 +46,7 @@ function MyCvsContent({ userId, email }: { userId: string; email: string }) {
       <Notice tone="info" title="Cuenta">
         {`Sesión iniciada como ${email}. Los CV que guardes aquí se guardan en esta cuenta y solo tú puedes verlos.`}
       </Notice>
-      <Link href="/privacidad">
-        <ThemedText step="footnote" color="primary">
-          Qué se guarda, dónde y cómo eliminarlo
-        </ThemedText>
-      </Link>
+      <TextLink href="/privacidad" step="footnote" label="Qué se guarda, dónde y cómo eliminarlo" />
 
       <Card style={styles.section}>
         <Heading level={2} step="headline">

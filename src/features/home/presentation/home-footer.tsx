@@ -1,10 +1,10 @@
 // Pie de Inicio a todo el ancho: aplica él mismo el área segura inferior, como pide `Screen`.
-import { Link } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useTheme } from '@/hooks/use-theme';
 import { layout, space } from '@/shared/theme';
+import { TextLink } from '@/shared/ui/text-link';
 import { ThemedText } from '@/shared/ui/themed-text';
 
 export function HomeFooter() {
@@ -28,11 +28,7 @@ export function HomeFooter() {
         <ThemedText step="footnote" color="textTertiary" style={styles.note}>
           El análisis se hace en tu dispositivo. Tus textos no se envían ni se guardan.
         </ThemedText>
-        <Link href="/privacidad">
-          <ThemedText step="footnote" color="textSecondary">
-            Privacidad
-          </ThemedText>
-        </Link>
+        <TextLink href="/privacidad" step="footnote" label="Privacidad" />
       </View>
     </View>
   );
@@ -46,6 +42,8 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     flexDirection: 'row',
     flexWrap: 'wrap',
+    // El enlace mide 44 px de alto: los textos se centran con él.
+    alignItems: 'center',
     justifyContent: 'space-between',
     columnGap: space[6],
     rowGap: space[2],

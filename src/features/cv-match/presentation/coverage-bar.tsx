@@ -1,15 +1,15 @@
 /*
 Representa los puntos posibles y los realmente aportados por cada estado evaluable.
 
-No decide reglas de puntuaciÃ³n: agrega `contribution`, que ya entrega el dominio para cada
-requisito. Por eso vive en la presentaciÃ³n de `cv-match` y no en el sistema compartido.
+No decide reglas de puntuación: agrega `contribution`, que ya entrega el dominio para cada
+requisito. Por eso vive en la presentación de `cv-match` y no en el sistema compartido.
 */
 import { StyleSheet, View } from 'react-native';
 
 import type { RequirementAssessment, RequirementStatus } from '@/features/cv-match/domain/types';
-import { useTheme } from '@/hooks/use-theme';
-import { radius, space } from '@/shared/theme';
+import { space } from '@/shared/theme';
 import { Icon } from '@/shared/ui/icon';
+import { SegmentedBar, type SegmentedBarTone } from '@/shared/ui/segmented-bar';
 import { ThemedText } from '@/shared/ui/themed-text';
 
 import { formatNumber, statusLabels } from './labels';
@@ -18,6 +18,12 @@ import { statusTones } from './status-badge';
 type EvaluatedStatus = Exclude<RequirementStatus, 'not-evaluable'>;
 
 const order: EvaluatedStatus[] = ['supported', 'mentioned', 'missing'];
+
+const barTones: Record<EvaluatedStatus, SegmentedBarTone> = {
+  supported: 'success',
+  mentioned: 'warning',
+  missing: 'danger',
+};
 
 type CoverageSegment = {
   status: EvaluatedStatus;
@@ -53,7 +59,7 @@ function pointsLabel(earned: number, possible: number) {
 function accessibilityDescription(segments: CoverageSegment[]) {
   const possible = segments.reduce((total, segment) => total + segment.possible, 0);
   if (possible === 0) {
-    return 'DistribuciÃ³n de puntos de cobertura. No hay requisitos evaluables.';
+    return 'Distribución de puntos de cobertura. No hay requisitos evaluables.';
   }
 
   const details = segments
@@ -62,14 +68,12 @@ function accessibilityDescription(segments: CoverageSegment[]) {
         `${statusLabels[status]}: ${pointsLabel(earned, segmentPossible)}`,
     )
     .join('; ');
-  return `DistribuciÃ³n de puntos de cobertura. ${details}.`;
+  return `Distribución de puntos de cobertura. ${details}.`;
 }
 
-/** Barra segmentada: anchura posible por estado y relleno interior con su aportaciÃ³n real. */
+/** Barra segmentada: anchura posible por estado y relleno interior con su aportación real. */
 export function CoverageBar({ assessments, showLegend = true }: CoverageBarProps) {
-  const theme = useTheme();
   const segments = segmentsOf(assessments);
-  const hasEvaluablePoints = segments.some((segment) => segment.possible > 0);
 
   return (
     <View
@@ -78,41 +82,16 @@ export function CoverageBar({ assessments, showLegend = true }: CoverageBarProps
       accessibilityLabel={accessibilityDescription(segments)}
       testID="coverage-bar">
       <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" aria-hidden>
-        <View
-          style={[styles.track, { backgroundColor: theme.neutralSubtle }]}
-          testID="coverage-track">
-          {hasEvaluablePoints
-            ? segments.map(({ status, earned, possible }) => {
-                if (possible === 0) return null;
-                const earnedPercentage = Math.min(100, Math.max(0, (earned / possible) * 100));
-                const tone = statusTones[status];
-                const earnedWidth = `${earnedPercentage}%` as `${number}%`;
-
-                return (
-                  <View
-                    key={status}
-                    testID={`coverage-segment-${status}`}
-                    style={[
-                      styles.segment,
-                      {
-                        backgroundColor: theme[tone.background],
-                        flexGrow: possible,
-                      },
-                    ]}>
-                    {earnedPercentage > 0 ? (
-                      <View
-                        testID={`coverage-earned-${status}`}
-                        style={[
-                          styles.earned,
-                          { backgroundColor: theme[tone.color], width: earnedWidth },
-                        ]}
-                      />
-                    ) : null}
-                  </View>
-                );
-              })
-            : null}
-        </View>
+        <SegmentedBar
+          segments={segments.map(({ status, earned, possible }) => ({
+            key: status,
+            tone: barTones[status],
+            weight: possible,
+            fill: possible > 0 ? earned / possible : 0,
+            testID: `coverage-segment-${status}`,
+            fillTestID: `coverage-earned-${status}`,
+          }))}
+        />
 
         {showLegend ? <CoverageLegend assessments={assessments} /> : null}
       </View>
@@ -140,21 +119,6 @@ export function CoverageLegend({ assessments }: Pick<CoverageBarProps, 'assessme
 }
 
 const styles = StyleSheet.create({
-  track: {
-    width: '100%',
-    height: space[4],
-    flexDirection: 'row',
-    overflow: 'hidden',
-    borderRadius: radius.full,
-  },
-  segment: {
-    flexBasis: 0,
-    minWidth: 0,
-    height: '100%',
-  },
-  earned: {
-    height: '100%',
-  },
   legend: {
     marginTop: space[2],
     gap: space[1],

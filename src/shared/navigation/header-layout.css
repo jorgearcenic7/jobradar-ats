@@ -1,43 +1,76 @@
+/*
+Móvil (hasta 639 px): una fila de unos 56 px con la marca a la izquierda y la navegación a la
+derecha. Desde 900 px, la navegación se centra entre la marca y la acción.
+
+React Native Web aplica parte de los estilos en línea, así que las reglas que los sustituyen
+llevan `!important`.
+*/
 .app-header-layout {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 8px 16px;
+  gap: 8px 12px;
   min-width: 0;
 }
 
-.app-header-aside {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.app-header-note {
+.app-header-action {
   display: flex;
   min-width: 0;
 }
 
-/* En un móvil la nota haría la cabecera fija de tres líneas; la privacidad sigue en la página. */
-@media (max-width: 1199px) {
-  .app-header-note {
-    display: none;
+/* La cuenta como icono solo en el móvil; con más ancho, con su nombre. */
+[data-header-account='compact'] {
+  display: none !important;
+}
+
+@media (max-width: 639px) {
+  [data-header-account='full'],
+  [data-header-badge],
+  .app-header-action {
+    display: none !important;
+  }
+
+  [data-header-account='compact'] {
+    display: flex !important;
+  }
+
+  [data-header-link] {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+
+  [data-header-account='compact'] {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+  }
+}
+
+/*
+Con sesión hay cuatro destinos: en las pantallas más estrechas el nombre se oculta a la vista,
+pero los lectores de pantalla lo siguen leyendo.
+*/
+@media (max-width: 419px) {
+  [data-nav-items='4'] [data-header-wordmark] {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
   }
 }
 
 @media (min-width: 900px) {
   .app-header-layout {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto 1fr;
   }
 
   .app-header-layout > [role='navigation'] {
     justify-self: center;
   }
 
-  .app-header-aside {
+  .app-header-action {
     justify-self: end;
   }
 }

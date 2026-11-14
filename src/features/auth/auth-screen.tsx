@@ -1,21 +1,23 @@
-import { Redirect, Link, router, useLocalSearchParams } from 'expo-router';
+import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useRef, useState, useSyncExternalStore } from 'react';
-import { ActivityIndicator, View, type TextInputInstance } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, type TextInputInstance } from 'react-native';
 
 import { useAuth } from './auth-provider';
 import { AuthFrame } from './auth-frame';
 import { authRedirectUrl } from './callback';
 import { getAuthClient } from './client';
 import { authError } from './messages';
+import { useTheme } from '@/hooks/use-theme';
 import { Button } from '@/shared/ui/button';
 import { Notice } from '@/shared/ui/notice';
 import { TextField } from '@/shared/ui/text-field';
-import { ThemedText } from '@/shared/ui/themed-text';
+import { TextButton, TextLink } from '@/shared/ui/text-link';
 
 type Mode = 'login' | 'signup' | 'recovery';
 const subscribe = () => () => {};
 
 export function AuthScreen({ mode }: { mode: Mode }) {
+  const theme = useTheme();
   const { session, loading, configured } = useAuth();
   const { verified, cuenta } = useLocalSearchParams<{ verified?: string; cuenta?: string }>();
   const hydrated = useSyncExternalStore(
@@ -202,36 +204,32 @@ export function AuthScreen({ mode }: { mode: Mode }) {
         disabled={disabled}
         onPress={() => void submit()}
       />
-      {mode !== 'recovery' ? (
-        <Button
-          label="Reenviar confirmación"
-          variant="secondary"
-          disabled={disabled}
-          onPress={() => void submit(true)}
-        />
-      ) : null}
-      {mode === 'login' ? (
-        <>
-          <Link href="/registro">
-            <ThemedText color="primary">Crear una cuenta</ThemedText>
-          </Link>
-          <Link href="/recuperar">
-            <ThemedText color="primary">He olvidado mi contraseña</ThemedText>
-          </Link>
-        </>
-      ) : (
-        <Link href="/acceso">
-          <ThemedText color="primary">Volver a acceder</ThemedText>
-        </Link>
-      )}
+      {/* Lo que completa este mismo formulario va pegado a él. */}
+      {mode === 'login' ? <TextLink href="/recuperar" label="He olvidado mi contraseña" /> : null}
       {updatePassword && !session ? (
-        <Link href="/recuperar">
-          <ThemedText color="primary">Solicitar otro enlace</ThemedText>
-        </Link>
+        <TextLink href="/recuperar" label="Solicitar otro enlace" />
       ) : null}
-      <Link href="/analisis">
-        <ThemedText color="primary">Continuar sin cuenta</ThemedText>
-      </Link>
+      {/* Las alternativas, separadas y como enlaces: una sola acción principal por pantalla. */}
+      <View style={[styles.divider, { backgroundColor: theme.divider }]} />
+      <View>
+        {mode === 'login' ? (
+          <TextLink href="/registro" label="Crear una cuenta" />
+        ) : (
+          <TextLink href="/acceso" label="Volver a acceder" />
+        )}
+        {mode !== 'recovery' ? (
+          <TextButton
+            label="Reenviar confirmación"
+            disabled={disabled}
+            onPress={() => void submit(true)}
+          />
+        ) : null}
+        <TextLink href="/analisis" label="Continuar sin cuenta" />
+      </View>
     </AuthFrame>
   );
 }
+
+const styles = StyleSheet.create({
+  divider: { height: 1 },
+});

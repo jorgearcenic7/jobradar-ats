@@ -45,6 +45,15 @@ const light = {
   danger: '#A3261B',
   dangerSubtle: '#FDECEA',
   dangerDot: '#DC2626',
+  /*
+  Pista de las barras de cobertura: la parte de cada estado que no aporta puntos. Es el tono vivo
+  al 30 % sobre la superficie, para que el estado se reconozca sin competir con lo conseguido.
+  */
+  successTrack: '#B9E3C9',
+  warningTrack: '#FCE2B6',
+  dangerTrack: '#F5BEBE',
+  // Marca J del logo. La casilla que la rodea es `accentSubtle`.
+  logoMark: '#5B4BE8',
   neutral: '#47454F',
   // Fondo de los grupos segmentados y del enlace activo de la navegación.
   neutralSubtle: '#F0EFF5',
@@ -110,6 +119,11 @@ const dark: Palette = {
   danger: '#FF8F84',
   dangerSubtle: '#33171A',
   dangerDot: '#EF4444',
+  successTrack: '#1A5335',
+  warningTrack: '#644518',
+  dangerTrack: '#62262C',
+  // Más clara que en el tema claro: el violeta de marca se perdería sobre la casilla oscura.
+  logoMark: '#A99FFF',
   neutral: '#C4C2D0',
   neutralSubtle: '#22212D',
   segmentActive: '#38354C',

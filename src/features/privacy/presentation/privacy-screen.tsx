@@ -16,6 +16,7 @@ import { AppNavigation } from '@/shared/navigation/app-navigation';
 import { layout, space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
 import { Screen } from '@/shared/ui/screen';
+import { TextLink } from '@/shared/ui/text-link';
 import { Heading, ThemedText } from '@/shared/ui/themed-text';
 
 const contactEmail = 'jorgearcenic7@gmail.com';
@@ -142,16 +143,14 @@ export function PrivacyScreen() {
             ))}
             {section.contact ? (
               <Link href={`mailto:${contactEmail}`}>
-                <ThemedText color="primary" selectable>
+                <ThemedText color="accentText" selectable>
                   {contactEmail}
                 </ThemedText>
               </Link>
             ) : null}
           </Card>
         ))}
-        <Link href="/mi-cuenta">
-          <ThemedText color="primary">Ir a Mi cuenta</ThemedText>
-        </Link>
+        <TextLink href="/mi-cuenta" label="Ir a Mi cuenta" />
       </View>
     </Screen>
   );

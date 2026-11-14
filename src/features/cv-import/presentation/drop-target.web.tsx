@@ -17,7 +17,7 @@ export function DropTarget({ children, disabled, onDragChange, onDrop }: DropTar
 
   return (
     <div
-      style={{ display: 'flex', flexDirection: 'column' }}
+      style={{ display: 'flex', flexDirection: 'column', flexGrow: 1 }}
       onDragEnter={(event) => {
         if (disabled || !hasFiles(event)) return;
         event.preventDefault();
