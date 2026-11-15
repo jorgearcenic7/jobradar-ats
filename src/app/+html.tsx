@@ -2,17 +2,28 @@
 HTML raíz de todas las páginas web, generado en Node al exportar (sin acceso al DOM).
 
 Parte de la plantilla de Expo Router y conserva su reinicio de scroll. Añade el idioma del
-documento y los metadatos para «Añadir a pantalla de inicio» en iPhone. El manifiesto no
-registra ningún service worker: la app no funciona sin conexión.
+documento, las vistas previas sociales y los metadatos para «Añadir a pantalla de inicio» en
+iPhone. El manifiesto no registra ningún service worker: la app no funciona sin conexión.
 */
 import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html';
 import { type PropsWithChildren } from 'react';
 
 import { palettes } from '@/shared/theme';
 
-export default function Root({ children }: PropsWithChildren) {
+const siteOrigin = 'https://jobradar-ats.pages.dev';
+const siteDescription =
+  'Compara tu CV con ofertas, evalúa requisitos y descubre mejoras con evidencias. Análisis ATS local en evolución.';
+const socialImage = `${siteOrigin}/jobradar-cover.jpg`;
+
+export default function Root({
+  children,
+  pathname = '/',
+}: PropsWithChildren<{ pathname?: string }>) {
   // Expo Router 58 exige pintar estos nodos al renderizar en estático: incluyen CSS, fuentes y scripts.
   const { headNodes, bodyNodes, htmlAttributes, bodyAttributes } = useServerDocumentContext();
+  const pageUrl = new URL(pathname, siteOrigin);
+  pageUrl.search = '';
+  pageUrl.hash = '';
 
   return (
     <html lang="es" {...htmlAttributes}>
@@ -21,7 +32,23 @@ export default function Root({ children }: PropsWithChildren) {
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
         <title>JobRadar ATS</title>
-        <meta name="description" content="Compara tu CV con una oferta, requisito a requisito." />
+        <meta name="description" content={siteDescription} />
+        <meta property="og:type" content="website" />
+        <meta property="og:site_name" content="JobRadar ATS" />
+        <meta property="og:title" content="JobRadar ATS" />
+        <meta property="og:description" content={siteDescription} />
+        <meta property="og:locale" content="es_ES" />
+        <meta property="og:url" content={pageUrl.href} />
+        <meta property="og:image" content={socialImage} />
+        <meta property="og:image:type" content="image/jpeg" />
+        <meta property="og:image:width" content="1280" />
+        <meta property="og:image:height" content="640" />
+        <meta property="og:image:alt" content="JobRadar ATS: análisis de CV y ofertas de empleo" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="JobRadar ATS" />
+        <meta name="twitter:description" content={siteDescription} />
+        <meta name="twitter:image" content={socialImage} />
+        <meta name="twitter:image:alt" content="JobRadar ATS: análisis de CV y ofertas de empleo" />
         <meta name="application-name" content="JobRadar ATS" />
         <meta name="apple-mobile-web-app-title" content="JobRadar ATS" />
         {/*

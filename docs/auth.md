@@ -101,3 +101,7 @@ Resultado esperado en v1.2: ninguna fila en las cuatro consultas. Cualquier tabl
 **Vercel:** hosting anterior, sin configuración en el repositorio. Pasos para retirarlo en [deploy.md](deploy.md#retirada-de-vercel-proveedor-anterior).
 
 Referencias: [Expo SDK 58](https://docs.expo.dev/versions/v58.0.0/), [autenticación en Expo Router](https://docs.expo.dev/router/advanced/authentication/), [Supabase para React Native](https://supabase.com/docs/guides/auth/quickstarts/react-native), [contraseñas](https://supabase.com/docs/guides/auth/passwords).
+
+## Disponibilidad de Supabase Free
+
+Hay una [propuesta de monitorización diaria de solo lectura](supabase-availability.md), sin credenciales administrativas ni acceso a CV. Está pendiente para una rama posterior al cierre de la preparación pública; no se ha creado ni activado un workflow y no garantiza evitar las pausas del plan Free.

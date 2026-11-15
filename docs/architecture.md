@@ -595,7 +595,7 @@ Fusionada en `main` mediante la PR #14 (`b5ac90b`), sin comprobar un despliegue 
 
 ### Motor ATS (v1.7)
 
-Sin publicar, en la rama `feat/v1.7-motor-ats`. Mejora la interpretación determinista de `cv-match/domain` sin dependencias nuevas, sin servidor y sin cambiar los pesos de la cobertura. Las reglas son generales: no hay casos específicos de ninguna empresa.
+Fusionada en `main` mediante la PR #15 (`f242412`), sin verificar un despliegue posterior. Mejora la interpretación determinista de `cv-match/domain` sin dependencias nuevas, sin servidor de análisis y sin cambiar los pesos de la cobertura. Las reglas son generales: no hay casos específicos de ninguna empresa.
 
 - **Secciones de la oferta** (`offer-requirements.ts`). Reconoce más encabezados de perfil y de deseables en los dos idiomas («Background», «Ideal candidate», «Valoraremos», «Desirable»…). Si la oferta tiene un apartado explícito de deseables, un perfil sin matiz contiene los obligatorios. Un calificador como «preferably in…» o «preferred in…» matiza la especialidad, no la importancia. `splitSentences` ya no corta en «e.g.», «i.e.» ni «p. ej.».
 - **Evidencias breves.** Una frase de cuatro o cinco palabras puede acreditar uso con un verbo de acción concreto en la misma cláusula. Las listas, menciones genéricas, negaciones, aprendizaje y secciones que no acreditan uso conservan sus límites.
@@ -809,6 +809,6 @@ Situación a 1 de noviembre de 2026: **46 avisos (45 moderados y 1 bajo, ninguno
 - **Formato de miles duplicado.** `cv-import/presentation/messages.ts` repite la función de `TextField` que agrupa los miles con punto. Convendrá compartirla cuando otro componente la necesite.
 - **Riesgos futuros.** La importación nativa y la IA local o gratuita dependerán de librerías que habrá que validar con Expo SDK 58, iOS, Android y la privacidad de los datos.
 
-## Cuestiones pendientes no técnicas
+## Política del código público
 
-- **Licencia.** La licencia propia de JobRadar ATS está pendiente de decisión. El repositorio es privado. El archivo `LICENSE` actual es la licencia MIT de la plantilla de Expo (copyright de 650 Industries, Inc.) y se conserva sin modificaciones. Al elegir la licencia propia, deberán mantenerse los avisos y atribuciones de terceros que correspondan.
+- **Derechos del código propio.** Por decisión del propietario, JobRadar se publica para consulta con derechos reservados, sin una concesión general de reutilización o comercialización y sin presentarlo como open source. El aviso raíz [LICENSE](../LICENSE) distingue ese contenido de los componentes de terceros. La MIT heredada de Expo se conserva íntegra en [LICENSES/Expo-MIT.txt](../LICENSES/Expo-MIT.txt); los demás avisos se describen en [THIRD_PARTY_NOTICES.md](../THIRD_PARTY_NOTICES.md). No se revocan permisos válidamente concedidos con anterioridad. Ver [preparación pública](public-repository.md#política-de-licencias-del-código-público).
