@@ -13,13 +13,27 @@ Este documento distingue lo **publicado**, lo **experimental**, lo **pendiente**
 | v1.4    | Extracción bilingüe de requisitos, catálogo de tecnologías ampliado y relaciones semánticas locales con `multilingual-e5-small` | Publicada (`ec2301b` en `main`) |
 | v1.5    | Rediseño responsive, accesibilidad y Resultados ATS agrupados por estado                                                        | Publicada (PR #13)              |
 | v1.6    | Diseño inmersivo en la web: radar interactivo, animaciones ligadas al desplazamiento y transición a Analizar                    | Fusionada en `main` (PR #14)    |
-| v1.7    | Motor ATS: secciones en inglés, alternativas, niveles de idioma con palabras, años por ámbito, normas ISO y representatividad   | En una rama, sin publicar       |
+| v1.7    | Motor ATS: secciones en inglés, alternativas, niveles de idioma con palabras, años por ámbito, normas ISO y representatividad   | Fusionada en `main` (PR #15)    |
 
 La v1.4 entró en `main` sin PR. La presencia de la v1.4 y la v1.5 en producción se comprobó el 15 de noviembre de 2026 sobre la web publicada. La v1.6, fusionada en `main` mediante la PR #14 (`b5ac90b`), sustituye en la web el Inicio y el aspecto de Analizar por la dirección inmersiva aprobada en el prototipo; la ruta `/prototipo` se ha retirado. iOS y Android conservan el diseño de la v1.5.
 
-No se ha comprobado un despliegue posterior de v1.6. La v1.7 continúa sobre esa integración, pendiente de revisión y PR. Ver [validación y límites de v1.7](v1.7-validation.md).
+No se ha comprobado un despliegue posterior de v1.6. La v1.7 está fusionada en `main` mediante la PR #15 (`f242412`); no se afirma un despliegue de esa versión. Ver [validación y límites de v1.7](v1.7-validation.md). La preparación pública se documenta en [public-repository.md](public-repository.md): por decisión del propietario, el contenido propio se publica para consulta con derechos reservados y sin permisos generales de reutilización o comercialización; las licencias de terceros se conservan.
 
 Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9), que es el hosting actual. Vercel, el hosting anterior, se ha retirado del repositorio y ya no sirve la app. Ver [deploy.md](deploy.md).
+
+## Evaluación híbrida: estado y evolución
+
+JobRadar evoluciona hacia una evaluación ATS híbrida más inteligente, preservando la trazabilidad de los requisitos, las evidencias y la privacidad del análisis local.
+
+| Capa                          | Estado real                                                    | Papel en el producto                                                            |
+| ----------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| Motor ATS determinista        | Implementado; mejoras de v1.7 fusionadas en `main`             | Evalúa requisitos y calcula la cobertura con reglas y evidencias visibles.      |
+| `multilingual-e5-small` local | Implementado, opcional y experimental desde v1.4               | Sugiere relaciones semánticas; no modifica la cobertura del motor.              |
+| Modelos generativos Qwen      | Experimentos independientes, fuera del repositorio de producto | Investigación para una posible evaluación híbrida; no integrados en producción. |
+
+Una futura incorporación generativa necesita calidad y latencia aceptables, comprobación determinista de las evidencias y una decisión explícita sobre privacidad y coste. No se promete una integración ni una fecha. El experimento aislado se conserva sin modificar.
+
+La preparación pública continúa en `chore/public-repository`. La portada elegida está en `public/jobradar-cover.jpg`, integrada en README y metadatos sociales; su verificación y configuración como Social Preview están en [public-repository.md](public-repository.md#portada-y-vistas-previas-sociales). La propuesta de [monitorización de Supabase Free](supabase-availability.md) se implementaría en una rama posterior, después de cerrar esta preparación; no hay workflow creado.
 
 ## Situación actual (v1.5, publicada)
 
@@ -75,7 +89,7 @@ Revisiones condicionadas: se aplicarán solo si el crecimiento, el riesgo o un u
 - **Derechos:** procedimientos de acceso, rectificación, supresión, portabilidad y oposición, y gestión y registro de solicitudes.
 - **Incidentes:** procedimiento de gestión y, si procede, notificación de brechas de seguridad.
 - **Cookies, analítica y consentimiento:** revisar políticas y consentimientos si se incorporan (hoy no hay analítica).
-- **Condiciones:** términos de uso, licencia y condiciones comerciales antes de monetizar.
+- **Condiciones:** términos de uso y condiciones comerciales antes de monetizar. El contenido propio del repositorio tiene derechos reservados según [LICENSE](../LICENSE); cualquier concesión futura de reutilización requiere una decisión expresa del propietario y debe respetar las licencias de terceros.
 - **Operación:** control de costes y cuotas, prevención de abuso, monitorización y copias de seguridad cuando aumenten los usuarios.
 - **IA externa:** antes de enviar CV a un modelo, revisar el proveedor, la retención, el uso para entrenamiento, las transferencias y el consentimiento.
 - **Seguridad operativa:** reforzar el control de acceso, la gestión de secretos y la protección de las cuentas de GitHub, Cloudflare y Supabase conforme aumente el riesgo.

@@ -1,21 +1,29 @@
-The MIT License (MIT)
+JobRadar ATS — Aviso sobre el contenido propio
 
-Copyright (c) 2015-present 650 Industries, Inc. (aka Expo)
+Copyright (c) 2026 Jorge Arce Nicolás. Todos los derechos reservados.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Este aviso se aplica exclusivamente al código, documentación y recursos originales
+de JobRadar ATS cuyos derechos correspondan a su titular. La publicación del
+repositorio permite consultar el proyecto, pero no concede una licencia general
+para reutilizar, reproducir, modificar, redistribuir, sublicenciar o comercializar
+ese contenido propio. Esas actuaciones requieren autorización expresa del titular,
+salvo los derechos y excepciones que reconozca la normativa aplicable.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Se respetan los derechos de visualización y fork derivados de los términos de
+GitHub. La disponibilidad pública del repositorio no implica la concesión de una
+licencia open source ni una autorización general de explotación comercial.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+Componentes de terceros
+
+Este aviso no sustituye, restringe ni modifica las licencias o permisos de los
+componentes de terceros. Las partes procedentes de la plantilla Expo siguen
+sujetas a su licencia MIT, cuyo texto y aviso de copyright se conservan íntegros
+en LICENSES/Expo-MIT.txt. Las dependencias, tipografías y demás recursos de
+terceros mantienen sus propias licencias, avisos y condiciones, descritos en
+THIRD_PARTY_NOTICES.md y en sus distribuciones originales.
+
+Este aviso no revoca permisos válidamente concedidos en versiones anteriores ni
+limita derechos que otras licencias aplicables ya otorguen sobre sus componentes.
+
+Para solicitar autorización sobre contenido propio:
+jorgearcenic7@gmail.com
