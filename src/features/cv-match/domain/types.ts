@@ -35,6 +35,15 @@ export type OfferRequirement =
       /** Ausente equivale a «al menos»; «más de» exige superar el umbral. */
       comparison?: 'more-than';
     })
+  | (RequirementBase & {
+      /**
+       * Opciones alternativas («SAP u otro ERP», «WMS or TMS»): basta con una. `openEnded` indica
+       * que la oferta admite además herramientas similares que no nombra.
+       */
+      kind: 'any-of';
+      conceptIds: string[];
+      openEnded: boolean;
+    })
   | (RequirementBase & { kind: 'unrecognized' })
   | (RequirementBase & {
       /** A sentence that may or may not be a requirement. Shown for review, never scored. */
@@ -116,6 +125,18 @@ export type Coverage = {
   evaluated: number;
   notEvaluated: number;
   counts: Record<RequirementStatus, number>;
+  /** Todo lo que se ha detectado en la oferta: evaluado, no evaluable o pendiente de revisión. */
+  detected: number;
+  /** Frases que pueden ser o no un requisito (incluidas en `notEvaluated`). */
+  pendingReview: number;
+  /** Requisitos obligatorios que no entran en el porcentaje. */
+  requiredNotEvaluated: number;
+  /**
+   * Qué parte de la oferta refleja el porcentaje: `sufficient` si se evalúa la mayoría de lo
+   * detectado, `limited` si falta una parte apreciable e `insufficient` si el porcentaje se
+   * calcula sobre muy poco y no debe leerse como un resumen de toda la oferta.
+   */
+  representativeness: 'sufficient' | 'limited' | 'insufficient';
 };
 
 export type CvChecks = {

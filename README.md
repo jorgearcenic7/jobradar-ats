@@ -18,7 +18,7 @@
 </div>
 
 > [!NOTE]
-> **Estado.** En producción, en Cloudflare Pages, está publicada la **v1.5**: analizador ATS, importación de CV, cuentas, «Mis CV», extracción bilingüe y relaciones semánticas locales (v1.4) y el rediseño responsive (v1.5). La **v1.6**, sin publicar, integra en la web la dirección inmersiva (Inicio con radar interactivo y Analizar con su transición y movimiento) en la rama `feat/v1.6-prototipo-inmersivo`. Detalle en [Estado de las funcionalidades](#estado-de-las-funcionalidades).
+> **Estado.** La última publicación comprobada en Cloudflare Pages es la **v1.5**: analizador ATS, importación de CV, cuentas, «Mis CV», extracción bilingüe y relaciones semánticas locales (v1.4) y rediseño responsive (v1.5). La **v1.6**, con el diseño inmersivo de Inicio y Analizar, está fusionada en `main` (PR #14); no se ha verificado un despliegue posterior. La **v1.7** está en `feat/v1.7-motor-ats`, pendiente de revisión y publicación. Detalle en [Estado de las funcionalidades](#estado-de-las-funcionalidades).
 
 ## Índice
 
@@ -64,7 +64,8 @@ Principios del producto:
 | Requisitos de ofertas en español e inglés, limpieza de páginas completas de LinkedIn y catálogo ampliado con sinónimos ESCO | v1.4    | Sí           | Sí               | Sí            |
 | **Relaciones semánticas** locales y opcionales con `multilingual-e5-small`: sugerencias que no cambian la cobertura         | v1.4    | Sí           | Sí               | Experimental  |
 | Rediseño responsive, accesibilidad en modo oscuro y Resultados ATS agrupados por estado                                     | v1.5    | Sí           | Sí               | Sí            |
-| **Diseño inmersivo** en la web: Inicio con radar interactivo y escena ligada al desplazamiento, transición y Analizar       | v1.6    | En una rama  | Sí               | Sí            |
+| **Diseño inmersivo** en la web: Inicio con radar interactivo y escena ligada al desplazamiento, transición y Analizar       | v1.6    | Fusionada    | Sí               | Sí            |
+| **Motor ATS v1.7**: secciones en inglés, alternativas, niveles con palabras, años por ámbito, ISO y representatividad       | v1.7    | En una rama  | Sí               | Sí            |
 | Importación de archivos en la app nativa (iOS y Android)                                                                    | —       | No           | —                | —             |
 
 Comprobaciones del responsable en el proyecto real de Supabase, registradas al cerrar la v1.3:
@@ -193,8 +194,7 @@ src/
     auth/               Supabase Auth: acceso, sesión, callback y baja de cuenta
     my-cvs/             «Mis CV»: lista, guardado con confirmación y traspaso al analizador
     privacy/            Página de privacidad
-    home/               Pantalla de inicio
-    prototype/          Prototipo inmersivo de la v1.6 (experimental, solo web)
+    home/               Inicio inmersivo en web y pantalla nativa
   shared/               Sistema de diseño (tokens y componentes), navegación y utilidades
 supabase/
   migrations/           Tablas, índices, RLS y políticas de Storage
@@ -230,15 +230,16 @@ Estas medidas reducen riesgos, pero no constituyen una garantía de seguridad ni
 
 ## Roadmap
 
-| Versión | Contenido                                                                                             | Estado                          |
-| ------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
-| v1.0    | Analizador CV–oferta e importación PDF/DOCX en la web, publicado en Vercel (hosting anterior)         | Publicada (PR #1)               |
-| v1.1    | Identidad visual, rediseño y mejoras de lectura de PDF                                                | Publicada (PR #2 a #5)          |
-| v1.2    | Cuentas con Supabase Auth y refuerzo de seguridad de sesiones                                         | Publicada (PR #6 y #7)          |
-| v1.3    | Mis CV, eliminación de cuenta y página de privacidad                                                  | Publicada (PR #8, #10 y #11)    |
-| v1.4    | Extracción bilingüe, catálogo ampliado y relaciones semánticas locales (`multilingual-e5-small`)      | Publicada (`ec2301b` en `main`) |
-| v1.5    | Rediseño responsive, accesibilidad y Resultados ATS                                                   | Publicada (PR #13)              |
-| v1.6    | Prototipo inmersivo: radar interactivo, animaciones ligadas al desplazamiento y transición a Analizar | Experimental, sin publicar      |
+| Versión | Contenido                                                                                        | Estado                            |
+| ------- | ------------------------------------------------------------------------------------------------ | --------------------------------- |
+| v1.0    | Analizador CV–oferta e importación PDF/DOCX en la web, publicado en Vercel (hosting anterior)    | Publicada (PR #1)                 |
+| v1.1    | Identidad visual, rediseño y mejoras de lectura de PDF                                           | Publicada (PR #2 a #5)            |
+| v1.2    | Cuentas con Supabase Auth y refuerzo de seguridad de sesiones                                    | Publicada (PR #6 y #7)            |
+| v1.3    | Mis CV, eliminación de cuenta y página de privacidad                                             | Publicada (PR #8, #10 y #11)      |
+| v1.4    | Extracción bilingüe, catálogo ampliado y relaciones semánticas locales (`multilingual-e5-small`) | Publicada (`ec2301b` en `main`)   |
+| v1.5    | Rediseño responsive, accesibilidad y Resultados ATS                                              | Publicada (PR #13)                |
+| v1.6    | Diseño inmersivo integrado en Inicio y Analizar                                                  | Fusionada en `main` (PR #14)      |
+| v1.7    | Motor ATS: evidencias breves, alternativas, idiomas, experiencia y representatividad             | Lista para revisión, sin publicar |
 
 Infraestructura: Cloudflare Pages es el hosting de la web desde la PR #9. Vercel, el hosting anterior, se ha retirado del repositorio y `jobradar-ats.vercel.app` ya no sirve la app; quedan pasos de [limpieza en remoto](docs/deploy.md#retirada-de-vercel-proveedor-anterior) que no constan como hechos.
 

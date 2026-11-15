@@ -19,6 +19,11 @@ export type SkillConcept = {
   label: string;
   aliases: string[];
   esco?: { uri: string; labels: string[] };
+  /**
+   * Concepto más general al que pertenece: una mención de este concepto respalda también un
+   * requisito del general («ISO 45001» acredita «normas ISO»), nunca al revés.
+   */
+  broader?: string;
 };
 
 export type LanguageConcept = {
@@ -125,7 +130,69 @@ const baseCatalog: readonly SkillConcept[] = [
     'aprendizaje automatico',
   ]),
   knowledge('data-analysis', 'Análisis de datos', ['analisis de datos', 'data analysis']),
-  transversal('teamwork', 'Trabajo en equipo', ['trabajo en equipo', 'teamwork']),
+  // Gestión empresarial e industrial (v1.7): ERP, normas ISO y prevención, comunes a muchos sectores.
+  knowledge('erp', 'ERP', ['erp', 'erps', 'sistema erp', 'sistemas erp', 'software erp']),
+  { ...skill('sap', 'SAP', ['sap', 'sap erp', 's/4hana', 'sap s/4hana']), broader: 'erp' },
+  skill('wms', 'WMS', ['wms', 'warehouse management system', 'sistema de gestion de almacenes']),
+  skill('tms', 'TMS', ['tms', 'transport management system', 'transportation management system']),
+  skill('a3', 'A3', ['a3', 'a3eco', 'a3con']),
+  skill('contaplus', 'Contaplus', ['contaplus', 'contaplus flex']),
+  knowledge('incoterms', 'Incoterms', ['incoterms']),
+  knowledge('iso-standards', 'Normas ISO', [
+    'iso',
+    'normas iso',
+    'norma iso',
+    'normativa iso',
+    'estandares iso',
+    'iso standards',
+    'iso standard',
+    'iso norms',
+  ]),
+  { ...knowledge('iso-9001', 'ISO 9001', ['iso 9001', 'iso9001']), broader: 'iso-standards' },
+  { ...knowledge('iso-14001', 'ISO 14001', ['iso 14001', 'iso14001']), broader: 'iso-standards' },
+  {
+    ...knowledge('iso-45001', 'ISO 45001', ['iso 45001', 'iso45001', 'ohsas 18001']),
+    broader: 'iso-standards',
+  },
+  { ...knowledge('iso-27001', 'ISO 27001', ['iso 27001', 'iso27001']), broader: 'iso-standards' },
+  { ...knowledge('iso-22000', 'ISO 22000', ['iso 22000', 'iso22000']), broader: 'iso-standards' },
+  { ...knowledge('iso-50001', 'ISO 50001', ['iso 50001', 'iso50001']), broader: 'iso-standards' },
+  knowledge('occupational-safety', 'Prevención de riesgos laborales', [
+    'prevencion de riesgos laborales',
+    'prl',
+    'seguridad y salud laboral',
+    'seguridad y salud en el trabajo',
+    'occupational health and safety',
+    'occupational safety',
+    'health and safety',
+    'hse',
+    'ehs',
+  ]),
+  transversal('teamwork', 'Trabajo en equipo', [
+    'trabajo en equipo',
+    'trabajar en equipo',
+    'teamwork',
+    'team player',
+    'part of a team',
+  ]),
+  transversal('autonomy', 'Trabajo autónomo', [
+    'trabajo autonomo',
+    'autonomia',
+    'de forma autonoma',
+    'work independently',
+    'working independently',
+    'independent work',
+    'self-starter',
+  ]),
+  transversal('analytical-thinking', 'Capacidad analítica', [
+    'capacidad analitica',
+    'capacidad de analisis',
+    'pensamiento analitico',
+    'analytical skills',
+    'analytical thinking',
+    'analytical mindset',
+    'analytical',
+  ]),
   transversal('communication', 'Comunicación', [
     'comunicacion',
     'habilidades comunicativas',
@@ -135,6 +202,7 @@ const baseCatalog: readonly SkillConcept[] = [
   transversal('problem-solving', 'Resolución de problemas', [
     'resolucion de problemas',
     'problem solving',
+    'problem-solving',
   ]),
 ];
 

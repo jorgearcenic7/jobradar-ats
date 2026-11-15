@@ -84,6 +84,11 @@ const requiredWords = [
   'required',
   'minimos',
   'minimum',
+  'mandatory',
+  'essential',
+  'esencial',
+  'excluyente',
+  'must',
 ];
 
 const requirementHeadingWords = [
@@ -116,7 +121,18 @@ const preferredWords = [
   'preferred',
   'preferible',
   'preferiblemente',
+  'preferentemente',
   'opcional',
+  'valoraremos',
+  'se valoraran',
+  'desirable',
+  'desired',
+  'preferable',
+  'preferably',
+  'ideally',
+  'idealmente',
+  'an advantage',
+  'advantageous',
 ];
 
 // Se retiran de la frase antes de buscar las palabras anteriores, para que «No es
@@ -176,6 +192,17 @@ const profileHeadingWords = [
   'what you bring',
   'what you will bring',
   'you have',
+  'background',
+  'ideal candidate',
+  'candidato ideal',
+  'candidata ideal',
+  'perfil del candidato',
+  'perfil profesional',
+  'skills and experience',
+  'experience and skills',
+  'skills and qualifications',
+  'experience and qualifications',
+  'formacion y experiencia',
 ];
 
 // Encabezados que nombran un tema («Backend», «Idiomas») en lugar de un tipo de sección.
@@ -362,8 +389,22 @@ const demandWords = [
   'you have',
 ];
 
+/*
+«Degree, preferably in Engineering» o «2 years' experience, preferred in safety» piden el
+requisito y solo prefieren una especialidad: el calificador no cambia su importancia. Se retira
+desde la palabra hasta la siguiente coma o punto y coma, y solo si no abre la frase, para que
+«Preferably: Docker» siga siendo un requisito deseable.
+*/
+const qualifierPattern =
+  /(?<=\S.*?)\b(?:preferabl[ey]|preferred|ideally|preferiblemente|preferentemente|idealmente)\s+(?:in|en|de|del|with|con|from|within|on|for|para)\b[^,;]*/g;
+
+function withoutQualifiers(normalized: string): string {
+  return normalized.replace(qualifierPattern, (match) => ' '.repeat(match.length));
+}
+
 /** Importancia que declaran las palabras de una frase, o `null` si no declaran ninguna. */
-function statedImportance(normalized: string): Importance | null {
+function statedImportance(text: string): Importance | null {
+  const normalized = withoutQualifiers(text);
   const negated = containsAny(normalized, negatedRequiredWords);
   const rest = removePhrases(normalized, negatedRequiredWords);
   const required = containsAny(rest, requiredWords);
@@ -388,6 +429,7 @@ function headingOf(
   normalized: string,
   index: CatalogIndex,
   introducesList: boolean,
+  hasPreferredSection = false,
 ): Heading | null {
   if (line.bulleted || namesAnyTerm(normalized, index)) return null;
   const endsWithColon = /:\s*$/.test(normalized);
@@ -409,8 +451,13 @@ function headingOf(
   if (containsAny(expanded, requirementHeadingWords)) {
     return { role: 'requirements', importance: 'required' };
   }
+  /*
+  Un perfil sin matiz («Background», «Lo que buscamos») no dice con qué firmeza pide. Si la
+  oferta tiene además un apartado explícito de deseables, el contraste lo aclara: lo que queda en
+  el perfil es lo obligatorio.
+  */
   if (containsAny(expanded, profileHeadingWords)) {
-    return { role: 'requirements', importance: 'unclassified' };
+    return { role: 'requirements', importance: hasPreferredSection ? 'required' : 'unclassified' };
   }
   if (containsAny(expanded, descriptionHeadingWords)) return { role: 'description' };
 
@@ -554,8 +601,8 @@ function recognize(normalized: string, index: CatalogIndex): Candidate[] {
   }
 
   /*
-  Solo se usa la primera cifra seguida de «años» («3-5 años» se lee como 5; «tres años», en
-  letras, no se reconoce) y se asocia a todos los conceptos de la frase. Esos conceptos siguen
+  Solo se usa la primera cifra seguida de «años» («3-5 años» se lee como 5; también se aceptan
+  cifras con letras hasta diez) y se asocia a todos los conceptos de la frase. Esos conceptos siguen
   siendo además requisitos propios, evaluados por separado.
   */
   const [yearMention] = findYearMentions(normalized);
@@ -571,7 +618,7 @@ function recognize(normalized: string, index: CatalogIndex): Candidate[] {
       conceptIds,
       ...(role ? { role } : {}),
       ...(strict ? { comparison: 'more-than' as const } : {}),
-      label: `${strict ? 'Más de ' : ''}${years} años de experiencia${role ? ` como ${role}` : labels.length ? ` con ${labels.join(' y ')}` : ''}`,
+      label: `${strict ? 'Más de ' : ''}${years} ${years === 1 ? 'año' : 'años'} de experiencia${role ? ` como ${role}` : labels.length ? ` con ${labels.join(' y ')}` : ''}`,
     });
   }
 
@@ -584,7 +631,36 @@ type DemandClause = {
   importance?: Importance;
   review?: boolean;
   reviewCause?: 'alternative' | 'partial-recognition';
+  /** Los conceptos de la cláusula son opciones («A o B»): basta con una. */
+  alternative?: boolean;
 };
+
+/*
+Marcas de que la oferta pone ejemplos o admite equivalentes: «e.g. SAP», «por ejemplo», «such
+as», «o similar», «u otro ERP», «or equivalent». Los conceptos de esa cláusula son opciones.
+*/
+const openEndedPattern =
+  /\b(?:e\.g|p\.\s?ej|por ejemplo|such as|similar|similares|equivalent|equivalente|equivalentes)\b|\b(?:o|u|or)\s+(?:de\s+)?(?:otro|otra|otros|otras|other|another|any other)\b/;
+
+/**
+ * `similar`: la oferta admite equivalentes («o similar», «e.g.»). `unknownOption`: nombra otra
+ * opción que el catálogo no reconoce («SQL o Teradata»). En los dos casos el grupo es abierto.
+ */
+function anyOfCandidate(
+  conceptIds: string[],
+  openness: { similar: boolean; unknownOption: boolean },
+  index: CatalogIndex,
+): Candidate {
+  const labels = conceptIds.map((id) => index.concepts.get(id)!.label);
+  const openEnded = openness.similar || openness.unknownOption;
+  return {
+    kind: 'any-of',
+    id: `any-of:${conceptIds.join('|')}${openEnded ? ':open' : ''}`,
+    conceptIds,
+    openEnded,
+    label: `${labels.join(' o ')}${openness.similar ? ' (o similar)' : openness.unknownOption ? ' u otra opción de la oferta' : ''}`,
+  };
+}
 
 /** Solo listas técnicas delimitadas: no intenta adivinar competencias dentro de prosa. */
 function technicalList(text: string, index: CatalogIndex) {
@@ -662,7 +738,16 @@ function protectedDemandClauses(
     sentenceRole(normalized, section, statedImportance(normalized)) === 'requirement' &&
     hasAlternative(source, index)
   ) {
-    return [{ source, text: source, review: true, reviewCause: 'alternative' }];
+    const matches = findTerms(normalized, index.conceptTerms);
+    const mixedConjunction = matches.some(
+      (match, i) =>
+        i > 0 && /\s(?:y|e|and)\s/.test(normalized.slice(matches[i - 1].end, match.start)),
+    );
+    // No simplificamos «A y B o C» ni convertimos una alternativa negada en exigencia positiva.
+    if (mixedConjunction || containsAny(normalized, negatedRequiredWords)) {
+      return [{ source, text: source, review: true }];
+    }
+    return [{ source, text: source, alternative: true }];
   }
   return demandClauses(source, index).flatMap((clause) => {
     if (
@@ -811,10 +896,30 @@ export function extractOfferRequirementsFromIndex(
   let section: Section = { role: 'preamble' };
   let unrecognized = 0;
   let review = 0;
+  const hasPreferredSection = lines.some((line, position) => {
+    const heading = headingOf(
+      line,
+      normalize(line.text),
+      index,
+      lines[position + 1]?.bulleted ?? false,
+    );
+    return (
+      heading !== null &&
+      typeof heading === 'object' &&
+      heading.role === 'requirements' &&
+      heading.importance === 'preferred'
+    );
+  });
 
   for (const [position, line] of lines.entries()) {
     const introducesList = lines[position + 1]?.bulleted ?? false;
-    const heading = headingOf(line, normalize(line.text), index, introducesList);
+    const heading = headingOf(
+      line,
+      normalize(line.text),
+      index,
+      introducesList,
+      hasPreferredSection,
+    );
     if (heading) {
       section = nextSection(section, heading, line);
       continue;
@@ -837,7 +942,25 @@ export function extractOfferRequirementsFromIndex(
       const importance = wordingReview
         ? combineImportance(sectionImportance(section), stated)
         : (clause.importance ?? combineImportance(sectionImportance(section), stated));
-      const candidates = recognize(normalized, index);
+      let candidates = recognize(normalized, index);
+
+      /*
+      Opciones alternativas: los conceptos de la cláusula forman un solo requisito que se cumple
+      con cualquiera de ellos. Los idiomas, la titulación y los años de la misma frase siguen
+      siendo requisitos propios.
+      */
+      const concepts = candidates.flatMap((candidate) =>
+        candidate.kind === 'concept' ? [candidate.conceptId] : [],
+      );
+      // Una alternativa con un solo concepto reconocido tiene otra opción que el catálogo no conoce.
+      const similar = openEndedPattern.test(normalized);
+      const unknownOption = Boolean(clause.alternative) && concepts.length === 1;
+      if (role === 'requirement' && concepts.length > 0 && (clause.alternative || similar)) {
+        candidates = [
+          ...candidates.filter((candidate) => candidate.kind !== 'concept'),
+          anyOfCandidate(concepts, { similar, unknownOption }, index),
+        ];
+      }
 
       // Una práctica de la empresa que no nombra nada conocido no deja nada que revisar.
       if (

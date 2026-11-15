@@ -17,19 +17,27 @@ con algunas expresiones habituales en inglés, y se aplican frase a frase.
 import {
   compareCefr,
   compareEducation,
+  compareLevelRanges,
   educationLabels,
   findEducationLevels,
   findYearMentions,
   languageLevelAt,
+  levelRange,
   mentionsExperience,
+  type CefrRange,
 } from './criteria';
 import { withoutDates, type CvUnit } from './cv-structure';
-import { asksGeneralExperience, workExperience } from './work-periods';
+import {
+  asksGeneralExperience,
+  experienceScopeTerms,
+  namesExperienceScope,
+  scopedExperience,
+  workExperience,
+} from './work-periods';
 import { explicitExperienceRole } from './experience-role';
 import { isEscoSynonym, type CatalogIndex } from './skill-catalog';
 import { containsAny, countWords, type TermMatch } from './text';
 import type {
-  CefrLevel,
   CvSectionKind,
   Evidence,
   EvidenceRole,
@@ -109,6 +117,12 @@ const learningCues = [
 // Verbos de acción, sobre todo en primera persona del pasado, que indican trabajo realizado.
 const actionVerbs = [
   'desarrolle',
+  'elabore',
+  'prepare',
+  'genere',
+  'implante',
+  'contabilice',
+  'calcule',
   'implemente',
   'disene',
   'cree',
@@ -150,7 +164,16 @@ const actionVerbs = [
   'configured',
   'maintained',
   'automated',
+  'generated',
+  'prepared',
 ];
+
+// «Usé Excel y Docker» sigue siendo una mención: en frases breves exigimos una acción concreta.
+const concreteActionVerbs = actionVerbs.filter(
+  (verb) => !['use', 'utilice', 'trabaje', 'participe', 'colabore'].includes(verb),
+);
+const actionPattern = new RegExp(`\\b(?:${actionVerbs.join('|')})\\b`, 'g');
+const negatedAction = new RegExp(`\\bno\\s+(?:${actionVerbs.join('|')})\\b`);
 
 /*
 Las negaciones y el aprendizaje se buscan en la cláusula anterior al término, no en toda la
@@ -177,6 +200,7 @@ function isNegated(normalized: string, match: Pick<TermMatch, 'start' | 'end'>) 
   const clause = clauseBefore(normalized, match.start);
   return (
     containsAny(clause, negationCues) ||
+    negatedAction.test(clause) ||
     directNegation.test(clause) ||
     negationAfter.test(normalized.slice(match.end))
   );
@@ -250,6 +274,7 @@ function isHedged(normalized: string) {
 export function isQualifiedSentence(normalized: string): boolean {
   return (
     containsAny(normalized, negationCues) ||
+    negatedAction.test(normalized) ||
     containsAny(normalized, learningCues) ||
     isHedged(normalized) ||
     /(^|[^a-z])nos/.test(normalized)
@@ -269,8 +294,32 @@ function isList(text: string) {
 // Una frase más corta, como «React y Docker», nombra herramientas pero no describe su uso.
 const minimumDescriptionWords = 6;
 
-function isDescription(unit: CvUnit) {
-  return countWords(unit.text) >= minimumDescriptionWords && !isList(unit.text);
+function isDescription(unit: CvUnit, match: TermMatch) {
+  if (isList(unit.text)) return false;
+  if (countWords(unit.text) >= minimumDescriptionWords) return true;
+  if (countWords(unit.text) < 4) return false;
+  // La acción debe preceder al concepto en su propia cláusula; no se presta desde otra frase.
+  const before = clauseBefore(unit.normalized, match.start);
+  // Además del verbo debe haber una tarea u objeto: «Gestioné Excel y Docker» solo enumera.
+  let context = unit.normalized;
+  for (const concept of [...unit.conceptMatches()].reverse()) {
+    context =
+      context.slice(0, concept.start) +
+      ' '.repeat(concept.end - concept.start) +
+      context.slice(concept.end);
+  }
+  const task = context
+    .slice(match.start - before.length, match.start)
+    .replace(actionPattern, ' ')
+    .replace(
+      /\b(?:yo|he|con|en|de|el|la|los|las|un|una|y|para|i|have|with|in|on|the|a|an|and)\b/g,
+      ' ',
+    );
+  return (
+    containsAny(before, concreteActionVerbs) &&
+    /[a-z]{3,}/.test(task) &&
+    !containsAny(before, ['si', 'podria', 'would', 'ojala', 'ejemplo'])
+  );
 }
 
 /*
@@ -315,8 +364,11 @@ function assessConcept(
       : ['experience', 'projects'];
 
   const evidence: Evidence[] = [];
+  // Un concepto más específico respalda al general: «ISO 45001» acredita «normas ISO».
+  const covers = (id: string) =>
+    id === requirement.conceptId || index.concepts.get(id)?.broader === requirement.conceptId;
   for (const unit of units) {
-    const mentions = unit.conceptMatches().filter((item) => item.id === requirement.conceptId);
+    const mentions = unit.conceptMatches().filter((item) => covers(item.id));
     if (mentions.length === 0) continue;
     const durationOnly = (item: TermMatch) =>
       isNegated(unit.normalized, item) && negatesOnlyDuration(unit.normalized, item);
@@ -338,7 +390,7 @@ function assessConcept(
     else if (
       !onlyDurationDenied &&
       supportingSections.includes(unit.section) &&
-      isDescription(unit)
+      isDescription(unit, match)
     ) {
       role = 'support';
     }
@@ -395,7 +447,7 @@ function assessLanguage(
   index: CatalogIndex,
 ): Assessment {
   const name = index.languages.get(requirement.languageId)?.label ?? requirement.label;
-  const mentions: { unit: CvUnit; level: CefrLevel | null }[] = [];
+  const mentions: { unit: CvUnit; range: CefrRange | null }[] = [];
   const negations: CvUnit[] = [];
 
   // Un idioma cuenta en cualquier sección del CV, no solo en «Idiomas».
@@ -404,11 +456,10 @@ function assessLanguage(
     const match = languageMatches.find((item) => item.id === requirement.languageId);
     if (!match) continue;
     if (isNegated(unit.normalized, match)) negations.push(unit);
-    else
-      mentions.push({
-        unit,
-        level: languageLevelAt(unit.normalized, match.start, languageMatches).level,
-      });
+    else {
+      const { level, levelText } = languageLevelAt(unit.normalized, match.start, languageMatches);
+      mentions.push({ unit, range: levelRange(level, levelText) });
+    }
   }
 
   const negationEvidence = negations.map((unit) => evidenceOf(unit, 'negation'));
@@ -433,8 +484,9 @@ function assessLanguage(
     ],
   });
 
-  // El CV nombra el idioma, pero JobRadar no sabe interpretar el nivel que pide la oferta.
-  if (requirement.level === null && requirement.levelText !== null) {
+  const asked = levelRange(requirement.level, requirement.levelText);
+  // El CV nombra el idioma, pero la oferta usa una palabra de nivel que JobRadar no conoce.
+  if (requirement.level === null && requirement.levelText !== null && !asked) {
     return result(
       'not-evaluable',
       `La oferta pide un nivel «${requirement.levelText}» de ${name}, que JobRadar no sabe comparar con la escala MCER. Comprueba tú si tu nivel lo cumple.`,
@@ -442,32 +494,53 @@ function assessLanguage(
   }
 
   // Si el CV indica varios niveles distintos, se usa el más bajo.
-  const levels = mentions
-    .map((mention) => mention.level)
-    .filter((level): level is CefrLevel => level !== null)
-    .sort(compareCefr);
-  const cvLevel = levels[0];
-  if (!cvLevel) {
+  const cvRange = mentions
+    .map((mention) => mention.range)
+    .filter((range): range is CefrRange => range !== null)
+    .sort((a, b) => compareCefr(a.low, b.low))[0];
+  if (!cvRange) {
     return result('mentioned', `El CV menciona el ${name} sin indicar el nivel.`);
   }
-  if (requirement.level === null) {
+  const cvLevel = describeRange(cvRange);
+  if (!asked) {
     return result('supported', `El CV indica un nivel ${cvLevel} de ${name}.`);
   }
-  if (compareCefr(cvLevel, requirement.level) >= 0) {
+  const askedLevel = requirement.levelText
+    ? `«${requirement.levelText}» (${describeRange(asked)} aprox.)`
+    : asked.low;
+  const comparison = compareLevelRanges(cvRange, asked);
+  if (comparison === 'meets') {
     return result(
       'supported',
-      `El CV indica un nivel ${cvLevel} de ${name}, igual o superior al ${requirement.level} que pide la oferta.`,
+      `El CV indica un nivel ${cvLevel} de ${name}, igual o superior al ${askedLevel} que pide la oferta.`,
     );
   }
-  // Un nivel conocido inferior al pedido no cumple el requisito: en los idiomas no hay crédito
-  // parcial. Se informa de la evidencia parcial sin puntuarla.
+  /*
+  Si uno de los dos niveles está escrito con palabras («fluido», «intermedio») y los intervalos se
+  solapan, el texto no permite decidir: es evidencia insuficiente, no un incumplimiento.
+  */
+  if (comparison === 'uncertain') {
+    return {
+      ...result(
+        'mentioned',
+        `El CV indica un nivel ${cvLevel} de ${name} y la oferta pide ${askedLevel}: según la equivalencia que use la empresa, puede bastar o no.`,
+      ),
+      partial: { achieved: cvLevel, required: requirement.levelText ?? describeRange(asked) },
+    };
+  }
+  // Un nivel inferior al pedido no cumple el requisito: en los idiomas no hay crédito parcial.
+  // Se informa de la evidencia parcial sin puntuarla.
   return {
     ...result(
       'missing',
-      `El CV indica un nivel ${cvLevel} de ${name}, inferior al ${requirement.level} que pide la oferta.`,
+      `El CV indica un nivel ${cvLevel} de ${name}, inferior al ${askedLevel} que pide la oferta.`,
     ),
-    partial: { achieved: cvLevel, required: requirement.level },
+    partial: { achieved: cvLevel, required: requirement.levelText ?? asked.low },
   };
+}
+
+function describeRange(range: CefrRange): string {
+  return range.low === range.high ? range.low : `${range.low}–${range.high}`;
 }
 
 /*
@@ -563,6 +636,13 @@ function yearsStatedFor(requirement: Requirement<'years'>, unit: CvUnit) {
   const denied: number[] = [];
   const deniedDurations: number[] = [];
   const { conceptIds } = requirement;
+  // Una duración general declarada tampoco acredita un ámbito específico de la oferta.
+  if (!conceptIds.length && !requirement.role && !asksGeneralExperience(requirement.sources)) {
+    const scope = experienceScopeTerms(requirement.sources);
+    if (!scope.length || !namesExperienceScope(unit.normalized, scope)) {
+      return { stated, denied, deniedDurations };
+    }
+  }
   // No se adivina qué cifra de una frase mixta corresponde al puesto, ni se usa una
   // declaración general cuando el título pedido tras «como» está incompleto o es ambiguo.
   if (
@@ -731,6 +811,34 @@ function assessYears(
         ),
       };
     }
+    /*
+    Años en un ámbito («en logística», «en UCI o Urgencias»): cuentan los periodos cuyo título de
+    puesto nombra ese ámbito. Si ninguno lo nombra, se sigue sin asignar años generales.
+    */
+    const scope = dated && !requirement.role ? experienceScopeTerms(requirement.sources) : [];
+    const scoped = dated && scope.length ? scopedExperience(dated, scope) : null;
+    if (scoped && scoped.periods.length > 0) {
+      const supported =
+        requirement.comparison === 'more-than'
+          ? scoped.minimumMonths > requirement.years * 12
+          : scoped.minimumMonths >= requirement.years * 12;
+      const listed = scoped.periods
+        .map((p) => `«${p.context ? `${p.context.text}: ` : ''}${p.unit.text}»`)
+        .join(', ');
+      return {
+        ...(!supported && {
+          partial: {
+            achieved: `${scoped.minimumMonths} meses`,
+            required: `${requirement.years * 12} meses`,
+          },
+        }),
+        status: supported ? 'supported' : 'mentioned',
+        reason: `Puestos cuyo título nombra el ámbito pedido (${scope.join(', ')}): ${listed}. Suman como mínimo ${scoped.minimumMonths} meses (referencia ${dated!.reference}). ${supported ? 'Alcanzan' : 'No alcanzan'} los ${requirement.years} años que pide la oferta. Los demás puestos no se cuentan para esta exigencia.`,
+        evidence: scoped.periods
+          .flatMap((p) => (p.context ? [p.context, p.unit] : [p.unit]))
+          .map((unit) => evidenceOf(unit, supported ? 'support' : 'mention')),
+      };
+    }
     if (dated)
       return {
         status: 'mentioned',
@@ -804,6 +912,52 @@ function assessYears(
   };
 }
 
+const statusRank: Record<RequirementStatus, number> = {
+  supported: 3,
+  mentioned: 2,
+  missing: 1,
+  'not-evaluable': 0,
+};
+
+/*
+Opciones alternativas: basta con una. Se evalúa cada concepto como un requisito propio y se queda
+el mejor resultado, con sus evidencias. Si ninguna opción aparece pero la oferta admite
+herramientas similares, el requisito no es evaluable: el CV puede usar una equivalente que el
+catálogo no reconoce, y tratarlo como una carencia sería injusto.
+*/
+function assessAnyOf(
+  requirement: Requirement<'any-of'>,
+  units: CvUnit[],
+  index: CatalogIndex,
+): Assessment {
+  const options = requirement.conceptIds.map((conceptId) => {
+    const label = index.concepts.get(conceptId)?.label ?? conceptId;
+    return {
+      label,
+      assessment: assessConcept(
+        { ...requirement, kind: 'concept', id: `concept:${conceptId}`, conceptId, label },
+        units,
+        index,
+      ),
+    };
+  });
+  const best = options.reduce((a, b) =>
+    statusRank[b.assessment.status] > statusRank[a.assessment.status] ? b : a,
+  );
+  const names = options.map((option) => option.label).join(', ');
+  if (best.assessment.status === 'missing' && requirement.openEnded) {
+    return {
+      status: 'not-evaluable',
+      reason: `No aparece ninguna de las opciones que cita la oferta (${names}). Como admite otras similares que JobRadar no puede reconocer, no se puntúa: si usas una equivalente, nómbrala en tu CV.`,
+      evidence: best.assessment.evidence,
+    };
+  }
+  return {
+    ...best.assessment,
+    reason: `Basta con una de las opciones (${names}${requirement.openEnded ? ' u otra que admita la oferta' : ''}). ${best.assessment.reason}`,
+  };
+}
+
 /**
  * Evalúa un requisito de la oferta frente a las frases del CV.
  *
@@ -819,6 +973,8 @@ export function assessRequirement(
   switch (requirement.kind) {
     case 'concept':
       return assessConcept(requirement, units, index);
+    case 'any-of':
+      return assessAnyOf(requirement, units, index);
     case 'language':
       return assessLanguage(requirement, units, index);
     case 'education':

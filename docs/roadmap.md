@@ -12,9 +12,12 @@ Este documento distingue lo **publicado**, lo **experimental**, lo **pendiente**
 | v1.3    | «Mis CV», eliminación de cuenta, página de privacidad y protección de Storage                                                   | Publicada (PR #8, #10 y #11)    |
 | v1.4    | Extracción bilingüe de requisitos, catálogo de tecnologías ampliado y relaciones semánticas locales con `multilingual-e5-small` | Publicada (`ec2301b` en `main`) |
 | v1.5    | Rediseño responsive, accesibilidad y Resultados ATS agrupados por estado                                                        | Publicada (PR #13)              |
-| v1.6    | Diseño inmersivo en la web: radar interactivo, animaciones ligadas al desplazamiento y transición a Analizar                    | En una rama, sin publicar       |
+| v1.6    | Diseño inmersivo en la web: radar interactivo, animaciones ligadas al desplazamiento y transición a Analizar                    | Fusionada en `main` (PR #14)    |
+| v1.7    | Motor ATS: secciones en inglés, alternativas, niveles de idioma con palabras, años por ámbito, normas ISO y representatividad   | En una rama, sin publicar       |
 
-La v1.4 entró en `main` sin PR. La presencia de la v1.4 y la v1.5 en producción se comprobó el 15 de noviembre de 2026 sobre la web publicada. La v1.6, en la rama `feat/v1.6-prototipo-inmersivo`, sustituye en la web el Inicio y el aspecto de Analizar por la dirección inmersiva aprobada en el prototipo; la ruta `/prototipo` se ha retirado. iOS y Android conservan el diseño de la v1.5.
+La v1.4 entró en `main` sin PR. La presencia de la v1.4 y la v1.5 en producción se comprobó el 15 de noviembre de 2026 sobre la web publicada. La v1.6, fusionada en `main` mediante la PR #14 (`b5ac90b`), sustituye en la web el Inicio y el aspecto de Analizar por la dirección inmersiva aprobada en el prototipo; la ruta `/prototipo` se ha retirado. iOS y Android conservan el diseño de la v1.5.
+
+No se ha comprobado un despliegue posterior de v1.6. La v1.7 continúa sobre esa integración, pendiente de revisión y PR. Ver [validación y límites de v1.7](v1.7-validation.md).
 
 Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9), que es el hosting actual. Vercel, el hosting anterior, se ha retirado del repositorio y ya no sirve la app. Ver [deploy.md](deploy.md).
 

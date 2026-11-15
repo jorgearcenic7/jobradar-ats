@@ -6,8 +6,12 @@ import type {
   RequirementAssessment,
 } from './types';
 
-// Every message is fixed wording plus labels taken from the offer. Nothing from the CV
-// is copied, and nothing suggests adding experience the user does not have.
+/*
+Cada mensaje combina un texto fijo, los nombres que usa la oferta y, desde la v1.7, hechos que ya
+están en el CV: el nivel de idioma declarado, los meses que suman los puestos relacionados o la
+frase literal donde aparece una competencia. Nunca propone añadir experiencia, titulaciones ni
+habilidades que el CV no tenga: solo hacer visible lo que ya demuestra o indicar el dato real.
+*/
 
 const importanceOrder: Importance[] = ['required', 'ambiguous', 'preferred', 'unclassified'];
 
@@ -16,7 +20,26 @@ type RecommendationInput = {
   evidence: RequirementAssessment['evidence'];
   label: string;
   requirementId: string;
+  partial?: RequirementAssessment['partial'];
 };
+
+// Una frase del CV citada en un consejo, recortada para que el mensaje siga siendo legible.
+function quote(text: string) {
+  const clean = text.replace(/\s+/g, ' ').trim();
+  return `«${clean.length > 90 ? `${clean.slice(0, 87).trimEnd()}…` : clean}»`;
+}
+
+function monthsText(value: string) {
+  const months = Number.parseInt(value, 10);
+  if (!Number.isFinite(months)) return value;
+  const years = Math.floor(months / 12);
+  const rest = months % 12;
+  const parts = [
+    years > 0 && `${years} ${years === 1 ? 'año' : 'años'}`,
+    rest > 0 && `${rest} ${rest === 1 ? 'mes' : 'meses'}`,
+  ].filter(Boolean);
+  return parts.length ? parts.join(' y ') : '0 meses';
+}
 
 function hasEvidence(evidence: RequirementAssessment['evidence'], role: EvidenceRole): boolean {
   return evidence.some((item) => item.role === role);
@@ -73,10 +96,24 @@ function forMentionedConcept({
     };
   }
 
+  /*
+  En una lista de habilidades basta con nombrar la sección; otra frase se cita literal. Una frase
+  con una negación («No tengo 5 años con React») no se cita: no es donde «aparece» la competencia.
+  */
+  const where = evidence.find((item) => item.role === 'mention');
+  const place = !where
+    ? null
+    : where.section === 'skills'
+      ? 'tu lista de habilidades'
+      : /(?:^|[^\p{L}])(?:no|nunca|sin|never|not|without)(?=$|[^\p{L}])/iu.test(where.text)
+        ? null
+        : quote(where.text);
   return {
     kind: 'add-evidence',
     requirementId,
-    message: `${label} aparece en tu CV sin un ejemplo de uso. Si lo has usado en un puesto o proyecto, describe allí qué hiciste con ello.`,
+    message: place
+      ? `${label} solo aparece en ${place}, sin un ejemplo de uso. Si lo has usado en un puesto o proyecto, describe allí qué hiciste con ello.`
+      : `${label} aparece en tu CV sin un ejemplo de uso. Si lo has usado en un puesto o proyecto, describe allí qué hiciste con ello.`,
   };
 }
 
@@ -90,6 +127,7 @@ function forMissingLanguage({
   evidence,
   label,
   requirementId,
+  partial,
 }: RecommendationInput): Recommendation {
   if (hasEvidence(evidence, 'negation')) {
     return {
@@ -102,7 +140,9 @@ function forMissingLanguage({
     return {
       kind: 'language-level',
       requirementId,
-      message: `Tu CV indica un nivel inferior al que pide la oferta (${label}). Indica siempre tu nivel real; no lo eleves para ajustarlo a la oferta.`,
+      message: partial
+        ? `Tu CV indica un nivel ${partial.achieved} y la oferta pide ${label}. Indica siempre tu nivel real; si tienes un certificado más reciente o lo estás preparando, añádelo con su fecha.`
+        : `Tu CV indica un nivel inferior al que pide la oferta (${label}). Indica siempre tu nivel real; no lo eleves para ajustarlo a la oferta.`,
     };
   }
 
@@ -114,14 +154,17 @@ function forMissingLanguage({
 }
 
 function forLanguage(input: RecommendationInput): Recommendation | null {
-  const { label, requirementId, status } = input;
+  const { label, requirementId, status, partial } = input;
 
   if (status === 'missing') return forMissingLanguage(input);
   if (status === 'mentioned') {
     return {
       kind: 'language-level',
       requirementId,
-      message: `Indica tu nivel real de idioma con la escala MCER (de A1 a C2). No lo eleves para ajustarlo a ${label}.`,
+      // Con el nivel del CV a la vista, el consejo es concreto: precisarlo o acreditarlo.
+      message: partial
+        ? `Tu CV indica un nivel ${partial.achieved} y la oferta pide ${label}, que puede equivaler a más. Si tu nivel real es superior o tienes un certificado (por ejemplo, de C1), indícalo; si no, mantén ${partial.achieved}.`
+        : `Indica tu nivel real de idioma con la escala MCER (de A1 a C2). No lo eleves para ajustarlo a ${label}.`,
     };
   }
   if (status === 'not-evaluable') {
@@ -147,8 +190,21 @@ function forEducation({
   };
 }
 
-function forYears({ label, requirementId, status }: RecommendationInput): Recommendation | null {
+function forYears({
+  label,
+  requirementId,
+  status,
+  partial,
+}: RecommendationInput): Recommendation | null {
   if (status !== 'mentioned') return null;
+  // Con los meses que ya suman los puestos relacionados, el consejo dice cuánto falta de verdad.
+  if (partial && /meses$/.test(partial.achieved)) {
+    return {
+      kind: 'years',
+      requirementId,
+      message: `Tus puestos relacionados suman ${monthsText(partial.achieved)} y la oferta pide ${label}. Si tienes más experiencia en ese ámbito (otro empleo, prácticas o proyectos), añádela con sus fechas; no amplíes las fechas reales.`,
+    };
+  }
   return {
     kind: 'years',
     requirementId,
@@ -156,18 +212,43 @@ function forYears({ label, requirementId, status }: RecommendationInput): Recomm
   };
 }
 
+/*
+Un requisito obligatorio sin acreditar, o con menos años o menos nivel de los pedidos, es un
+motivo de descarte habitual en un filtrado ATS. Se dice como posibilidad, nunca como certeza.
+*/
+function discardRisk(assessment: RequirementAssessment): boolean {
+  if (assessment.requirement.importance !== 'required') return false;
+  if (assessment.status === 'missing') return true;
+  // Un nivel de idioma ambiguo («fluent» frente a B2) no es un descarte probable; unos años de menos sí.
+  return (
+    assessment.status === 'mentioned' &&
+    assessment.requirement.kind === 'years' &&
+    assessment.partial !== undefined
+  );
+}
+
 function forRequirement(assessment: RequirementAssessment): Recommendation | null {
-  const { requirement, status, evidence } = assessment;
+  const recommendation = forRequirementKind(assessment);
+  if (!recommendation || !discardRisk(assessment)) return recommendation;
+  return { ...recommendation, message: `Posible motivo de descarte. ${recommendation.message}` };
+}
+
+function forRequirementKind(assessment: RequirementAssessment): Recommendation | null {
+  const { requirement, status, evidence, partial } = assessment;
   const input: RecommendationInput = {
     status,
     evidence,
     label: `«${requirement.label}»`,
     requirementId: requirement.id,
+    partial,
   };
 
   switch (requirement.kind) {
     case 'concept':
       return forConcept(input);
+    case 'any-of':
+      // Con alternativas abiertas que no aparecen, no hay nada concreto que recomendar.
+      return status === 'not-evaluable' ? null : forConcept(input);
     case 'language':
       return forLanguage(input);
     case 'education':
