@@ -1,0 +1,79 @@
+name: Supabase availability
+
+on:
+  schedule:
+    - cron: '17 7 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  availability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check read-only database probe
+        shell: bash
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+        run: |
+          python3 - <<'PY'
+          import http.client
+          import json
+          import os
+          import re
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          # No seguimos redirecciones: la clave solo se envía al proyecto configurado.
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, req, fp, code, msg, headers, newurl):
+                  return None
+
+          url = os.environ.get('SUPABASE_URL', '').strip()
+          key = os.environ.get('SUPABASE_PUBLISHABLE_KEY', '').strip()
+          if not re.fullmatch(r'https://[a-z0-9-]+\.supabase\.co/?', url):
+              print('::error::SUPABASE_URL must be a Supabase HTTPS project origin.')
+              sys.exit(1)
+          if not re.fullmatch(r'sb_publishable_[A-Za-z0-9_-]+', key):
+              print('::error::SUPABASE_PUBLISHABLE_KEY must be a publishable key.')
+              sys.exit(1)
+
+          opener = urllib.request.build_opener(NoRedirect())
+          request = urllib.request.Request(
+              url.rstrip('/') + '/rest/v1/rpc/availability_probe',
+              headers={'apikey': key, 'Accept': 'application/json'},
+              method='GET',
+          )
+          for attempt in range(2):
+              failure = 'unexpected response'
+              try:
+                  with opener.open(request, timeout=15) as response:
+                      content_type = response.headers.get('Content-Type', '').split(';')[0].strip().lower()
+                      if response.status == 200 and content_type == 'application/json':
+                          body = response.read(65)
+                          if len(body) <= 64:
+                              value = json.loads(body)
+                              # True y 1.0 no cumplen el contrato del entero SQL 1.
+                              if type(value) is int and value == 1:
+                                  print('Supabase availability probe: OK.')
+                                  sys.exit(0)
+              except urllib.error.HTTPError as error:
+                  failure = 'HTTP ' + str(error.code)
+                  error.close()
+              except (urllib.error.URLError, OSError, http.client.HTTPException):
+                  failure = 'network failure'
+              except (ValueError, UnicodeError):
+                  failure = 'invalid JSON response'
+
+              if attempt == 0:
+                  print('Supabase availability probe: retrying once.')
+                  time.sleep(2)
+
+          # No se imprimen cuerpos, URLs, cabeceras, claves ni excepciones de red.
+          print('::error::Supabase availability probe failed: ' + failure + '.')
+          sys.exit(1)
+          PY
