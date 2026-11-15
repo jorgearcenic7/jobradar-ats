@@ -1,24 +1,30 @@
 # Roadmap de JobRadar ATS
 
-Este documento distingue lo **publicado**, lo **pendiente** y lo **condicionado** al crecimiento del proyecto. Desde la v1.0, el avance se sigue por versiones; el [historial de fases](#historial-de-desarrollo-fases-hasta-la-v10) conserva el detalle anterior.
+Este documento distingue lo **publicado**, lo **experimental**, lo **pendiente** y lo **condicionado** al crecimiento del proyecto. Desde la v1.0, el avance se sigue por versiones; el [historial de fases](#historial-de-desarrollo-fases-hasta-la-v10) conserva el detalle anterior.
 
 ## Versiones
 
-| Versión | Contenido                                                                                        | Estado                         |
-| ------- | ------------------------------------------------------------------------------------------------ | ------------------------------ |
-| v1.0    | Analizador CV–oferta, importación PDF/DOCX en la web y publicación estática en Vercel (anterior) | Publicada (PR #1)              |
-| v1.1    | Identidad visual, rediseño de la interfaz y compatibilidad de lectura de PDF                     | Publicada (PR #2, #3, #4 y #5) |
-| v1.2    | Supabase Auth (registro, confirmación, acceso, sesión, recuperación) y refuerzo de seguridad     | Publicada (PR #6 y #7)         |
-| v1.3    | «Mis CV», eliminación de cuenta, página de privacidad y protección de Storage                    | Publicada (PR #8, #10 y #11)   |
+| Versión | Contenido                                                                                                                       | Estado                          |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| v1.0    | Analizador CV–oferta, importación PDF/DOCX en la web y publicación estática en Vercel (anterior)                                | Publicada (PR #1)               |
+| v1.1    | Identidad visual, rediseño de la interfaz y compatibilidad de lectura de PDF                                                    | Publicada (PR #2, #3, #4 y #5)  |
+| v1.2    | Supabase Auth (registro, confirmación, acceso, sesión, recuperación) y refuerzo de seguridad                                    | Publicada (PR #6 y #7)          |
+| v1.3    | «Mis CV», eliminación de cuenta, página de privacidad y protección de Storage                                                   | Publicada (PR #8, #10 y #11)    |
+| v1.4    | Extracción bilingüe de requisitos, catálogo de tecnologías ampliado y relaciones semánticas locales con `multilingual-e5-small` | Publicada (`ec2301b` en `main`) |
+| v1.5    | Rediseño responsive, accesibilidad y Resultados ATS agrupados por estado                                                        | Publicada (PR #13)              |
+| v1.6    | Prototipo inmersivo: radar interactivo, animaciones ligadas al desplazamiento y transición a Analizar                           | Experimental, sin publicar      |
 
-Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9), que es el hosting definitivo. Vercel, el hosting anterior, se ha retirado del repositorio. Ver [deploy.md](deploy.md).
+La v1.4 entró en `main` sin PR. La presencia de la v1.4 y la v1.5 en producción se comprobó el 15 de noviembre de 2026 sobre la web publicada. La v1.6 es un prototipo en la rama `feat/v1.6-prototipo-inmersivo` (ruta `/prototipo`). No sustituye ninguna pantalla y no es una funcionalidad definitiva: la dirección visual está pendiente de aprobación.
 
-## Situación actual (v1.3, publicada)
+Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9), que es el hosting actual. Vercel, el hosting anterior, se ha retirado del repositorio y ya no sirve la app. Ver [deploy.md](deploy.md).
+
+## Situación actual (v1.5, publicada)
 
 - **Servicio gratuito y no comercial.**
 - **Responsable:** Jorge Arce Nicolás. **Contacto:** jorgearcenic7@gmail.com.
 - **Datos en Supabase**, región eu-west-1 (Irlanda, UE): cuentas, registros de «Mis CV» y archivos.
-- **Análisis ATS local**, en el dispositivo, y **almacenamiento voluntario** de CV con confirmación explícita.
+- **Análisis ATS local**, en el dispositivo: compatibilidad del CV con la oferta según criterios habituales de evaluación ATS, con Jobscan como referencia. Las relaciones semánticas opcionales (v1.4) también se ejecutan en el navegador.
+- **Almacenamiento voluntario** de CV, con confirmación explícita.
 - **Seguridad:** Supabase Auth, RLS por propietario, bucket privado y eliminación de cuenta mediante la Edge Function `delete-account`. Detalle en [mis-cv.md](mis-cv.md).
 - **Web:** <https://jobradar-ats.pages.dev> (Cloudflare Pages).
 
@@ -32,13 +38,13 @@ Verificado por el responsable al cerrar la v1.3:
 - La recuperación de contraseña funciona en producción: llega el correo, se establece la nueva contraseña y el cambio queda confirmado.
 - Las pruebas reales de la v1.3 se han completado y la versión está publicada en Cloudflare Pages.
 
-### Pendiente tras la v1.3
+### Pendiente
 
-1. Completar la información de privacidad: la v1.3 se ha publicado con la base jurídica y las transferencias internacionales marcadas como pendientes en `/privacidad` (ver [Cumplimiento y privacidad](#cumplimiento-y-privacidad)).
-2. Dominio `jobradar-ats.is-a.dev`, pendiente de aprobación (ver [Hosting, dominio y correo](#hosting-dominio-y-correo)).
-3. Comprobar el SMTP de Supabase Auth: el servidor integrado solo entrega correos a direcciones del equipo del proyecto. No consta como revisado.
-4. Retirar Vercel en remoto: no consta que se haya desconectado ni eliminado el proyecto ([deploy.md](deploy.md#retirada-de-vercel-proveedor-anterior)).
-5. Prueba del enlace de confirmación de otra cuenta (paso 7 de [auth.md](auth.md#verificación-real-manual)), que no consta como realizada.
+1. Completar la información de privacidad: la v1.3 se publicó con la base jurídica y las transferencias internacionales marcadas como pendientes en `/privacidad` (ver [Cumplimiento y privacidad](#cumplimiento-y-privacidad)).
+2. Comprobar el SMTP de Supabase Auth: el servidor integrado solo entrega correos a direcciones del equipo del proyecto. No consta como revisado.
+3. Terminar la limpieza de Vercel: la web antigua ya no se sirve (`jobradar-ats.vercel.app` responde 404, comprobado el 15 de noviembre de 2026), pero no consta que se hayan quitado sus callbacks de Supabase ni su app de GitHub ([deploy.md](deploy.md#retirada-de-vercel-proveedor-anterior)).
+4. Prueba del enlace de confirmación de otra cuenta (paso 7 de [auth.md](auth.md#verificación-real-manual)), que no consta como realizada.
+5. Decidir si la dirección inmersiva de la v1.6 se aplica a las pantallas reales. Antes de integrarla, retirar o proteger `/prototipo`.
 
 ## Cumplimiento y privacidad
 
@@ -73,22 +79,14 @@ Revisiones condicionadas: se aplicarán solo si el crecimiento, el riesgo o un u
 
 ## Hosting, dominio y correo
 
-| Elemento                    | Estado                                                                                                                                                                     |
-| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cloudflare Pages            | Hosting definitivo de la web: <https://jobradar-ats.pages.dev>, despliega `main` con `npm run build:web`. Publica la v1.3.                                                 |
-| Vercel                      | Hosting anterior. Retirado del repositorio; no consta que se haya desconectado ni eliminado el proyecto remoto ([pasos](deploy.md#retirada-de-vercel-proveedor-anterior)). |
-| Dominio gratuito solicitado | `jobradar-ats.is-a.dev`, en el [PR #61106 de is-a-dev/register](https://github.com/is-a-dev/register/pull/61106). **Pendiente de aprobación; no está activo.**             |
-| Correos de Supabase Auth    | Configuración actual sin cambios. **Resend no está integrado.**                                                                                                            |
+| Elemento                 | Estado                                                                                                                                                                                  |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cloudflare Pages         | Hosting de la web: <https://jobradar-ats.pages.dev>. Despliega `main` con `npm run build:web` y publica la v1.5.                                                                        |
+| Vercel                   | Hosting anterior, retirado del repositorio. `jobradar-ats.vercel.app` ya no sirve la app; queda la [limpieza en remoto](deploy.md#retirada-de-vercel-proveedor-anterior) sin confirmar. |
+| Dominio                  | `jobradar-ats.pages.dev`. El subdominio `jobradar-ats.is-a.dev` (PR #61106 de is-a-dev/register) fue **rechazado** y no se buscarán más dominios gratuitos.                             |
+| Correos de Supabase Auth | Configuración actual sin cambios. **Resend no está integrado.**                                                                                                                         |
 
-Pasos pendientes:
-
-1. Esperar la aprobación del PR #61106 y, si se aprueba, conectar el subdominio a Cloudflare Pages como dominio personalizado. Después, actualizar la Site URL y las Redirect URLs de Supabase ([deploy.md](deploy.md#supabase-origen-de-autenticación-manual)).
-2. Comprobar si Resend permite verificar el subdominio y si is-a.dev permite crear los registros DNS necesarios (TXT y MX).
-3. Si es posible, configurar esos registros y conectar Resend como SMTP de Supabase Auth.
-4. Personalizar los correos de confirmación y recuperación con la identidad de JobRadar.
-5. Si el subdominio no permite configurar bien el correo, buscar otra opción compatible sin salir del coste objetivo de 0 €.
-
-Condiciones: is-a.dev se usa para un proyecto no comercial. Si JobRadar se monetiza, hay que migrar a un dominio propio y dejar de usar el subdominio si sus condiciones lo exigen.
+Correos personalizados: Resend, como cualquier SMTP con remitente propio, exige verificar un dominio con registros DNS (TXT y MX), y `pages.dev` no permite crearlos. Los correos de confirmación y recuperación con la identidad de JobRadar quedan aplazados hasta disponer de un dominio propio, por ejemplo si el proyecto se monetiza.
 
 ## Historial de desarrollo (fases hasta la v1.0)
 
@@ -154,7 +152,7 @@ Alcance:
 
 Límites:
 
-- **El motor es heurístico** (reglas y un catálogo de habilidades). No predice la decisión de ningún ATS ni la probabilidad de contratación.
+- **Motor de reglas** con un catálogo de habilidades, que analiza la compatibilidad del CV con criterios habituales de evaluación ATS.
 - **Importación solo en la web.** La importación en iOS y Android queda pendiente.
 - **Sin OCR.** Los PDF escaneados o en imagen no se leen: se pide pegar el texto.
 - **Ejemplo ficticio.** «Cargar ejemplo ficticio» se conserva para desarrollo y pruebas, sin protagonismo en la app final.
@@ -266,14 +264,14 @@ Funcionalidades planificadas para después de la Fase 6. El orden y la agrupaci�
 - Importación de CV en PDF y DOCX en iOS y Android (la web forma parte de la Fase A).
 - Reconocimiento de texto (OCR) en CV escaneados.
 - Gestión de varias versiones del CV.
-- Integración opcional de IA local o gratuita.
+- Integración opcional de IA local o gratuita: la v1.4 añadió una primera versión, experimental, con relaciones semánticas locales.
 - Edición y exportación de currículums.
 - Historial y seguimiento de candidaturas.
 - Integración con las funciones de compartir del dispositivo, cuando sea viable.
 
 #### Condiciones para esta evolución y para la Fase A
 
-- **Motor ATS:** cada puntuación debe mostrar los criterios y las evidencias en que se basa. No debe presentarse como predicción de la decisión de un ATS real ni como probabilidad de contratación.
+- **Motor ATS:** simula los mecanismos habituales de análisis y filtrado de los ATS, con Jobscan como referencia. Cada puntuación debe mostrar los criterios y las evidencias en que se basa, y no se atribuirá al algoritmo de un ATS comercial concreto ni se presentará como garantía de su decisión.
 - **Recomendaciones y edición:** nunca inventarán experiencia, titulaciones ni habilidades.
 - **IA:** será opcional, local o gratuita, y requerirá una evaluación previa de privacidad, porque los CV contienen datos personales.
 - **Nuevas librerías** (lectura de PDF/DOCX, exportación, IA): se consultará antes de instalarlas y se validará su compatibilidad con Expo SDK 58, iOS, Android y la web.

@@ -182,9 +182,9 @@ src/features/cv-match/domain/
 
 Limitaciones:
 
-- **Motor heurístico.** Reglas y un catálogo cerrado escritos para JobRadar, sin IA. Lo que no está en el catálogo se marca como no evaluable en lugar de adivinarse.
-- **Sin predicciones.** La cobertura mide los requisitos detectados en la oferta. No es la decisión de ningún ATS real ni una probabilidad de contratación.
-- **Español.** Las reglas de importancia, negación y matización están escritas para textos en español; algunos encabezados del CV se reconocen también en inglés.
+- **Motor de reglas.** Reglas y un catálogo cerrado escritos para JobRadar, sin IA. Lo que no está en el catálogo se marca como no evaluable en lugar de adivinarse. Las relaciones semánticas de la v1.4 son un módulo aparte que no cambia estados, puntos ni pesos.
+- **Criterios ATS.** Simula los mecanismos habituales de análisis y filtrado de los ATS, con Jobscan como referencia: la cobertura mide qué requisitos de la oferta respalda el CV, con criterios y evidencias visibles. No usa el algoritmo de ningún ATS comercial concreto.
+- **Español e inglés.** Las reglas de importancia, negación y matización están escritas para textos en español. Desde la v1.4 se reconocen también las secciones y expresiones habituales de las ofertas en inglés, y algunos encabezados del CV en inglés.
 - **Solo texto.** Analiza texto ya escrito o pegado; no lee archivos (eso lo hace `cv-import`).
 
 #### Fiabilidad del motor (Fase 5a, `4e5951a`)
@@ -359,7 +359,7 @@ src/features/cv-match/presentation/
 - **Vuelta al inicio (Fase 4b.1).** El enlace de la cabecera compartida vuelve a `/` con `dismissTo`, protegido por la confirmación de salida si hay datos. Sustituye al botón provisional y a `onGoHome`.
 - **Componentes compartidos.** El indicador de estado delega en `Badge` y los avisos usan `Notice` (Fase 2c.2a). Si la oferta no tiene requisitos reconocibles, Resultados muestra un `EmptyState` sin acción en el lugar de los grupos de requisitos, con un título `h3` como ellos (Fase 2c.2b).
 - **Barra de cobertura.** `CoverageBar` vive en la presentación de `cv-match`, porque conoce los estados del analizador. Recibe las evaluaciones y agrega exclusivamente los valores de `contribution` ya calculados por el dominio: no decide pesos, aportaciones ni porcentaje. `CoverageSummary` conserva el porcentaje, los recuentos y la explicación anteriores, y omite la barra cuando no hay requisitos evaluables.
-- **Resultados, primera pantalla (Fase 3c.1).** Orden: título (`h1`), resumen compacto, comparación (si existe), «Qué mejorar primero» (`h2`) y «Requisitos de la oferta» (`h2`, con sus grupos `h3`). Se quitó el `h2` «Resultados», redundante con el título. El resumen mantiene porcentaje, puntos, barra, recuentos y «No es una puntuación ATS ni una probabilidad de contratación»; la explicación del cálculo está en un `Disclosure` («Cómo se calcula la cobertura»). La comparación muestra la variación de cobertura y pliega la lista de requisitos cambiados. Las recomendaciones llegan ordenadas por el motor: se muestran las tres primeras y «Ver todas (N)» añade el resto sin repetir ninguna; los mensajes idénticos se muestran una vez. No se recalcula nada. Medición con datos ficticios en 390 × 844 px: la primera recomendación empieza a 635 px y cabe entera (110 px); con comparación empieza a 799 px y se ven 45 px de ella.
+- **Resultados, primera pantalla (Fase 3c.1).** Orden: título (`h1`), resumen compacto, comparación (si existe), «Qué mejorar primero» (`h2`) y «Requisitos de la oferta» (`h2`, con sus grupos `h3`). Se quitó el `h2` «Resultados», redundante con el título. El resumen mantiene porcentaje, puntos, barra, recuentos y una línea con los criterios del cálculo (desde la v1.6, «Calculado con criterios habituales de evaluación ATS…»); la explicación del cálculo está en un `Disclosure` («Cómo se calcula la cobertura»). La comparación muestra la variación de cobertura y pliega la lista de requisitos cambiados. Las recomendaciones llegan ordenadas por el motor: se muestran las tres primeras y «Ver todas (N)» añade el resto sin repetir ninguna; los mensajes idénticos se muestran una vez. No se recalcula nada. Medición con datos ficticios en 390 × 844 px: la primera recomendación empieza a 635 px y cabe entera (110 px); con comparación empieza a 799 px y se ven 45 px de ella.
 - **Requisitos desplegables (Fase 3c.2a, `b0ae88b`).** Cada requisito es un `Disclosure` contraído por defecto, con estado propio: varios pueden estar abiertos a la vez. La cabecera muestra el nombre, la insignia de estado y «importancia · puntos que aporta» (sin repetir el estado en texto). Al abrirse aparecen el motivo completo, las evidencias literales del CV (las tres primeras y «Y N frases más», como antes) y las frases de la oferta: no se pierde información. Como la cabecera es una vista personalizada, el `Disclosure` exige un nombre accesible: «Nombre. Estado. Importancia · puntos», que sustituye la lectura de sus partes; la cabecera no contiene controles anidados. El contenido plegado no se monta, así que no está en el árbol accesible ni en la tabulación. Orden, categorías y datos del motor no cambian. Medición con datos ficticios (13 requisitos): lista contraída de 2.343 px a 390 px de ancho y de 1.953 px a 1440 px, frente a 5.341 y 4.203 px con todos abiertos, que es aproximadamente la altura anterior.
 - **Filtros de requisitos (Fase 3c.2b, `1ea613c`).** Debajo de «Requisitos de la oferta», `FilterChips` (sustituido en la v1.5 por `RequirementFilterControl`; ver «Diseño base (v1.5)») ofrece «Todos», «No acreditados», «Sin evidencia suficiente» y «Respaldados». `AnalysisResults` guarda una única selección local, inicialmente «Todos», y deriva los recuentos de `result.requirements`, sin usar ni alterar la cobertura. «Todos» cuenta también los no evaluables; los otros tres recuentos incluyen solo su estado. Los no evaluables permanecen visibles con cualquier filtro en su grupo «No evaluables, fuera del porcentaje», sin sumarse al recuento del estado seleccionado. El filtrado conserva los grupos y el orden original dentro de cada grupo; cobertura, comparación y recomendaciones reciben siempre los datos completos. No cambia el motor ni la sesión compartida.
   - **Desplegables al filtrar.** Un requisito que permanece visible conserva su apertura. Si deja de mostrarse se desmonta, y vuelve contraído al reaparecer: no se guarda un mapa adicional de aperturas. Su motivo y evidencias originales vuelven a estar disponibles al abrirlo. El grupo no evaluable mantiene su apertura porque nunca se oculta.
@@ -523,7 +523,7 @@ Comprobado sobre la compilación de producción con un servidor local que emula 
 
 ### Migración a Cloudflare Pages
 
-Cloudflare Pages es el hosting definitivo y único (<https://jobradar-ats.pages.dev>) y publica la v1.3. Vercel, el anterior, se ha retirado del repositorio. La salida sigue siendo estática y no cambia la arquitectura. Detalle, pasos manuales y retirada de Vercel en [deploy.md](deploy.md).
+Cloudflare Pages es el hosting actual y único (<https://jobradar-ats.pages.dev>) y publica la v1.5. Vercel, el anterior, se ha retirado del repositorio. La salida sigue siendo estática y no cambia la arquitectura. Detalle, pasos manuales y retirada de Vercel en [deploy.md](deploy.md).
 
 - **`npm run build:web`.** Ejecuta `expo export` y [`scripts/move-vendor-assets.cjs`](../scripts/move-vendor-assets.cjs), que mueve `dist/assets/node_modules/` a `dist/assets/vendor/` y actualiza las referencias. En el despliegue real de Cloudflare, la fuente Material Symbols y las imágenes de expo-router de esa carpeta devolvían el HTML de la portada, y los iconos no aparecían.
 - **`public/_headers`.** Las cabeceras de seguridad y caché que antes aplicaba `vercel.json`. En Cloudflare faltaban `X-Frame-Options` y `Referrer-Policy: no-referrer`.
@@ -557,6 +557,16 @@ Detalle, migración y pruebas en [mis-cv.md](mis-cv.md). Las decisiones de arqui
 - **Privacidad y baja.** `/privacidad` (módulo `privacy`, solo presentación) indica el responsable y el contacto, y describe qué se guarda, dónde, para qué, cuánto tiempo, cómo se elimina y cómo se ejercen los derechos (contenido en [mis-cv.md](mis-cv.md#información-de-privacidad)). Se enlaza desde el pie de Inicio, las pantallas de cuenta y «Mis CV». La baja la ejecuta la Edge Function `supabase/functions/delete-account`, la única pieza con clave secreta, en este orden: archivos por la Storage API, filas de `cvs` y usuario de Auth.
 - **Capas.** Como en `auth`, la presentación llama directamente a la infraestructura (`cv-library.ts`) sin una capa de aplicación, porque no hay reglas que coordinar más allá de guardar, listar, renombrar y borrar.
 
+### Extracción bilingüe y relaciones semánticas (v1.4)
+
+Publicada en `main` (`0ce598c`, `3a3ffc6` y `ec2301b`). El motor sigue siendo determinista; lo nuevo amplía lo que reconoce y añade sugerencias opcionales.
+
+- **Ofertas en inglés.** `offer-requirements.ts` reconoce las secciones y expresiones habituales de las ofertas en inglés («What You’ll Bring», «Bonus Points»…), también cuando se copian sin viñetas.
+- **Limpieza de páginas de LinkedIn.** `offer-cleanup.ts` detecta una página completa pegada (menú, «Solicitud sencilla», «Empleos similares»…) y quita solo las líneas que coinciden enteras con botones y menús conocidos. Si eso cambiara algún requisito reconocido, se analiza el texto original. Siempre pide revisar el texto.
+- **Catálogo y sinónimos.** Tecnologías de datos y analítica (Spark, Databricks, Airflow, dbt, Snowflake, Kafka, Terraform, Tableau, Power BI…) y sinónimos de ESCO (`esco-synonyms.ts`).
+- **Evidencia parcial.** Un nivel o unos años inferiores a los pedidos se muestran como información, sin cambiar el estado ni sumar puntos.
+- **Relaciones semánticas (experimental, solo web).** `semantic-candidates.ts` propone, para algunos requisitos no acreditados, frases del CV que dicen algo parecido con otras palabras. Nunca para tecnologías, años, idiomas ni titulaciones, y nunca cambian la cobertura. El modelo `multilingual-e5-small` (ONNX) se ejecuta en un Web Worker con `onnxruntime-web`. Solo se descarga si el usuario lo activa, desde `/semantic/` en el propio dominio, y el navegador comprueba el SHA-256 de cada parte. `npm run build:web` lo prepara con `scripts/prepare-semantic-model.cjs`.
+
 ### Diseño base (v1.5)
 
 Primera entrega de la revisión visual. Solo afecta a la presentación: el motor, la IA semántica y Supabase no cambian.
@@ -571,6 +581,17 @@ Primera entrega de la revisión visual. Solo afecta a la presentación: el motor
 - **Formularios.** En Acceso, «Entrar» es la única acción principal; la recuperación va pegada al formulario y las alternativas son enlaces de texto. En Analizar, la zona de subida se estira hasta la altura de la tarjeta de la oferta.
 - **Resultados (segunda entrega).** Los requisitos se agrupan por estado en una sola superficie por grupo, con una fila por requisito separada por una línea: el estado lo dice el título del grupo, con su icono, y cada fila lleva solo el icono (el nombre accesible conserva el estado completo). El filtro es `RequirementFilterControl` (`requirement-filter.tsx`), un `SegmentedControl` en tamaño `compact` con recuentos: cuatro opciones de al menos 120 px que forman dos filas de dos en el móvil. Se anuncia como grupo de botones de opción (antes, botones con `aria-pressed`). El resumen sustituye las cuatro tarjetas de recuentos por una leyenda en línea con los mismos nombres accesibles, y las recomendaciones van en una sola lista. El panel semántico es un `Disclosure` con la cabecera dentro de un encabezado de nivel 2 (`headingLevel`): plegado mientras no se usa, con una línea de estado siempre visible, y abierto solo mientras descarga, analiza, muestra su resultado o falla. No cambia ningún cálculo ni el funcionamiento del modelo.
 - **Movimiento.** `webTransition` (`shared/theme/motion.ts`) anima solo cambios de estado en la web: el hover de la navegación, de la zona de subida y de las opciones de los selectores (150 ms), el progreso de los pasos y el giro de la flecha de los desplegables (200 ms), con la curva `cubic-bezier(0.23, 1, 0.32, 1)`. `src/global.css` las anula con «reducir movimiento». En iOS y Android el cambio es inmediato.
+
+### Prototipo de dirección inmersiva (v1.6, experimental)
+
+Sin publicar: solo existe en la rama `feat/v1.6-prototipo-inmersivo` y no es una funcionalidad definitiva. `/prototipo` (módulo `prototype`, solo presentación) es un prototipo navegable de la dirección visual inmersiva para Inicio y la transición a Analizar. No sustituye ninguna pantalla ni está enlazado desde la app. Usa DOM, CSS y un canvas 2D propios (`radar-field.ts`), sin dependencias nuevas; en iOS y Android solo muestra un aviso.
+
+- **Radar.** Un pulso recorre el campo y revela el estado de cada requisito del ejemplo ilustrativo. El puntero curva los anillos y un clic o un toque emite otra señal. Solo dibuja mientras algo se mueve y el canvas está a la vista.
+- **Tres pasos.** Una escena fijada (`position: sticky`) avanza con el desplazamiento mediante variables CSS (`--p1`…`--p3`), sin renderizar React en cada fotograma.
+- **Transiciones.** Una onda violeta nace del control pulsado y lleva a Analizar, donde el carril de etapas y la diana del CV reaccionan al estado.
+- **Accesibilidad.** Con «reducir movimiento», la escena se muestra completa y la onda pasa a ser un fundido. Botones y campos son elementos nativos con foco visible.
+
+Antes de integrar la dirección en las pantallas reales hay que retirar o proteger esta ruta, que hoy se publica con la compilación web.
 
 ## Estructura planificada
 
@@ -691,7 +712,7 @@ Estas reglas todavía no se aplican de forma automática. Se valorará reforzarl
 ## Restricciones de producto que afectan al diseño
 
 - **Puntuación explicable:** el motor debe devolver, junto a cada puntuación, los criterios aplicados y las evidencias encontradas en el CV y la oferta. Esta lógica pertenece a la capa `domain` (hoy, la de `cv-match`).
-- **Sin predicciones:** ningún texto ni cálculo debe presentar el resultado como la decisión que tomaría un ATS real.
+- **Simulación ATS honesta:** los textos presentan el resultado como compatibilidad según criterios habituales de evaluación ATS. El porcentaje es exactamente el que calcula el motor. No se atribuye al algoritmo de un ATS comercial concreto ni se presenta como garantía de su decisión, y no se inventan porcentajes de contratación.
 - **Sin invención de datos:** las recomendaciones y la edición de CV no pueden añadir experiencia, titulaciones ni habilidades que el usuario no haya aportado.
 - **Datos personales:** los CV contienen datos personales. Cualquier almacenamiento, envío a servicios externos o uso de IA deberá justificarse y evaluarse en términos de privacidad (RGPD) antes de implementarse.
 

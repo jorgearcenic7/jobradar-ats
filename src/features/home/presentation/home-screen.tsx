@@ -174,8 +174,8 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
         <View style={styles.limitRow}>
           <Icon name="info" color="textSecondary" />
           <ThemedText step="callout" color="textSecondary" style={styles.flexText}>
-            JobRadar explica qué requisitos respalda tu CV con pruebas. No predice la decisión de un
-            ATS ni de la empresa.
+            JobRadar analiza la compatibilidad de tu CV con una oferta utilizando criterios
+            habituales de evaluación ATS e identifica oportunidades para mejorar tu candidatura.
           </ThemedText>
         </View>
         <View style={[styles.divider, { backgroundColor: theme.divider }]} />
@@ -190,8 +190,7 @@ export function HomeScreen({ onAnalyze }: { onAnalyze: () => void }) {
             <ThemedText step="callout" color="textSecondary">
               Cada requisito suma 1 punto si está respaldado, 0,5 si aparece sin evidencia
               suficiente y 0 si no está acreditado. Los obligatorios cuentan el doble; los no
-              evaluables quedan fuera del porcentaje. Es una heurística, no una puntuación ATS ni
-              una probabilidad de contratación.
+              evaluables quedan fuera del porcentaje.
             </ThemedText>
             <ThemedText step="callout" color="textSecondary">
               Solo se reconocen los requisitos que JobRadar sabe interpretar. No se leen PDF

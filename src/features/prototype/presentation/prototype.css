@@ -1,0 +1,1545 @@
+/*
+Prototipo inmersivo de JobRadar (ruta /prototipo).
+
+Composición editorial a sangre: sin tarjetas ni cajas. La jerarquía la dan la escala tipográfica,
+el aire y el radar; el violeta de marca marca la acción, la señal y el cierre. Los colores son
+variables que el componente rellena desde la paleta del tema, en claro y en oscuro.
+
+Movimiento: una curva de salida para lo que llega (`--ease-out`) y otra con más recorrido para
+la onda y el carril (`--ease-drawer`). El desplazamiento solo cambia variables (`--hero`,
+`--p1`…`--p3`) y propiedades que el navegador compone sin recalcular la página.
+*/
+
+.pr-root {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --gutter: clamp(20px, 5vw, 72px);
+  /* Contenido centrado de 1440 px: en pantallas más anchas, el sobrante va a los lados. */
+  --content: 1440px;
+  --inline: max(var(--gutter), calc((100% - var(--content)) / 2 + var(--gutter)));
+  --topbar: 72px;
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pr-root,
+.pr-root *,
+.pr-root *::before,
+.pr-root *::after {
+  box-sizing: border-box;
+}
+
+.pr-root ::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.pr-root :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.pr-scroll {
+  position: absolute;
+  inset: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.pr-sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Cabecera ---------- */
+
+.pr-topbar {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: var(--topbar);
+  padding: 0 var(--inline);
+}
+
+.pr-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  color: var(--text);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+.pr-logo {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--accent-subtle);
+  color: var(--logo);
+}
+
+.pr-logo svg {
+  width: 24px;
+  height: 24px;
+}
+
+.pr-badge {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.pr-topbar-link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--text-2);
+  font-size: 15px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.pr-topbar-link:hover {
+  color: var(--text);
+}
+
+/* ---------- Acciones ---------- */
+
+/* Área de atracción del botón magnético: algo mayor que el botón, sin cambiar su posición. */
+.pr-magnet {
+  display: inline-flex;
+  padding: 16px;
+  margin: -16px;
+}
+
+.pr-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 26px 0 30px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  translate: var(--mx, 0px) var(--my, 0px);
+  transition:
+    scale 120ms var(--ease-out),
+    background-color 150ms var(--ease-out);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.16),
+    0 12px 32px -12px var(--accent);
+}
+
+.pr-primary:hover {
+  background: var(--accent-press);
+}
+
+/* Responde al pulsar, no al soltar: con el dedo es la única señal de que la app escucha. */
+.pr-primary:active {
+  scale: 0.97;
+}
+
+.pr-primary [data-magnetic-label] {
+  display: inline-block;
+  translate: calc(var(--mx, 0px) * 0.4) calc(var(--my, 0px) * 0.4);
+}
+
+.pr-primary.is-inverse {
+  background: var(--on-accent);
+  color: var(--accent);
+  box-shadow: 0 12px 40px -16px rgb(0 0 0 / 0.45);
+}
+
+.pr-primary.is-inverse:hover {
+  background: var(--accent-subtle);
+}
+
+.pr-arrow {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: translate 200ms var(--ease-out);
+}
+
+.pr-primary:hover .pr-arrow {
+  translate: 4px 0;
+}
+
+.pr-text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(currentColor, currentColor) left calc(100% - 9px) / 0% 1.5px no-repeat;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-size 240ms var(--ease-out);
+}
+
+/* El subrayado crece desde la izquierda al señalarlo. */
+.pr-text-link:hover,
+.pr-text-link:focus-visible {
+  background-size: 100% 1.5px;
+}
+
+.pr-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+/* ---------- Primera vista: el radar ---------- */
+
+.pr-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: 100svh;
+  margin-top: calc(var(--topbar) * -1);
+  padding: calc(var(--topbar) + 48px) var(--inline) clamp(40px, 8vh, 88px);
+  overflow: hidden;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.pr-hero a,
+.pr-hero button {
+  cursor: pointer;
+}
+
+.pr-radar {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  transform: scale(calc(1 + var(--hero, 0) * 0.06));
+  transform-origin: 70% 47%;
+}
+
+.pr-blips {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* La J del logo es el origen de la señal: se impulsa cada vez que emite un pulso. */
+.pr-radar-core {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  background: var(--accent-subtle);
+  color: var(--logo);
+  animation: pr-core-pulse 520ms var(--ease-out);
+}
+
+.pr-radar-core svg {
+  width: 36px;
+  height: 36px;
+}
+
+@keyframes pr-core-pulse {
+  30% {
+    scale: 1.12;
+  }
+}
+
+.pr-blip {
+  position: absolute;
+  display: grid;
+  grid-template-columns: 16px auto;
+  column-gap: 8px;
+  align-items: center;
+  translate: -8px -8px;
+}
+
+.pr-blip[data-status='supported'] {
+  --status: var(--ok);
+  --status-text: var(--ok-text);
+}
+
+.pr-blip[data-status='mentioned'] {
+  --status: var(--warn);
+  --status-text: var(--warn-text);
+}
+
+.pr-blip[data-status='missing'] {
+  --status: var(--bad);
+  --status-text: var(--bad-text);
+}
+
+.pr-blip i {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  border-radius: 50%;
+  background: var(--text-3);
+  box-shadow: 0 0 0 4px var(--bg);
+  transition:
+    background-color 260ms var(--ease-out),
+    scale 260ms var(--ease-out);
+}
+
+.pr-blip b,
+.pr-blip small {
+  justify-self: start;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+}
+
+.pr-blip b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-2);
+  transition: color 260ms var(--ease-out);
+}
+
+.pr-blip small {
+  grid-column: 2;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--status-text);
+  opacity: 0;
+  translate: 0 -4px;
+  transition:
+    opacity 260ms var(--ease-out),
+    translate 260ms var(--ease-out);
+}
+
+/* El pulso alcanza el requisito: se enciende con su estado y deja un eco. */
+.pr-blip[data-found='true'] i {
+  background: var(--status);
+  scale: 1.2;
+}
+
+.pr-blip[data-found='true'] i::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1.5px solid var(--status);
+  animation: pr-blip-echo 900ms var(--ease-out) forwards;
+}
+
+.pr-blip[data-found='true'] b {
+  color: var(--text);
+}
+
+.pr-blip[data-found='true'] small {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@keyframes pr-blip-echo {
+  from {
+    opacity: 0.9;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 3.2;
+  }
+}
+
+.pr-example-tag {
+  position: absolute;
+  top: calc(var(--topbar) + 16px);
+  right: var(--inline);
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.pr-hero-copy {
+  position: relative;
+  max-width: 780px;
+  translate: 0 calc(var(--hero, 0) * -48px);
+  opacity: calc(1 - var(--hero, 0) * 0.75);
+}
+
+.pr-display {
+  max-width: 9.5ch;
+  margin: 0;
+  /* Limitado también por la altura: la acción principal cabe siempre en la primera vista. */
+  font-size: clamp(48px, min(8.2vw, 12vh), 120px);
+  font-weight: 600;
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.pr-display em {
+  font-style: normal;
+  color: var(--accent-text);
+}
+
+.pr-lead {
+  max-width: 44ch;
+  text-wrap: pretty;
+  margin: 28px 0 36px;
+  font-size: clamp(17px, 1.4vw, 20px);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.pr-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 32px;
+  margin-bottom: 24px;
+}
+
+.pr-hint {
+  position: absolute;
+  right: var(--inline);
+  bottom: clamp(40px, 8vh, 88px);
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.pr-hint-touch,
+.pr-tag-touch {
+  display: none;
+}
+
+@media (hover: none) {
+  .pr-hint-pointer {
+    display: none;
+  }
+
+  .pr-hint-touch {
+    display: inline;
+  }
+}
+
+/* ---------- Tres pasos: escena fijada ---------- */
+
+.pr-story {
+  position: relative;
+  height: 230vh;
+}
+
+/*
+La escena mide como mucho 760 px y se fija centrada en la pantalla. Así, en pantallas altas, no
+queda un hueco grande ni al llegar ni mientras está fijada.
+*/
+.pr-story-stage {
+  position: sticky;
+  top: max(0px, calc((100svh - 760px) / 2));
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 112px);
+  max-width: 1440px;
+  height: min(100svh, 760px);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.pr-story-text h2 {
+  margin: 0 0 32px;
+  font-size: clamp(32px, 3.8vw, 56px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  outline: none;
+}
+
+.pr-story-progress {
+  height: 2px;
+  margin-bottom: 32px;
+  background: var(--divider);
+}
+
+.pr-story-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(var(--p, 1));
+  transform-origin: left;
+}
+
+.pr-story ol {
+  display: grid;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+Los pasos que no están en curso se apagan con color, no con opacidad: siguen superando 4,5:1 y
+se pueden leer en cualquier momento.
+*/
+.pr-story li {
+  --step-title: var(--text-3);
+  --step-text: var(--text-3);
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 16px;
+}
+
+.pr-story[data-step='0'] li[data-index='0'],
+.pr-story[data-step='1'] li[data-index='1'],
+.pr-story[data-step='2'] li[data-index='2'] {
+  --step-title: var(--text);
+  --step-text: var(--text-2);
+}
+
+.pr-step-number {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-3);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 320ms var(--ease-out),
+    color 320ms var(--ease-out);
+}
+
+.pr-story[data-step='0'] li[data-index='0'] .pr-step-number,
+.pr-story[data-step='1'] li[data-index='1'] .pr-step-number,
+.pr-story[data-step='2'] li[data-index='2'] .pr-step-number {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.pr-story h3 {
+  margin: 4px 0 6px;
+  color: var(--step-title);
+  transition: color 320ms var(--ease-out);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pr-story li p {
+  max-width: 38ch;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--step-text);
+  transition: color 320ms var(--ease-out);
+}
+
+.pr-scene {
+  margin: 0;
+}
+
+.pr-scene-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: inherit;
+}
+
+.pr-scene-svg.is-narrow {
+  display: none;
+}
+
+.pr-scene figcaption {
+  max-width: 60ch;
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.pr-scene-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  fill: var(--text-3);
+}
+
+/* Cada línea del CV aparece cuando su turno llega dentro del primer paso. */
+.pr-cv-line {
+  --v: clamp(0, calc(var(--p1, 1) * 8 - var(--i)), 1);
+  fill: var(--text-2);
+  opacity: var(--v);
+  transform: translateY(calc((1 - var(--v)) * 10px));
+  transition: fill 320ms var(--ease-out);
+}
+
+.pr-cv-line.is-heading {
+  font-weight: 600;
+  fill: var(--text-3);
+}
+
+.pr-story[data-step='2'] .pr-cv-line.is-evidence {
+  fill: var(--text);
+  font-weight: 600;
+}
+
+.pr-root [data-status='supported'] {
+  --status: var(--ok);
+  --status-text: var(--ok-text);
+}
+
+.pr-root [data-status='mentioned'] {
+  --status: var(--warn);
+  --status-text: var(--warn-text);
+}
+
+.pr-root [data-status='missing'] {
+  --status: var(--bad);
+  --status-text: var(--bad-text);
+}
+
+/* Los requisitos entran de uno en uno durante el segundo paso. */
+.pr-requirement {
+  --v: clamp(0, calc(var(--p2, 1) * 4 - var(--i)), 1);
+  opacity: max(0.16, var(--v));
+  transform: translateX(calc((1 - var(--v)) * 28px));
+}
+
+.pr-requirement text {
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.pr-requirement circle {
+  fill: var(--text-3);
+  transition: fill 320ms var(--ease-out);
+}
+
+.pr-story[data-step='2'] .pr-requirement circle {
+  fill: var(--status);
+}
+
+.pr-requirement .pr-requirement-status {
+  font-weight: 500;
+  fill: var(--status-text);
+  opacity: clamp(0, calc(var(--p3, 1) * 3 - var(--i) * 0.6), 1);
+}
+
+/* Las evidencias se trazan del CV a cada requisito durante el tercer paso. */
+.pr-link-path {
+  --v: clamp(0, calc(var(--p3, 1) * 3 - var(--i) * 0.6), 1);
+  fill: none;
+  stroke: var(--status);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--v));
+  opacity: clamp(0, calc(var(--v) * 12), 1);
+}
+
+/* ---------- Lo que promete y lo que no ---------- */
+
+.pr-truth {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: end;
+  gap: 48px clamp(40px, 6vw, 112px);
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(72px, 11vh, 128px) var(--gutter);
+}
+
+.pr-statement {
+  max-width: 13ch;
+  margin: 0;
+  font-size: clamp(38px, 5.2vw, 80px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.pr-statement span {
+  color: var(--accent-text);
+}
+
+.pr-facts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pr-facts li {
+  text-wrap: pretty;
+  padding: 18px 0;
+  border-top: 1px solid var(--divider);
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+/*
+Revelado ligado al desplazamiento con CSS (`animation-timeline: view()`). Donde el navegador no lo
+admite, o con «reducir movimiento», el contenido simplemente está ahí.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .pr-statement,
+    .pr-facts li {
+      animation: pr-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+
+@keyframes pr-rise {
+  from {
+    opacity: 0;
+    translate: 0 36px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* ---------- Cierre ---------- */
+
+.pr-close {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
+  padding: clamp(72px, 13vh, 144px) var(--inline);
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Los anillos del radar salen de la esquina y se abren a medida que la sección entra. */
+.pr-close-rings {
+  position: absolute;
+  right: -18vmax;
+  bottom: -30vmax;
+  z-index: -1;
+  width: 90vmax;
+  height: 90vmax;
+  pointer-events: none;
+}
+
+.pr-close-rings circle {
+  fill: none;
+  stroke: var(--on-accent);
+  stroke-opacity: 0.16;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .pr-close-rings {
+      animation: pr-rings-open linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 60%;
+    }
+  }
+}
+
+@keyframes pr-rings-open {
+  from {
+    scale: 0.72;
+    opacity: 0.4;
+  }
+}
+
+.pr-close h2 {
+  max-width: 12ch;
+  margin: 0;
+  font-size: clamp(42px, 6.6vw, 108px);
+  font-weight: 600;
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.pr-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 24px var(--inline);
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.pr-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+/* ---------- Onda de transición ---------- */
+
+.pr-wave {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: var(--accent);
+  pointer-events: none;
+}
+
+.pr-wave[hidden] {
+  display: none;
+}
+
+.pr-wave i {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 40px;
+  height: 40px;
+  margin: -20px 0 0 -20px;
+  border: 2px solid var(--on-accent);
+  border-radius: 50%;
+  opacity: 0;
+  animation: pr-echo 760ms var(--ease-drawer) forwards;
+}
+
+.pr-wave i:nth-child(2) {
+  animation-delay: 110ms;
+}
+
+@keyframes pr-echo {
+  from {
+    opacity: 0.7;
+    scale: 0.2;
+  }
+  to {
+    opacity: 0;
+    scale: 22;
+  }
+}
+
+/* ---------- Analizar ---------- */
+
+.pr-analyze {
+  display: grid;
+  gap: clamp(32px, 5vh, 56px);
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 8px var(--gutter) 64px;
+}
+
+/* Lo que llega con la onda entra una vez, en orden de lectura y en menos de 300 ms. */
+@media (prefers-reduced-motion: no-preference) {
+  .pr-analyze > * {
+    animation: pr-arrive 520ms var(--ease-out) both;
+  }
+
+  .pr-analyze > :nth-child(2) {
+    animation-delay: 60ms;
+  }
+
+  .pr-analyze > :nth-child(3) {
+    animation-delay: 110ms;
+  }
+}
+
+@keyframes pr-arrive {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+
+.pr-analyze-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 16px 48px;
+}
+
+.pr-back {
+  grid-column: 1 / -1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text-2);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pr-back .pr-arrow {
+  rotate: 180deg;
+}
+
+.pr-back:hover {
+  color: var(--text);
+}
+
+.pr-back:hover .pr-arrow {
+  translate: -4px 0;
+}
+
+.pr-analyze-title {
+  margin: 0;
+  font-size: clamp(42px, 6.4vw, 96px);
+  font-weight: 600;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+  outline: none;
+}
+
+.pr-stages {
+  --stage: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 400px;
+  margin: 0;
+  padding: 0 0 14px;
+  list-style: none;
+  border-bottom: 2px solid var(--divider);
+}
+
+/* Un solo indicador que se desliza a la etapa en curso. */
+.pr-stages::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: calc(100% / 3);
+  height: 2px;
+  background: var(--accent);
+  translate: calc(var(--stage) * 100%) 0;
+  transition: translate 420ms var(--ease-drawer);
+}
+
+.pr-stages li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-3);
+  transition: color 200ms var(--ease-out);
+}
+
+.pr-stages li[data-state='current'],
+.pr-stages li[data-state='done'] {
+  color: var(--text);
+}
+
+.pr-stage-number {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 200ms var(--ease-out),
+    border-color 200ms var(--ease-out);
+}
+
+.pr-stages li[data-state='current'] .pr-stage-number {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.pr-stages li[data-state='done'] .pr-stage-number {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.pr-stage-number svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pr-inputs {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(32px, 6vw, 112px);
+}
+
+.pr-field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.pr-field-head h2 {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.pr-count {
+  font-size: 13px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.pr-textarea {
+  display: grid;
+  gap: 10px;
+}
+
+.pr-textarea > span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-2);
+}
+
+/* Campo editorial: una regla a la izquierda, sin caja. El foco la pinta en violeta. */
+.pr-textarea textarea {
+  min-height: 260px;
+  padding: 4px 0 4px 20px;
+  border: 0;
+  border-left: 2px solid var(--input);
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  caret-color: var(--accent);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 150ms var(--ease-out);
+}
+
+.pr-textarea textarea::placeholder {
+  color: var(--text-3);
+}
+
+.pr-textarea textarea:focus {
+  border-left-color: var(--accent);
+}
+
+.pr-textarea.is-tall textarea {
+  min-height: 380px;
+}
+
+/* La diana del CV: anillos que se contraen hacia el centro cuando un archivo se acerca. */
+.pr-target {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  min-height: 400px;
+  padding: 16px 0;
+}
+
+.pr-target-rings {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: min(100%, 248px);
+  aspect-ratio: 1;
+  pointer-events: none;
+}
+
+.pr-target-rings i {
+  position: absolute;
+  aspect-ratio: 1;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  transition:
+    scale 360ms var(--ease-drawer),
+    border-color 200ms var(--ease-out);
+}
+
+.pr-target-rings i:nth-child(1) {
+  width: 100%;
+}
+
+.pr-target-rings i:nth-child(2) {
+  width: 76%;
+  transition-delay: 30ms;
+}
+
+.pr-target-rings i:nth-child(3) {
+  width: 52%;
+  transition-delay: 60ms;
+}
+
+.pr-target-rings i:nth-child(4) {
+  width: 30%;
+  transition-delay: 90ms;
+}
+
+@media (hover: hover) {
+  .pr-target:hover .pr-target-rings i {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  }
+}
+
+.pr-target[data-dragging='true'] .pr-target-rings i {
+  scale: 0.86;
+  border-color: var(--accent);
+}
+
+.pr-target-core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+  transition: scale 360ms var(--ease-drawer);
+}
+
+.pr-target[data-dragging='true'] .pr-target-core {
+  scale: 1.12;
+}
+
+.pr-target-core svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Al recibir el archivo, el núcleo pasa a violeta, dibuja la marca y deja una onda. */
+.pr-target[data-ready='true'] .pr-target-core {
+  background: var(--accent);
+  color: var(--on-accent);
+  animation: pr-core-pulse 520ms var(--ease-out);
+}
+
+.pr-target[data-ready='true'] .pr-target-core svg {
+  stroke-width: 2.6;
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: pr-draw 360ms var(--ease-out) 160ms forwards;
+}
+
+.pr-target[data-ready='true'] .pr-target-core::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  animation: pr-echo-small 800ms var(--ease-out) 80ms;
+}
+
+.pr-target-button {
+  display: grid;
+  gap: 6px;
+  max-width: 26ch;
+  min-height: 44px;
+  padding: 12px 20px;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: center;
+  cursor: pointer;
+}
+
+.pr-target-button small {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+/* El nombre del archivo aterriza bajo la diana: baja y se enfoca. */
+.pr-landed {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  max-width: 100%;
+  text-align: center;
+  animation: pr-land 440ms var(--ease-out) both;
+}
+
+.pr-landed b {
+  max-width: 28ch;
+  overflow: hidden;
+  font-size: 17px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pr-landed small {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+@keyframes pr-land {
+  from {
+    opacity: 0;
+    translate: 0 -18px;
+    scale: 1.06;
+    filter: blur(4px);
+  }
+}
+
+@keyframes pr-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pr-echo-small {
+  from {
+    opacity: 0.8;
+    scale: 0.6;
+  }
+  to {
+    opacity: 0;
+    scale: 5;
+  }
+}
+
+/* Barrido al analizar: recorre el CV y la oferta una vez, recortado a su zona. */
+.pr-scan {
+  position: absolute;
+  inset: -16px 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pr-scan i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 30%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 14%, transparent) 85%,
+    var(--accent) 99%,
+    transparent
+  );
+  opacity: 0;
+  translate: -100% 0;
+}
+
+.pr-analyze[data-scanning='true'] .pr-scan i {
+  animation: pr-scan 900ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes pr-scan {
+  0% {
+    opacity: 1;
+    translate: -100% 0;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 340% 0;
+  }
+}
+
+.pr-submit {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px 36px;
+  padding-top: 28px;
+  border-top: 1px solid var(--divider);
+}
+
+.pr-submit-status {
+  grid-column: 1 / -1;
+  justify-self: end;
+  min-height: 22px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-3);
+  text-align: right;
+}
+
+.pr-submit-status a {
+  color: var(--accent-text);
+  font-weight: 600;
+}
+
+/* ---------- Móvil y pantallas estrechas ---------- */
+
+@media (max-width: 899px) {
+  .pr-root {
+    --topbar: 64px;
+  }
+
+  .pr-badge {
+    display: none;
+  }
+
+  /*
+  El radar necesita una franja propia sobre el titular. En teléfonos bajos la primera vista
+  muestra el radar y el titular, y la acción queda a un desplazamiento corto.
+  */
+  .pr-hero {
+    padding-top: calc(var(--topbar) + clamp(270px, 100svh - 470px, 340px));
+    padding-bottom: 32px;
+  }
+
+  .pr-radar {
+    transform-origin: 55% 30%;
+  }
+
+  .pr-example-tag {
+    left: var(--gutter);
+    right: auto;
+  }
+
+  .pr-hint,
+  .pr-tag-role {
+    display: none;
+  }
+
+  .pr-tag-touch {
+    display: inline;
+  }
+
+  .pr-display {
+    font-size: clamp(44px, 13vw, 76px);
+  }
+
+  .pr-lead {
+    margin: 20px 0 28px;
+  }
+
+  .pr-actions {
+    gap: 12px 24px;
+  }
+
+  .pr-story {
+    height: 250vh;
+  }
+
+  .pr-story-stage {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 24px;
+  }
+
+  .pr-story-text h2 {
+    margin-bottom: 20px;
+    font-size: 32px;
+  }
+
+  .pr-story-progress {
+    margin-bottom: 20px;
+  }
+
+  /* En el móvil solo cabe el paso en curso junto a la escena. */
+  .pr-story li {
+    display: none;
+  }
+
+  .pr-story[data-step='0'] li[data-index='0'],
+  .pr-story[data-step='1'] li[data-index='1'],
+  .pr-story[data-step='2'] li[data-index='2'] {
+    display: grid;
+  }
+
+  .pr-scene-svg.is-wide {
+    display: none;
+  }
+
+  .pr-scene-svg.is-narrow {
+    display: block;
+  }
+
+  .pr-scene figcaption {
+    display: none;
+  }
+
+  .pr-truth {
+    grid-template-columns: 1fr;
+  }
+
+  .pr-analyze-head {
+    grid-template-columns: 1fr;
+  }
+
+  .pr-stages {
+    min-width: 0;
+  }
+
+  .pr-stages li {
+    font-size: 13.5px;
+  }
+
+  .pr-inputs {
+    grid-template-columns: 1fr;
+  }
+
+  .pr-target {
+    min-height: 0;
+  }
+
+  .pr-target-rings {
+    width: min(100%, 208px);
+  }
+
+  .pr-textarea.is-tall textarea {
+    min-height: 240px;
+  }
+
+  .pr-submit {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .pr-submit .pr-magnet {
+    width: calc(100% + 32px);
+  }
+
+  .pr-submit .pr-primary {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .pr-submit-status {
+    justify-self: start;
+    text-align: left;
+  }
+}
+
+/* ---------- Reducir movimiento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-root *,
+  .pr-root *::before,
+  .pr-root *::after {
+    transition-duration: 1ms !important;
+  }
+
+  .pr-hero-copy,
+  .pr-radar {
+    translate: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* La escena deja de estar fijada y se muestra completa, con los tres pasos legibles. */
+  .pr-story {
+    height: auto;
+  }
+
+  .pr-story-stage {
+    position: static;
+    height: auto;
+    padding-block: 96px;
+  }
+
+  .pr-story li,
+  .pr-story[data-step] li {
+    display: grid;
+    opacity: 1;
+  }
+
+  .pr-story .pr-requirement circle {
+    fill: var(--status);
+  }
+
+  .pr-scene figcaption {
+    display: block;
+  }
+
+  .pr-wave i,
+  .pr-radar-core,
+  .pr-landed,
+  .pr-target-core,
+  .pr-target-core::after,
+  .pr-blip[data-found='true'] i::after {
+    animation: none;
+  }
+
+  .pr-target[data-ready='true'] .pr-target-core svg {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+}
