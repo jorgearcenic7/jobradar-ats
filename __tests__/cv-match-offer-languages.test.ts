@@ -58,9 +58,10 @@ describe.each([
     expect(ids.some((id) => id.startsWith('years:3:'))).toBe(true);
   });
 
-  it('keeps explicit alternatives as unscored groups', () => {
-    const alternatives = requirements.filter((item) => item.cause === 'alternative');
-    expect(alternatives).toHaveLength(2);
+  // «Spark o dbt» es un grupo cerrado; «such as AWS or Azure» pone ejemplos y admite otros.
+  it('scores explicit alternatives as single groups', () => {
+    expect(ids).toEqual(expect.arrayContaining(['any-of:spark|dbt']));
+    expect(ids.some((id) => id.startsWith('any-of:aws|azure'))).toBe(true);
     expect(ids).not.toEqual(expect.arrayContaining(['concept:spark', 'concept:aws']));
   });
 

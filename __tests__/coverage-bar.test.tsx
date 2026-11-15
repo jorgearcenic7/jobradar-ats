@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react-native';
 import { StyleSheet } from 'react-native';
 
+import { computeCoverage } from '@/features/cv-match/domain/coverage';
 import type { RequirementAssessment, RequirementStatus } from '@/features/cv-match/domain/types';
 import { CoverageBar } from '@/features/cv-match/presentation/coverage-bar';
 import { CoverageSummary } from '@/features/cv-match/presentation/coverage-summary';
@@ -36,27 +37,8 @@ function assessment(
   };
 }
 
-function coverageOf(assessments: RequirementAssessment[]) {
-  const evaluated = assessments.filter((item) => item.contribution !== null);
-  const earned = evaluated.reduce(
-    (total, item) => total + item.contribution!.points * item.contribution!.weight,
-    0,
-  );
-  const possible = evaluated.reduce((total, item) => total + item.contribution!.weight, 0);
-  return {
-    percentage: possible > 0 ? Math.round((earned / possible) * 100) : null,
-    earned,
-    possible,
-    evaluated: evaluated.length,
-    notEvaluated: assessments.length - evaluated.length,
-    counts: {
-      supported: assessments.filter((item) => item.status === 'supported').length,
-      mentioned: assessments.filter((item) => item.status === 'mentioned').length,
-      missing: assessments.filter((item) => item.status === 'missing').length,
-      'not-evaluable': assessments.filter((item) => item.status === 'not-evaluable').length,
-    },
-  };
-}
+// La cobertura sale del cálculo real, para que el resumen reciba los mismos datos que en la app.
+const coverageOf = computeCoverage;
 
 describe('CoverageBar', () => {
   beforeEach(() => mockedUseColorScheme.mockReturnValue('light'));
@@ -239,6 +221,25 @@ describe('CoverageSummary integration', () => {
     ).toBeOnTheScreen();
   });
 
+  it('warns when the percentage covers only a small part of the offer', async () => {
+    const assessments = [
+      assessment('react', 'supported', { points: 1, weight: 2 }),
+      assessment('remote-work', 'not-evaluable'),
+      assessment('license', 'not-evaluable'),
+      assessment('shifts', 'not-evaluable'),
+    ];
+
+    await render(<CoverageSummary coverage={coverageOf(assessments)} assessments={assessments} />);
+
+    expect(screen.getByText('Cobertura parcial: solo una parte de la oferta')).toBeOnTheScreen();
+    expect(
+      screen.getByText(
+        /El porcentaje solo se calcula con 1 de los 4 elementos detectados en la oferta: 3 no se han podido evaluar/,
+      ),
+    ).toBeOnTheScreen();
+    expect(screen.getByText(/No lo tomes como el resultado de toda la oferta/)).toBeOnTheScreen();
+  });
+
   it('preserves the existing empty message and omits an uninformative bar', async () => {
     const assessments = [assessment('remote-work', 'not-evaluable')];
 
@@ -248,5 +249,12 @@ describe('CoverageSummary integration', () => {
       screen.getByText(/No se ha podido evaluar ning.n requisito de esta oferta/),
     ).toBeOnTheScreen();
     expect(screen.queryByRole('image', { name: /Distribución de puntos/ })).toBeNull();
+  });
+
+  it('does not claim there are unevaluated requirements when the offer only has one', async () => {
+    const assessments = [assessment('excel', 'supported', { points: 1, weight: 2 })];
+    await render(<CoverageSummary coverage={coverageOf(assessments)} assessments={assessments} />);
+    expect(screen.getByText(/Es una muestra pequeña de requisitos/)).toBeOnTheScreen();
+    expect(screen.queryByText(/revisa abajo los requisitos sin evaluar/)).toBeNull();
   });
 });

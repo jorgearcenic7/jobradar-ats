@@ -88,22 +88,60 @@ export function compareCefr(a: CefrLevel, b: CefrLevel): number {
 
 const nativeWords = ['nativo', 'nativa', 'bilingue', 'lengua materna', 'native', 'bilingual'];
 
-const textualLevelWords = [
-  'basico',
-  'basica',
-  'intermedio',
-  'intermedia',
-  'medio',
-  'alto',
-  'avanzado',
-  'avanzada',
-  'fluido',
-  'fluida',
-  'fluent',
-  'advanced',
-  'intermediate',
-  'basic',
+/*
+Niveles escritos con palabras y el intervalo del MCER que suelen abarcar. No hay una equivalencia
+oficial: «intermedio» puede ser B1 o B2 y «fluido» o «alto», B2 o C1. Por eso se comparan como
+intervalos y solo se decide cuando no se solapan (ver `compareLevelRanges`).
+*/
+const textualLevelRanges: [string, CefrLevel, CefrLevel][] = [
+  ['upper intermediate', 'B2', 'B2'],
+  ['upper-intermediate', 'B2', 'B2'],
+  ['proficient', 'C1', 'C2'],
+  ['proficiency', 'C1', 'C2'],
+  ['excelente', 'C1', 'C2'],
+  ['fluent', 'B2', 'C1'],
+  ['fluency', 'B2', 'C1'],
+  ['fluido', 'B2', 'C1'],
+  ['fluida', 'B2', 'C1'],
+  ['alto', 'B2', 'C1'],
+  ['avanzado', 'B2', 'C1'],
+  ['avanzada', 'B2', 'C1'],
+  ['advanced', 'B2', 'C1'],
+  ['intermedio', 'B1', 'B2'],
+  ['intermedia', 'B1', 'B2'],
+  ['medio', 'B1', 'B2'],
+  ['intermediate', 'B1', 'B2'],
+  ['basico', 'A1', 'A2'],
+  ['basica', 'A1', 'A2'],
+  ['elemental', 'A1', 'A2'],
+  ['basic', 'A1', 'A2'],
 ];
+
+const textualLevelWords = textualLevelRanges.map(([word]) => word);
+
+export type CefrRange = { low: CefrLevel; high: CefrLevel };
+
+/** Intervalo del MCER de un nivel: exacto si es un código, aproximado si es una palabra. */
+export function levelRange(level: CefrLevel | null, levelText: string | null): CefrRange | null {
+  if (level) return { low: level, high: level };
+  const entry = textualLevelRanges.find(([word]) => word === levelText);
+  return entry ? { low: entry[1], high: entry[2] } : null;
+}
+
+/**
+ * Compara el nivel del CV con el pedido. `meets` si el más bajo posible del CV alcanza el más alto
+ * posible de la oferta; `below` si el más alto posible del CV no llega al más bajo pedido;
+ * `uncertain` si los intervalos se solapan y la respuesta depende de una equivalencia que el texto
+ * no fija.
+ */
+export function compareLevelRanges(
+  cv: CefrRange,
+  asked: CefrRange,
+): 'meets' | 'below' | 'uncertain' {
+  if (compareCefr(cv.low, asked.high) >= 0) return 'meets';
+  if (compareCefr(cv.high, asked.low) < 0) return 'below';
+  return 'uncertain';
+}
 
 export type LanguageLevel = { level: CefrLevel | null; levelText: string | null };
 
@@ -156,14 +194,49 @@ export function languageLevelAt(
 /** Una cifra de años del texto y la posición de la cifra, para saber qué la rodea. */
 export type YearMention = { years: number; start: number; end: number };
 
+// Cifras escritas con letras hasta diez: «tres años», «one year».
+const numberWords: Record<string, number> = {
+  un: 1,
+  uno: 1,
+  una: 1,
+  one: 1,
+  dos: 2,
+  two: 2,
+  tres: 3,
+  three: 3,
+  cuatro: 4,
+  four: 4,
+  cinco: 5,
+  five: 5,
+  seis: 6,
+  six: 6,
+  siete: 7,
+  seven: 7,
+  ocho: 8,
+  eight: 8,
+  nueve: 9,
+  nine: 9,
+  diez: 10,
+  ten: 10,
+};
+
 /** Cifras de años de un texto normalizado, en orden de aparición, con su posición. */
 export function findYearMentions(normalized: string): YearMention[] {
-  const pattern = /(^|[^0-9])(\d{1,2})\s*\+?\s*(?:o mas\s+|or more\s+)?(?:anos|years)(?=$|[^a-z])/g;
+  // También en singular («1 año», «one year») y con letras; «years'» lleva el apóstrofo detrás.
+  const pattern = new RegExp(
+    `(^|[^0-9a-z])(\\d{1,2}|${Object.keys(numberWords).join('|')})\\s*\\+?\\s*(?:o mas\\s+|or more\\s+)?(?:anos?|years?)(?=$|[^a-z])`,
+    'g',
+  );
   const mentions: YearMention[] = [];
   let match: RegExpExecArray | null;
   while ((match = pattern.exec(normalized))) {
     const start = match.index + match[1].length;
-    mentions.push({ years: Number(match[2]), start, end: match.index + match[0].length });
+    const value = match[2];
+    mentions.push({
+      years: /^\d/.test(value) ? Number(value) : numberWords[value],
+      start,
+      end: match.index + match[0].length,
+    });
   }
   return mentions;
 }

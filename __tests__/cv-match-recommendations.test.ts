@@ -101,11 +101,12 @@ describe('recommendation contracts for special requirement states', () => {
       [],
     );
 
+    // Desde la v1.7 un obligatorio ausente se señala como posible motivo de descarte.
     expect(recommendationFor(item)).toEqual({
       kind: 'education',
       requirementId: 'education:master',
       message:
-        'La oferta pide «máster». Si tienes esa formación, inclúyela en la sección de formación; si no, no la añadas.',
+        'Posible motivo de descarte. La oferta pide «máster». Si tienes esa formación, inclúyela en la sección de formación; si no, no la añadas.',
     });
   });
 

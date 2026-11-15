@@ -180,7 +180,11 @@ describe('Requirement filters', () => {
   });
 
   it('keeps an offer with only unevaluable elements accessible alongside an empty status filter', async () => {
-    const onlyOthers = analyzeMatch('IDIOMAS\nInglés B2.', 'REQUISITOS\n- Inglés alto.');
+    // Un grupo abierto («u otro ERP similar») sin ninguna opción en el CV no se puede evaluar.
+    const onlyOthers = analyzeMatch(
+      'EXPERIENCIA\nNo he trabajado con SAP.',
+      'REQUISITOS\n- Manejo de SAP u otro ERP similar.',
+    );
     await renderResults(onlyOthers);
     expect(onlyOthers.coverage.percentage).toBeNull();
     expect(others()).toBeCollapsed();
@@ -189,7 +193,7 @@ describe('Requirement filters', () => {
     await userEvent.setup().press(others());
     expect(rows()).toHaveLength(1);
     expect(others()).toBeExpanded();
-    await userEvent.setup().press(screen.getByRole('button', { name: /^Inglés/ }));
+    await userEvent.setup().press(screen.getByRole('button', { name: /^SAP/ }));
     expect(onlyOthers.requirements[0].evidence.length).toBeGreaterThan(0);
     expect(screen.getByText(onlyOthers.requirements[0].evidence[0].text)).toBeOnTheScreen();
     expect(

@@ -27,16 +27,18 @@ describe('offer with headings', () => {
       'review:1 [unclassified]',
       'concept:typescript [required]',
       'years:3:typescript [required]',
-      'review:2 [required]',
+      'any-of:react|vue [required]',
       'unrecognized:1 [required]',
       'concept:docker [preferred]',
       'concept:kubernetes [preferred]',
       'unrecognized:2 [preferred]',
     ]);
-    expect(requirement(structuredOffer, 'review:2')).toMatchObject({
-      kind: 'review',
-      cause: 'alternative',
-      label: 'Experiencia con React o Vue.',
+    // Desde la v1.7 las alternativas se puntúan como un solo requisito.
+    expect(requirement(structuredOffer, 'any-of:react|vue')).toMatchObject({
+      kind: 'any-of',
+      conceptIds: ['react', 'vue'],
+      openEnded: false,
+      label: 'React o Vue',
       sources: ['Experiencia con React o Vue.'],
     });
   });

@@ -68,6 +68,19 @@ export function splitSentences(text: string): string[] {
       /^(?:de\s+)?\d{1,2}\s*\+?\s*anos\b/.test(normalize(text.slice(boundary.lastIndex)))
     )
       continue;
+    // «e.g. SAP», «i.e.», «p. ej.», «aprox.»: una abreviatura no cierra la frase.
+    if (
+      /(?:^|[^a-z])(?:e\.g|i\.e|p\.\s?ej|ej|approx|aprox|incl|vs|cf)\.$/.test(
+        normalize(text.slice(start, match.index + 1)),
+      )
+    )
+      continue;
+    // Una sola letra con punto seguida de minúscula («p. ej.») también es una abreviatura.
+    if (
+      /(?:^|[^\p{L}])\p{L}\.$/u.test(text.slice(start, match.index + 1)) &&
+      /^\p{Ll}/u.test(text.slice(boundary.lastIndex))
+    )
+      continue;
     // «ene. 2019 – actualidad»: un mes abreviado seguido de un año forma parte de una fecha.
     if (
       /\b(?:ene|feb|mar|abr|may|jun|jul|ago|sep|sept|oct|nov|dic|jan|apr|aug|dec)\.$/.test(

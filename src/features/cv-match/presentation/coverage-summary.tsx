@@ -1,7 +1,8 @@
 /*
 Resumen compacto de la cobertura: porcentaje, barra, recuentos por estado y los criterios con que
-se calcula. La explicación completa del cálculo queda plegada para que la primera
-pantalla de Resultados llegue antes a lo accionable, pero sigue disponible.
+se calcula. Si el porcentaje solo refleja una parte de la oferta, un aviso dice cuánto queda fuera
+y, cuando es muy poco lo evaluado, la cifra pasa a segundo plano. La explicación completa del
+cálculo queda plegada para que la primera pantalla de Resultados llegue antes a lo accionable.
 */
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -16,6 +17,7 @@ import { space } from '@/shared/theme';
 import { Card } from '@/shared/ui/card';
 import { Disclosure } from '@/shared/ui/disclosure';
 import { Icon } from '@/shared/ui/icon';
+import { Notice } from '@/shared/ui/notice';
 import { ThemedText } from '@/shared/ui/themed-text';
 
 import { CoverageBar, CoverageLegend } from './coverage-bar';
@@ -29,9 +31,35 @@ type CoverageSummaryProps = {
   assessments: readonly RequirementAssessment[];
 };
 
+/**
+ * Qué parte de la oferta queda fuera del porcentaje, en una frase. `null` si el porcentaje la
+ * representa bien.
+ */
+export function representativenessMessage(coverage: Coverage): string | null {
+  if (coverage.representativeness === 'sufficient' || coverage.percentage === null) return null;
+  const outside = coverage.notEvaluated;
+  if (outside === 0) {
+    return `El porcentaje se calcula con los ${coverage.evaluated} elementos detectados. Es una muestra pequeña de requisitos; comprueba que has pegado la oferta completa.`;
+  }
+  const parts = [
+    `${outside} ${outside === 1 ? 'no se ha podido evaluar' : 'no se han podido evaluar'}`,
+    coverage.pendingReview > 0 &&
+      `${coverage.pendingReview} ${coverage.pendingReview === 1 ? 'es una frase pendiente' : 'son frases pendientes'} de revisión`,
+    coverage.requiredNotEvaluated > 0 &&
+      `${coverage.requiredNotEvaluated} ${coverage.requiredNotEvaluated === 1 ? 'es obligatorio' : 'son obligatorios'}`,
+  ].filter(Boolean);
+  const base = `El porcentaje solo se calcula con ${coverage.evaluated} de los ${coverage.detected} elementos detectados en la oferta: ${parts.join('; ')}.`;
+  return coverage.representativeness === 'insufficient'
+    ? `${base} No lo tomes como el resultado de toda la oferta: revisa abajo los requisitos sin evaluar.`
+    : base;
+}
+
 export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps) {
   const theme = useTheme();
   const [methodOpen, setMethodOpen] = useState(false);
+  const partial = representativenessMessage(coverage);
+  // Con representatividad insuficiente la cifra pasa a segundo plano: no resume toda la oferta.
+  const insufficient = coverage.representativeness === 'insufficient';
 
   return (
     <Card style={styles.card}>
@@ -42,10 +70,14 @@ export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps)
       ) : (
         <View style={styles.figure}>
           <ThemedText step="callout" color="textSecondary">
-            Cobertura de los requisitos evaluados
+            {insufficient
+              ? 'Cobertura parcial: solo una parte de la oferta'
+              : 'Cobertura de los requisitos evaluados'}
           </ThemedText>
           <View style={styles.figureRow}>
-            <ThemedText step="metric">{formatPercent(coverage.percentage)}</ThemedText>
+            <ThemedText step={insufficient ? 'title' : 'metric'}>
+              {formatPercent(coverage.percentage)}
+            </ThemedText>
             <ThemedText step="callout" color="textSecondary" style={styles.points}>
               {formatNumber(coverage.earned)} de {formatNumber(coverage.possible)} puntos ·{' '}
               {coverage.evaluated}{' '}
@@ -54,6 +86,8 @@ export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps)
           </View>
         </View>
       )}
+
+      {partial ? <Notice tone={insufficient ? 'warning' : 'info'}>{partial}</Notice> : null}
 
       {coverage.percentage === null ? null : (
         <CoverageBar assessments={assessments} showLegend={false} />

@@ -54,12 +54,34 @@ export function computeCoverage(assessments: RequirementAssessment[]): Coverage 
       possible += contribution.weight;
     }
   }
+  const evaluated = assessments.length - counts['not-evaluable'];
   return {
     percentage: possible > 0 ? Math.round((earned / possible) * 100) : null,
     earned,
     possible,
-    evaluated: assessments.length - counts['not-evaluable'],
+    evaluated,
     notEvaluated: counts['not-evaluable'],
     counts,
+    detected: assessments.length,
+    pendingReview: assessments.filter((item) => item.requirement.kind === 'review').length,
+    requiredNotEvaluated: assessments.filter(
+      (item) => item.status === 'not-evaluable' && item.requirement.importance === 'required',
+    ).length,
+    representativeness: representativenessOf(evaluated, assessments.length),
   };
+}
+
+/*
+Umbrales provisionales y no validados: con al menos el 80 % de lo detectado evaluado, el
+porcentaje resume la oferta; por debajo del 50 %, o con menos de tres requisitos evaluados, solo
+habla de una parte pequeña y no debe presentarse como el resultado de toda la oferta.
+*/
+export const representativenessThresholds = { sufficient: 0.8, limited: 0.5, minimumEvaluated: 3 };
+
+function representativenessOf(evaluated: number, detected: number): Coverage['representativeness'] {
+  if (detected === 0) return 'insufficient';
+  const share = evaluated / detected;
+  if (evaluated < representativenessThresholds.minimumEvaluated) return 'insufficient';
+  if (share < representativenessThresholds.limited) return 'insufficient';
+  return share < representativenessThresholds.sufficient ? 'limited' : 'sufficient';
 }

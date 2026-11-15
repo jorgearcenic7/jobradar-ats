@@ -6,6 +6,7 @@ solapamientos y no atribuye el tiempo a tecnologías, empresas o puestos por pro
 import type { CvUnit } from './cv-structure';
 import { containsAny, normalize } from './text';
 import { isRoleHeader } from './experience-role';
+import { findYearMentions } from './criteria';
 
 /*
 Meses en español e inglés, completos y abreviados («ene.», «Sept», «Aug»), ya normalizados. Una
@@ -193,16 +194,133 @@ export function workExperience(units: CvUnit[], referenceDate: Date, role?: stri
   };
 }
 
+// Palabras de la exigencia que no delimitan un ámbito: «en un puesto similar», «en el sector».
+const scopeStopwords = new Set(
+  'experiencia experience anos ano years year minimo minima minimos minimas least menos mas como puesto puestos role roles position posicion similar similares afin afines related relacionado relacionada relacionados equivalente equivalent field campo area areas ambito sector empresa empresas company companies preferred preferably preferiblemente preferentemente ideally idealmente valorable deseable trabajo work working professional profesional laboral previa previous demostrable proven solid solida tambien also funciones tareas the and with para por una uno del las los the that this'.split(
+    ' ',
+  ),
+);
+
+/*
+Ámbitos profesionales habituales en inglés y español, para que una oferta en un idioma encuentre
+los títulos de puesto de un CV en el otro («safety» ↔ «seguridad»). Solo raíces de seis letras o
+palabras completas, como compara `sameStem`.
+*/
+const fieldTranslations: [string, string][] = [
+  ['quality', 'calidad'],
+  ['safety', 'seguridad'],
+  ['health', 'salud'],
+  ['logistics', 'logistica'],
+  ['transport', 'transporte'],
+  ['warehouse', 'almacen'],
+  ['purchasing', 'compras'],
+  ['procurement', 'compras'],
+  ['sales', 'ventas'],
+  ['accounting', 'contabilidad'],
+  ['finance', 'finanzas'],
+  ['maintenance', 'mantenimiento'],
+  ['production', 'produccion'],
+  ['manufacturing', 'fabricacion'],
+  ['engineering', 'ingenieria'],
+  ['nursing', 'enfermeria'],
+  ['teaching', 'docencia'],
+  ['customer', 'cliente'],
+  ['marketing', 'marketing'],
+  ['recruitment', 'seleccion'],
+  ['environmental', 'medioambiente'],
+  ['legal', 'juridico'],
+];
+
+function withTranslations(terms: Set<string>): Set<string> {
+  for (const term of [...terms]) {
+    for (const [english, spanish] of fieldTranslations) {
+      if (sameStem(term, english)) terms.add(spanish);
+      if (sameStem(term, spanish)) terms.add(english);
+    }
+  }
+  return terms;
+}
+
+/**
+ * Palabras que delimitan el ámbito de una exigencia de años sin conceptos del catálogo:
+ * «2 years of experience in logistics or transport coordination» → logistics, transport,
+ * coordination. Vacío si la exigencia es general.
+ */
+export function experienceScopeTerms(sources: string[]): string[] {
+  const terms = new Set<string>();
+  for (const source of sources) {
+    const text = normalize(source);
+    const at = text.search(/\b(?:experiencia|experience)\b/);
+    /*
+    «Experiencia como…» o «as a…» pide un puesto: lo resuelve la coincidencia literal de títulos
+    (`experience-role.ts`), no estas palabras. Una frase truncada tampoco delimita nada.
+    */
+    if (at < 0 || /\b(?:como|as)\b/.test(text.slice(at)) || /(?:…|\.\.\.)\s*$/.test(source))
+      continue;
+    const scope = text.slice(at).match(/\b(?:en|in|within)\b(.*)$/)?.[1] ?? '';
+    for (const word of scope.split(/[^a-z0-9]+/)) {
+      if (word.length >= 3 && !/^\d+$/.test(word) && !scopeStopwords.has(word)) terms.add(word);
+    }
+  }
+  return [...withTranslations(terms)];
+}
+
+/*
+Dos palabras se consideran la misma si coinciden enteras o, en palabras de cinco letras o más,
+si comparten las seis primeras («contabilidad» y «contable», «logistics» y «logística»).
+Es una comparación deliberadamente estrecha: solo sirve para títulos de puesto.
+*/
+function sameStem(a: string, b: string): boolean {
+  if (a === b) return true;
+  if (a.length < 5 || b.length < 5) return false;
+  const size = Math.min(6, a.length, b.length);
+  return a.slice(0, size) === b.slice(0, size);
+}
+
+/** Coincidencia del ámbito explícito, con los mismos límites que los títulos de puesto. */
+export function namesExperienceScope(text: string, terms: string[]): boolean {
+  const words = normalize(text)
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean);
+  return terms.some((term) => words.some((word) => sameStem(term, word)));
+}
+
+/**
+ * Meses de los periodos cuyo título de puesto (la línea de las fechas o el encabezado sin fechas
+ * que la precede) contiene alguna palabra del ámbito pedido. Nunca usa la descripción del puesto:
+ * mencionar algo en una tarea no convierte todo el empleo en experiencia de ese ámbito.
+ */
+export function scopedExperience(
+  experience: NonNullable<ReturnType<typeof workExperience>>,
+  terms: string[],
+) {
+  const matching = experience.periods.filter((period) => {
+    const title = normalize(
+      `${period.context?.text ?? ''} ${period.unit.text.replace(period.range, '')}`,
+    );
+    return !period.ambiguousAssociation && namesExperienceScope(title, terms);
+  });
+  return {
+    periods: matching,
+    minimumMonths: unionMonths(matching.map((p) => [p.start.latest, p.end.earliest])),
+  };
+}
+
 /** Un puesto o tecnología desconocidos en la oferta tampoco se acreditan con años generales. */
 export function asksGeneralExperience(sources: string[]): boolean {
-  return sources.every(
-    (source) =>
-      normalize(source)
-        .replace(/\d{1,2}\s*\+?\s*(?:o mas\s+)?anos/g, ' ')
+  return sources.every((source) => {
+    let text = normalize(source);
+    // Se usa el mismo lector que en la oferta: singular, cifras y números escritos en ambos idiomas.
+    for (const mention of findYearMentions(text).reverse()) {
+      text = text.slice(0, mention.start) + ' ' + text.slice(mention.end);
+    }
+    return (
+      text
         .replace(
-          /\b(?:experiencia|profesional|laboral|general|previa|minima|minimo|minimos|mas|al|menos|de|se|requiere|requerida|necesaria|imprescindible|obligatoria|obligatorio)\b/g,
+          /\b(?:experiencia|profesional|laboral|general|previa|minima|minimo|minimos|mas|al|menos|de|se|requiere|requerida|necesaria|imprescindible|obligatoria|obligatorio|experience|professional|work|previous|minimum|at|least|of|required|more|than)\b/g,
           ' ',
         )
-        .replace(/[\s.,;:()]/g, '') === '',
-  );
+        .replace(/[\s.,;:()]/g, '') === ''
+    );
+  });
 }

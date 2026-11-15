@@ -120,6 +120,11 @@ describe('analysis of the sample CV and offer', () => {
       evaluated: 8,
       notEvaluated: 1,
       counts: { supported: 4, mentioned: 2, missing: 2, 'not-evaluable': 1 },
+      // 8 de 9 detectados: el porcentaje representa la oferta.
+      detected: 9,
+      pendingReview: 0,
+      requiredNotEvaluated: 1,
+      representativeness: 'sufficient',
     });
   });
 
@@ -202,30 +207,42 @@ describe('alternative and partial technical requirements', () => {
   const cv =
     'EXPERIENCIA\nDesarrollé servicios con Docker y consultas con SQL para una empresa ficticia.';
 
+  // Desde la v1.7 un grupo alternativo es un solo requisito: basta con una opción.
   it.each([
-    'Experiencia con Docker o Kubernetes; basta con uno.',
-    'Experiencia con Docker o Kubernetes.',
-    'Experiencia con SQL o Teradata.',
-  ])(
-    'retains an alternative group for review without penalizing the other option: %s',
-    (sentence) => {
-      const result = analyzeMatch(cv, `Requisitos\n- ${sentence}`);
-      expect(result.requirements).toHaveLength(1);
-      expect(result.requirements[0]).toMatchObject({
-        requirement: { kind: 'review', cause: 'alternative', label: sentence, sources: [sentence] },
-        status: 'not-evaluable',
-        contribution: null,
-        evidence: [],
-      });
-      expect(result.requirements[0].reason).toMatch(/alternativas/);
-      expect(result.coverage).toMatchObject({
-        evaluated: 0,
-        notEvaluated: 1,
-        possible: 0,
-        percentage: null,
-      });
-    },
-  );
+    ['Experiencia con Docker o Kubernetes; basta con uno.', 'any-of:docker|kubernetes', false],
+    ['Experiencia con Docker o Kubernetes.', 'any-of:docker|kubernetes', false],
+    ['Experiencia con SQL o Teradata.', 'any-of:sql:open', true],
+  ])('scores an alternative group once, with the best option: %s', (sentence, id, openEnded) => {
+    const result = analyzeMatch(cv, `Requisitos\n- ${sentence}`);
+    expect(result.requirements).toHaveLength(1);
+    expect(result.requirements[0]).toMatchObject({
+      requirement: { kind: 'any-of', id, openEnded, sources: [sentence] },
+      status: 'supported',
+      contribution: { points: 1, weight: 2 },
+    });
+    expect(result.requirements[0].reason).toMatch(/Basta con una de las opciones/);
+    expect(result.coverage).toMatchObject({ evaluated: 1, notEvaluated: 0, percentage: 100 });
+  });
+
+  it('does not penalize an open alternative group when no listed option appears', () => {
+    const result = analyzeMatch(
+      'EXPERIENCIA\nDiseñé informes de ventas con hojas de cálculo.',
+      'Requisitos\n- Experiencia con SAP u otro ERP similar.',
+    );
+    expect(result.requirements[0]).toMatchObject({
+      requirement: { kind: 'any-of', openEnded: true },
+      status: 'not-evaluable',
+      contribution: null,
+    });
+  });
+
+  it('counts a closed alternative group as missing when no option appears', () => {
+    const result = analyzeMatch(
+      'EXPERIENCIA\nDiseñé informes de ventas con hojas de cálculo.',
+      'Requisitos\n- Experiencia con Docker o Kubernetes.',
+    );
+    expect(result.requirements[0].status).toBe('missing');
+  });
 
   it('keeps a conjunction as two independent requirements', () => {
     const result = analyzeMatch(cv, 'Requisitos\n- Experiencia con Docker y Kubernetes.');
@@ -399,17 +416,18 @@ describe('abbreviated minimum experience', () => {
 });
 
 describe('languages', () => {
+  // «Básico» equivale a A1–A2: queda por debajo de B2 aunque no sea un código MCER.
   it.each([
-    ['Inglés C1 y francés B1.', 'B1'],
-    ['C1 de inglés y B1 de francés.', 'B1'],
-    ['Inglés nativo y francés básico.', null],
+    ['Inglés C1 y francés B1.', 'nivel B1'],
+    ['C1 de inglés y B1 de francés.', 'nivel B1'],
+    ['Inglés nativo y francés básico.', 'nivel A1–A2'],
   ])('never credits French B2 using the English level in %s', (sentence, frenchLevel) => {
     const result = analyzeMatch(`IDIOMAS\n${sentence}`, 'Requisitos\n- Francés B2.');
     const french = assessment(result, 'language:fr:B2');
-    expect(french.status).toBe(frenchLevel ? 'missing' : 'mentioned');
+    expect(french.status).toBe('missing');
     expect(french.evidence.map((item) => item.text)).toEqual([sentence]);
-    expect(french.reason).toContain(frenchLevel ? 'nivel B1' : 'sin indicar el nivel');
-    expect(result.coverage).toMatchObject({ percentage: frenchLevel ? 0 : 50, possible: 2 });
+    expect(french.reason).toContain(frenchLevel);
+    expect(result.coverage).toMatchObject({ percentage: 0, possible: 2 });
   });
 
   const offer = 'Requisitos\n- Inglés B2.';
@@ -440,12 +458,34 @@ describe('languages', () => {
     );
   });
 
-  it('leaves out of the coverage a level that the offer does not express on the CEFR scale', () => {
-    const result = analyzeMatch('IDIOMAS\nInglés C1', 'Requisitos\n- Inglés alto.');
+  /*
+  Un nivel con palabras («alto», «fluent») abarca un intervalo del MCER (B2–C1). Se acredita si el
+  CV alcanza el extremo superior, se descarta si no llega al inferior y, si se solapan, queda como
+  evidencia insuficiente.
+  */
+  it.each([
+    ['Inglés C1', 'supported'],
+    ['Inglés B2', 'mentioned'],
+    ['Inglés B1', 'missing'],
+    ['Inglés: nivel avanzado', 'mentioned'],
+    ['Inglés nativo', 'supported'],
+  ])('compares %s with a level written in words («Inglés alto»)', (cvLine, status) => {
+    const result = analyzeMatch(`IDIOMAS\n${cvLine}`, 'Requisitos\n- Inglés alto.');
     const english = assessment(result, 'language:en');
-    expect(english.status).toBe('not-evaluable');
-    expect(english.contribution).toBeNull();
-    expect(english.evidence[0].text).toBe('Inglés C1');
+    expect(english.status).toBe(status);
+    expect(english.evidence[0].text).toBe(cvLine);
+  });
+
+  it('compares a CV level written in words with a CEFR code', () => {
+    expect(
+      statusOf('IDIOMAS\nInglés: nivel intermedio', 'Requisitos\n- Inglés B1.', 'language:en:B1'),
+    ).toBe('supported');
+    expect(
+      statusOf('IDIOMAS\nInglés: nivel intermedio', 'Requisitos\n- Inglés B2.', 'language:en:B2'),
+    ).toBe('mentioned');
+    expect(
+      statusOf('IDIOMAS\nInglés: nivel intermedio', 'Requisitos\n- Inglés C1.', 'language:en:C1'),
+    ).toBe('missing');
   });
 
   it('still reports a language missing from the CV when the offer level is not on the CEFR scale', () => {
@@ -917,6 +957,10 @@ Ofrecemos
       evaluated: 9,
       notEvaluated: 1,
       counts: { supported: 3, mentioned: 3, missing: 3, 'not-evaluable': 1 },
+      detected: 10,
+      pendingReview: 0,
+      requiredNotEvaluated: 1,
+      representativeness: 'sufficient',
     });
   });
 });
