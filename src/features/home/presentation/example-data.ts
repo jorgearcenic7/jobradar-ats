@@ -1,9 +1,9 @@
 /*
-Contenido del prototipo inmersivo. Todo es un ejemplo ilustrativo y ficticio: no sale del motor ni
+Ejemplo de Inicio en la web. Todo es ilustrativo y ficticio: no sale del motor ni
 de ningún análisis del usuario, y la interfaz lo etiqueta siempre como ejemplo.
 
-Repite el ejemplo de la tarjeta de Inicio (Desarrollador/a backend, cuatro requisitos) para que
-la promesa sea la misma en la app y en el prototipo.
+Repite el ejemplo de la tarjeta de Inicio en iOS y Android (Desarrollador/a backend, cuatro
+requisitos) para que la promesa sea la misma en todas las plataformas.
 */
 
 export type ExampleStatus = 'supported' | 'mentioned' | 'missing';

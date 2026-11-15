@@ -18,7 +18,7 @@
 </div>
 
 > [!NOTE]
-> **Estado.** En producción, en Cloudflare Pages, está publicada la **v1.5**: analizador ATS, importación de CV, cuentas, «Mis CV», extracción bilingüe y relaciones semánticas locales (v1.4) y el rediseño responsive (v1.5). La **v1.6** es un prototipo experimental de dirección visual, sin publicar, en la rama `feat/v1.6-prototipo-inmersivo`. Detalle en [Estado de las funcionalidades](#estado-de-las-funcionalidades).
+> **Estado.** En producción, en Cloudflare Pages, está publicada la **v1.5**: analizador ATS, importación de CV, cuentas, «Mis CV», extracción bilingüe y relaciones semánticas locales (v1.4) y el rediseño responsive (v1.5). La **v1.6**, sin publicar, integra en la web la dirección inmersiva (Inicio con radar interactivo y Analizar con su transición y movimiento) en la rama `feat/v1.6-prototipo-inmersivo`. Detalle en [Estado de las funcionalidades](#estado-de-las-funcionalidades).
 
 ## Índice
 
@@ -64,7 +64,7 @@ Principios del producto:
 | Requisitos de ofertas en español e inglés, limpieza de páginas completas de LinkedIn y catálogo ampliado con sinónimos ESCO | v1.4    | Sí           | Sí               | Sí            |
 | **Relaciones semánticas** locales y opcionales con `multilingual-e5-small`: sugerencias que no cambian la cobertura         | v1.4    | Sí           | Sí               | Experimental  |
 | Rediseño responsive, accesibilidad en modo oscuro y Resultados ATS agrupados por estado                                     | v1.5    | Sí           | Sí               | Sí            |
-| **Prototipo inmersivo** (`/prototipo`): radar interactivo, escena ligada al desplazamiento y transición a Analizar          | v1.6    | En una rama  | Sí               | No            |
+| **Diseño inmersivo** en la web: Inicio con radar interactivo y escena ligada al desplazamiento, transición y Analizar       | v1.6    | En una rama  | Sí               | Sí            |
 | Importación de archivos en la app nativa (iOS y Android)                                                                    | —       | No           | —                | —             |
 
 Comprobaciones del responsable en el proyecto real de Supabase, registradas al cerrar la v1.3:

@@ -1,0 +1,1005 @@
+/*
+Inicio en la web (dirección inmersiva v1.6).
+
+Composición editorial a sangre: sin tarjetas ni cajas. La jerarquía la dan la escala tipográfica,
+el aire y el radar; el violeta de marca marca la acción, la señal y el cierre. Los colores son las
+variables de `themeVariablesCss`, en claro y en oscuro.
+
+Movimiento: una curva de salida para lo que llega (`--ease-out`) y otra con más recorrido para
+la onda (`--ease-drawer`). El desplazamiento solo cambia variables (`--hero`, `--p1`…`--p3`) y
+propiedades que el navegador compone sin recalcular la página.
+*/
+
+.im-home {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --gutter: clamp(20px, 5vw, 72px);
+  /* Contenido centrado de 1440 px: en pantallas más anchas, el sobrante va a los lados. */
+  --content: 1440px;
+  --inline: max(var(--gutter), calc((100% - var(--content)) / 2 + var(--gutter)));
+  /* Alto de la cabecera compartida (`HEADER_HEIGHT` en el componente). */
+  --topbar: 57px;
+  /* Como `Screen`: ocupa la pantalla de la ruta y se desplaza por dentro. */
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.im-home *,
+.im-home *::before,
+.im-home *::after {
+  box-sizing: border-box;
+}
+
+.im-home ::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.im-home :focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+.im-scroll {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/*
+La cabecera compartida se alinea con la composición de 1440 px de Inicio. React Native Web aplica
+parte de sus estilos en línea, por eso `!important`.
+*/
+.im-home .app-header-sticky > * {
+  max-width: var(--content) !important;
+  padding-left: var(--gutter) !important;
+  padding-right: var(--gutter) !important;
+}
+
+.im-sr-only {
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* El radar pasa por debajo de la cabecera translúcida, que queda por encima. */
+.im-home main {
+  position: relative;
+  z-index: 0;
+}
+
+/* ---------- Acciones ---------- */
+
+/* Área de atracción del botón magnético: algo mayor que el botón, sin cambiar su posición. */
+.im-magnet {
+  display: inline-flex;
+  padding: 16px;
+  margin: -16px;
+}
+
+.im-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+  padding: 0 26px 0 30px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+  translate: var(--mx, 0px) var(--my, 0px);
+  transition:
+    scale 120ms var(--ease-out),
+    background-color 150ms var(--ease-out);
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.16),
+    0 12px 32px -12px var(--accent);
+}
+
+/*
+Los estados de hover solo existen con ratón o trackpad: en iPhone se quedarían pegados tras el
+toque. Allí responde la pulsación.
+*/
+@media (hover: hover) {
+  .im-primary:hover {
+    background: var(--accent-press);
+  }
+
+  .im-primary.is-inverse:hover {
+    background: var(--accent-subtle);
+  }
+
+  .im-primary:hover .im-arrow {
+    translate: 4px 0;
+  }
+
+  .im-text-link:hover,
+  .im-method summary:hover {
+    background-size: 100% 1.5px;
+  }
+}
+
+/* Responde al pulsar, no al soltar: con el dedo es la única señal de que la app escucha. */
+.im-primary:active {
+  scale: 0.97;
+}
+
+.im-primary [data-magnetic-label] {
+  display: inline-block;
+  translate: calc(var(--mx, 0px) * 0.4) calc(var(--my, 0px) * 0.4);
+}
+
+.im-primary.is-inverse {
+  background: var(--on-accent);
+  color: var(--accent);
+  box-shadow: 0 12px 40px -16px rgb(0 0 0 / 0.45);
+}
+
+.im-arrow {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: translate 200ms var(--ease-out);
+}
+
+.im-text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(currentColor, currentColor) left calc(100% - 9px) / 0% 1.5px no-repeat;
+  color: var(--text);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-size 240ms var(--ease-out);
+}
+
+/* El subrayado crece desde la izquierda al señalarlo (con el puntero, en el bloque de arriba). */
+.im-text-link:focus-visible {
+  background-size: 100% 1.5px;
+}
+
+.im-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-3);
+}
+
+/* ---------- Primera vista: el radar ---------- */
+
+.im-hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  min-height: 100svh;
+  margin-top: calc(var(--topbar) * -1);
+  padding: calc(var(--topbar) + 48px) var(--inline) clamp(40px, 8vh, 88px);
+  overflow: hidden;
+  touch-action: pan-y;
+  cursor: crosshair;
+}
+
+.im-hero a,
+.im-hero button {
+  cursor: pointer;
+}
+
+.im-radar {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  transform: scale(calc(1 + var(--hero, 0) * 0.06));
+  transform-origin: 70% 47%;
+}
+
+.im-blips {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* La J del logo es el origen de la señal: se impulsa cada vez que emite un pulso. */
+.im-radar-core {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
+  border-radius: 50%;
+  background: var(--accent-subtle);
+  color: var(--logo);
+  animation: im-core-pulse 520ms var(--ease-out);
+}
+
+.im-radar-core svg {
+  width: 36px;
+  height: 36px;
+}
+
+@keyframes im-core-pulse {
+  30% {
+    scale: 1.12;
+  }
+}
+
+.im-blip {
+  position: absolute;
+  display: grid;
+  grid-template-columns: 16px auto;
+  column-gap: 8px;
+  align-items: center;
+  translate: -8px -8px;
+}
+
+.im-blip[data-status='supported'] {
+  --status: var(--ok);
+  --status-text: var(--ok-text);
+}
+
+.im-blip[data-status='mentioned'] {
+  --status: var(--warn);
+  --status-text: var(--warn-text);
+}
+
+.im-blip[data-status='missing'] {
+  --status: var(--bad);
+  --status-text: var(--bad-text);
+}
+
+.im-blip i {
+  position: relative;
+  width: 10px;
+  height: 10px;
+  margin: 3px;
+  border-radius: 50%;
+  background: var(--text-3);
+  box-shadow: 0 0 0 4px var(--bg);
+  transition:
+    background-color 260ms var(--ease-out),
+    scale 260ms var(--ease-out);
+}
+
+.im-blip b,
+.im-blip small {
+  justify-self: start;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+}
+
+.im-blip b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-2);
+  transition: color 260ms var(--ease-out);
+}
+
+.im-blip small {
+  grid-column: 2;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--status-text);
+  opacity: 0;
+  translate: 0 -4px;
+  transition:
+    opacity 260ms var(--ease-out),
+    translate 260ms var(--ease-out);
+}
+
+/* El pulso alcanza el requisito: se enciende con su estado y deja un eco. */
+.im-blip[data-found='true'] i {
+  background: var(--status);
+  scale: 1.2;
+}
+
+.im-blip[data-found='true'] i::after {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  border: 1.5px solid var(--status);
+  animation: im-blip-echo 900ms var(--ease-out) forwards;
+}
+
+.im-blip[data-found='true'] b {
+  color: var(--text);
+}
+
+.im-blip[data-found='true'] small {
+  opacity: 1;
+  translate: 0 0;
+}
+
+@keyframes im-blip-echo {
+  from {
+    opacity: 0.9;
+    scale: 1;
+  }
+  to {
+    opacity: 0;
+    scale: 3.2;
+  }
+}
+
+.im-example-tag {
+  position: absolute;
+  top: calc(var(--topbar) + 16px);
+  right: var(--inline);
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+}
+
+.im-hero-copy {
+  position: relative;
+  max-width: 780px;
+  translate: 0 calc(var(--hero, 0) * -48px);
+  opacity: calc(1 - var(--hero, 0) * 0.75);
+}
+
+.im-display {
+  max-width: 9.5ch;
+  margin: 0;
+  /* Limitado también por la altura: la acción principal cabe siempre en la primera vista. */
+  font-size: clamp(48px, min(8.2vw, 12vh), 120px);
+  font-weight: 600;
+  line-height: 0.94;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.im-display em {
+  font-style: normal;
+  color: var(--accent-text);
+}
+
+.im-lead {
+  max-width: 44ch;
+  text-wrap: pretty;
+  margin: 28px 0 36px;
+  font-size: clamp(17px, 1.4vw, 20px);
+  line-height: 1.55;
+  color: var(--text-2);
+}
+
+.im-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 32px;
+  margin-bottom: 24px;
+}
+
+.im-hint {
+  position: absolute;
+  right: var(--inline);
+  bottom: clamp(40px, 8vh, 88px);
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.im-hint-touch,
+.im-tag-touch {
+  display: none;
+}
+
+@media (hover: none) {
+  .im-hint-pointer {
+    display: none;
+  }
+
+  .im-hint-touch {
+    display: inline;
+  }
+}
+
+/* ---------- Tres pasos: escena fijada ---------- */
+
+.im-story {
+  position: relative;
+  height: 230vh;
+}
+
+/*
+La escena mide como mucho 760 px y se fija centrada en la pantalla. Así, en pantallas altas, no
+queda un hueco grande ni al llegar ni mientras está fijada.
+*/
+.im-story-stage {
+  position: sticky;
+  top: max(0px, calc((100svh - 760px) / 2));
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+  align-items: center;
+  gap: clamp(32px, 6vw, 112px);
+  max-width: 1440px;
+  height: min(100svh, 760px);
+  margin: 0 auto;
+  padding: 0 var(--gutter);
+}
+
+.im-story-text h2 {
+  margin: 0 0 32px;
+  font-size: clamp(32px, 3.8vw, 56px);
+  font-weight: 600;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  outline: none;
+}
+
+.im-story-progress {
+  height: 2px;
+  margin-bottom: 32px;
+  background: var(--divider);
+}
+
+.im-story-progress span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
+  transform: scaleX(var(--p, 1));
+  transform-origin: left;
+}
+
+.im-story ol {
+  display: grid;
+  gap: 28px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/*
+Los pasos que no están en curso se apagan con color, no con opacidad: siguen superando 4,5:1 y
+se pueden leer en cualquier momento.
+*/
+.im-story li {
+  --step-title: var(--text-3);
+  --step-text: var(--text-3);
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  gap: 16px;
+}
+
+.im-story[data-step='0'] li[data-index='0'],
+.im-story[data-step='1'] li[data-index='1'],
+.im-story[data-step='2'] li[data-index='2'] {
+  --step-title: var(--text);
+  --step-text: var(--text-2);
+}
+
+.im-step-number {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  color: var(--text-3);
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    border-color 320ms var(--ease-out),
+    color 320ms var(--ease-out);
+}
+
+.im-story[data-step='0'] li[data-index='0'] .im-step-number,
+.im-story[data-step='1'] li[data-index='1'] .im-step-number,
+.im-story[data-step='2'] li[data-index='2'] .im-step-number {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.im-story h3 {
+  margin: 4px 0 6px;
+  color: var(--step-title);
+  transition: color 320ms var(--ease-out);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.im-story li p {
+  max-width: 38ch;
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--step-text);
+  transition: color 320ms var(--ease-out);
+}
+
+.im-scene {
+  margin: 0;
+}
+
+.im-scene-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  font-family: inherit;
+}
+
+.im-scene-svg.is-narrow {
+  display: none;
+}
+
+.im-scene figcaption {
+  max-width: 60ch;
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.im-scene-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  fill: var(--text-3);
+}
+
+/* Cada línea del CV aparece cuando su turno llega dentro del primer paso. */
+.im-cv-line {
+  --v: clamp(0, calc(var(--p1, 1) * 8 - var(--i)), 1);
+  fill: var(--text-2);
+  opacity: var(--v);
+  transform: translateY(calc((1 - var(--v)) * 10px));
+  transition: fill 320ms var(--ease-out);
+}
+
+.im-cv-line.is-heading {
+  font-weight: 600;
+  fill: var(--text-3);
+}
+
+.im-story[data-step='2'] .im-cv-line.is-evidence {
+  fill: var(--text);
+  font-weight: 600;
+}
+
+.im-home [data-status='supported'] {
+  --status: var(--ok);
+  --status-text: var(--ok-text);
+}
+
+.im-home [data-status='mentioned'] {
+  --status: var(--warn);
+  --status-text: var(--warn-text);
+}
+
+.im-home [data-status='missing'] {
+  --status: var(--bad);
+  --status-text: var(--bad-text);
+}
+
+/* Los requisitos entran de uno en uno durante el segundo paso. */
+.im-requirement {
+  --v: clamp(0, calc(var(--p2, 1) * 4 - var(--i)), 1);
+  opacity: max(0.16, var(--v));
+  transform: translateX(calc((1 - var(--v)) * 28px));
+}
+
+.im-requirement text {
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.im-requirement circle {
+  fill: var(--text-3);
+  transition: fill 320ms var(--ease-out);
+}
+
+.im-story[data-step='2'] .im-requirement circle {
+  fill: var(--status);
+}
+
+.im-requirement .im-requirement-status {
+  font-weight: 500;
+  fill: var(--status-text);
+  opacity: clamp(0, calc(var(--p3, 1) * 3 - var(--i) * 0.6), 1);
+}
+
+/* Las evidencias se trazan del CV a cada requisito durante el tercer paso. */
+.im-link-path {
+  --v: clamp(0, calc(var(--p3, 1) * 3 - var(--i) * 0.6), 1);
+  fill: none;
+  stroke: var(--status);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: calc(1 - var(--v));
+  opacity: clamp(0, calc(var(--v) * 12), 1);
+}
+
+/* ---------- Lo que promete y lo que no ---------- */
+
+.im-truth {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: end;
+  gap: 48px clamp(40px, 6vw, 112px);
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: clamp(72px, 11vh, 128px) var(--gutter);
+}
+
+.im-statement {
+  max-width: 13ch;
+  margin: 0;
+  font-size: clamp(38px, 5.2vw, 80px);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.im-statement span {
+  color: var(--accent-text);
+}
+
+.im-facts {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.im-facts li {
+  text-wrap: pretty;
+  padding: 18px 0;
+  border-top: 1px solid var(--divider);
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--text-2);
+}
+
+/*
+Revelado ligado al desplazamiento con CSS (`animation-timeline: view()`). Donde el navegador no lo
+admite, o con «reducir movimiento», el contenido simplemente está ahí.
+*/
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .im-statement,
+    .im-facts li {
+      animation: im-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+
+@keyframes im-rise {
+  from {
+    opacity: 0;
+    translate: 0 36px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+/* ---------- Cierre ---------- */
+
+.im-close {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
+  padding: clamp(72px, 13vh, 144px) var(--inline);
+  isolation: isolate;
+  overflow: hidden;
+  background-color: var(--accent);
+  color: var(--on-accent);
+}
+
+/* Los anillos del radar salen de la esquina y se abren a medida que la sección entra. */
+.im-close-rings {
+  position: absolute;
+  right: -18vmax;
+  bottom: -30vmax;
+  z-index: -1;
+  width: 90vmax;
+  height: 90vmax;
+  pointer-events: none;
+}
+
+.im-close-rings circle {
+  fill: none;
+  stroke: var(--on-accent);
+  stroke-opacity: 0.16;
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .im-close-rings {
+      animation: im-rings-open linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 60%;
+    }
+  }
+}
+
+@keyframes im-rings-open {
+  from {
+    scale: 0.72;
+    opacity: 0.4;
+  }
+}
+
+.im-close h2 {
+  max-width: 12ch;
+  margin: 0;
+  font-size: clamp(42px, 6.6vw, 108px);
+  font-weight: 600;
+  line-height: 0.96;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+}
+
+.im-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px 24px;
+  padding: 24px var(--inline);
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.im-footer a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--accent-text);
+  font-weight: 500;
+}
+
+.im-footer-note {
+  flex: 1 1 280px;
+}
+
+/* ---------- Metodología ---------- */
+
+.im-truth-side {
+  display: grid;
+  gap: 8px;
+}
+
+.im-method {
+  border-top: 1px solid var(--divider);
+}
+
+.im-method summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 6px;
+  background: linear-gradient(currentColor, currentColor) left calc(100% - 9px) / 0% 1.5px no-repeat;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+  transition: background-size 240ms var(--ease-out);
+}
+
+.im-method summary::-webkit-details-marker {
+  display: none;
+}
+
+.im-method summary:focus-visible {
+  background-size: 100% 1.5px;
+}
+
+.im-chevron {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: rotate 200ms var(--ease-out);
+}
+
+.im-method[open] .im-chevron {
+  rotate: 180deg;
+}
+
+.im-method-body {
+  display: grid;
+  gap: 12px;
+  padding: 8px 0 12px;
+}
+
+.im-method-body p {
+  max-width: 60ch;
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-2);
+}
+
+/* ---------- Móvil y pantallas estrechas ---------- */
+
+@media (max-width: 899px) {
+  /*
+  El radar necesita una franja propia sobre el titular. En teléfonos bajos la primera vista
+  muestra el radar y el titular, y la acción queda a un desplazamiento corto.
+  */
+  .im-hero {
+    padding-top: calc(var(--topbar) + clamp(270px, 100svh - 470px, 340px));
+    padding-bottom: 32px;
+  }
+
+  .im-radar {
+    transform-origin: 50% 30%;
+  }
+
+  .im-example-tag {
+    left: var(--gutter);
+    right: auto;
+  }
+
+  .im-hint,
+  .im-tag-role {
+    display: none;
+  }
+
+  .im-tag-touch {
+    display: inline;
+  }
+
+  .im-display {
+    font-size: clamp(44px, 13vw, 76px);
+  }
+
+  .im-lead {
+    margin: 20px 0 28px;
+  }
+
+  .im-actions {
+    gap: 12px 24px;
+  }
+
+  .im-story {
+    height: 250vh;
+  }
+
+  .im-story-stage {
+    grid-template-columns: 1fr;
+    align-content: center;
+    gap: 24px;
+  }
+
+  .im-story-text h2 {
+    margin-bottom: 20px;
+    font-size: 32px;
+  }
+
+  .im-story-progress {
+    margin-bottom: 20px;
+  }
+
+  /* En el móvil solo cabe el paso en curso junto a la escena. */
+  .im-story li {
+    display: none;
+  }
+
+  .im-story[data-step='0'] li[data-index='0'],
+  .im-story[data-step='1'] li[data-index='1'],
+  .im-story[data-step='2'] li[data-index='2'] {
+    display: grid;
+  }
+
+  .im-scene-svg.is-wide {
+    display: none;
+  }
+
+  .im-scene-svg.is-narrow {
+    display: block;
+  }
+
+  .im-scene figcaption {
+    display: none;
+  }
+
+  .im-truth {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Reducir movimiento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .im-home *,
+  .im-home *::before,
+  .im-home *::after {
+    transition-duration: 1ms !important;
+  }
+
+  .im-hero-copy,
+  .im-radar {
+    translate: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  /* La escena deja de estar fijada y se muestra completa, con los tres pasos legibles. */
+  .im-story {
+    height: auto;
+  }
+
+  .im-story-stage {
+    position: static;
+    height: auto;
+    padding-block: 96px;
+  }
+
+  .im-story li,
+  .im-story[data-step] li {
+    display: grid;
+    opacity: 1;
+  }
+
+  .im-story .im-requirement circle {
+    fill: var(--status);
+  }
+
+  .im-scene figcaption {
+    display: block;
+  }
+
+  .im-radar-core,
+  .im-blip[data-found='true'] i::after {
+    animation: none;
+  }
+}

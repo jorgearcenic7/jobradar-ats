@@ -12,9 +12,9 @@ Este documento distingue lo **publicado**, lo **experimental**, lo **pendiente**
 | v1.3    | «Mis CV», eliminación de cuenta, página de privacidad y protección de Storage                                                   | Publicada (PR #8, #10 y #11)    |
 | v1.4    | Extracción bilingüe de requisitos, catálogo de tecnologías ampliado y relaciones semánticas locales con `multilingual-e5-small` | Publicada (`ec2301b` en `main`) |
 | v1.5    | Rediseño responsive, accesibilidad y Resultados ATS agrupados por estado                                                        | Publicada (PR #13)              |
-| v1.6    | Prototipo inmersivo: radar interactivo, animaciones ligadas al desplazamiento y transición a Analizar                           | Experimental, sin publicar      |
+| v1.6    | Diseño inmersivo en la web: radar interactivo, animaciones ligadas al desplazamiento y transición a Analizar                    | En una rama, sin publicar       |
 
-La v1.4 entró en `main` sin PR. La presencia de la v1.4 y la v1.5 en producción se comprobó el 15 de noviembre de 2026 sobre la web publicada. La v1.6 es un prototipo en la rama `feat/v1.6-prototipo-inmersivo` (ruta `/prototipo`). No sustituye ninguna pantalla y no es una funcionalidad definitiva: la dirección visual está pendiente de aprobación.
+La v1.4 entró en `main` sin PR. La presencia de la v1.4 y la v1.5 en producción se comprobó el 15 de noviembre de 2026 sobre la web publicada. La v1.6, en la rama `feat/v1.6-prototipo-inmersivo`, sustituye en la web el Inicio y el aspecto de Analizar por la dirección inmersiva aprobada en el prototipo; la ruta `/prototipo` se ha retirado. iOS y Android conservan el diseño de la v1.5.
 
 Infraestructura: el alojamiento web migró a Cloudflare Pages (PR #9), que es el hosting actual. Vercel, el hosting anterior, se ha retirado del repositorio y ya no sirve la app. Ver [deploy.md](deploy.md).
 
@@ -44,7 +44,7 @@ Verificado por el responsable al cerrar la v1.3:
 2. Comprobar el SMTP de Supabase Auth: el servidor integrado solo entrega correos a direcciones del equipo del proyecto. No consta como revisado.
 3. Terminar la limpieza de Vercel: la web antigua ya no se sirve (`jobradar-ats.vercel.app` responde 404, comprobado el 15 de noviembre de 2026), pero no consta que se hayan quitado sus callbacks de Supabase ni su app de GitHub ([deploy.md](deploy.md#retirada-de-vercel-proveedor-anterior)).
 4. Prueba del enlace de confirmación de otra cuenta (paso 7 de [auth.md](auth.md#verificación-real-manual)), que no consta como realizada.
-5. Decidir si la dirección inmersiva de la v1.6 se aplica a las pantallas reales. Antes de integrarla, retirar o proteger `/prototipo`.
+5. Revisar la v1.6 en un iPhone real (Safari) antes de publicarla: las pruebas se hicieron con emulación móvil de Chromium.
 
 ## Cumplimiento y privacidad
 

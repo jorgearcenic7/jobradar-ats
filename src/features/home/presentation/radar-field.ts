@@ -1,5 +1,5 @@
 /*
-Campo de radar del prototipo, dibujado en un canvas 2D (sin WebGL ni dependencias).
+Campo de radar de Inicio (solo web), dibujado en un canvas 2D (sin WebGL ni dependencias).
 
 Anillos concéntricos alrededor de un centro. El puntero actúa como una lente: curva los anillos
 cercanos hacia él y los ilumina. Cada pulso es una onda que sale de un punto, recorre el campo y

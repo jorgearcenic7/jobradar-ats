@@ -53,6 +53,8 @@ export function FileCard(props: FileCardProps) {
   return (
     <View
       aria-busy={reading}
+      // En la web, el marco de Preparar hace «aterrizar» la tarjeta cuando termina la lectura.
+      dataSet={{ fileCard: reading ? 'reading' : 'read' }}
       style={[styles.card, { borderColor: theme.border, backgroundColor: theme.surface }]}>
       <View style={styles.main}>
         <View

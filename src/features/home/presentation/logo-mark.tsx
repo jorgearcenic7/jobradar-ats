@@ -1,4 +1,4 @@
-// La J con las ondas del logo, a partir de `assets/branding/jobradar-mark.svg`, en `currentColor`.
+// La J con las ondas del logo en SVG del DOM (solo web), a partir de `assets/branding/jobradar-mark.svg`.
 export function LogoMark() {
   return (
     <svg viewBox="0 0 1024 1024" aria-hidden>

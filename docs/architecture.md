@@ -25,7 +25,7 @@ src/
     mis-cv.tsx          # «Mis CV» (v1.3)
     privacidad.tsx      # Información de privacidad (v1.3)
   features/
-    home/presentation/  # Inicio: identidad, acción principal, pasos y metodología desplegable
+    home/presentation/  # Inicio: inmersivo en la web (`.web.tsx`), con tarjetas en iOS y Android
     cv-match/           # Analizador CV–oferta (ver más abajo)
       domain/           # Motor en TypeScript puro
       presentation/     # Pantalla, hook de estado y componentes de resultados
@@ -42,6 +42,7 @@ src/
     auth/               # Supabase Auth (v1.2): cliente, sesión, pantallas, callback y baja de cuenta, sin capas (ver docs/auth.md)
     privacy/presentation/ # Página /privacidad (v1.3)
   shared/navigation/    # Cabecera compartida con identidad y los enlaces Inicio / Analizar
+  shared/motion/        # Solo web: onda de transición, atracción magnética y «reducir movimiento»
   shared/ui/            # Componentes genéricos del sistema de diseño
     screen.tsx          # Contenedor de pantalla: fondo, áreas seguras, márgenes, scroll
     card.tsx            # Contenedor de contenido sobre una superficie
@@ -87,7 +88,7 @@ assets/                 # Iconos y pantalla de bienvenida
 
 ### Módulo `home` (Fase 4a.1, `9a2890c`)
 
-`src/features/home/presentation/home-screen.tsx` contiene el Inicio, con `example-result-card.tsx` (la tarjeta de ejemplo ilustrativo) y `home-footer.tsx` (el pie). La ruta `/` solo lo monta y le pasa `onAnalyze`, que abre `/analisis` con Expo Router. No lee ni almacena la sesión del analizador.
+`src/features/home/presentation/home-screen.tsx` contiene el Inicio de iOS y Android, con `example-result-card.tsx` (la tarjeta de ejemplo ilustrativo) y `home-footer.tsx` (el pie). En la web se usa `home-screen.web.tsx`, el Inicio inmersivo de la v1.6 (ver [Dirección inmersiva en la web](#dirección-inmersiva-en-la-web-v16)). La ruta `/` solo lo monta y le pasa `onAnalyze`, que abre `/analisis` con Expo Router. No lee ni almacena la sesión del analizador.
 
 - **Diseño.** Referencia: Inicio del prototipo aprobado, revisado en HTML y capturas. Marca JobRadar ATS en Sora, bloque marino con el mensaje principal (`h1`), acción «Analizar mi CV» y privacidad breve. Debajo, «Cómo funciona» y «Qué puedes esperar» (`h2`), con tres pasos numerados y los límites del producto. Se reutilizan `Screen`, `Card`, `Button`, `Icon`, `Heading`, `ThemedText` y `Disclosure`. El bloque de marca usa los colores existentes de la paleta oscura para mantener el contraste en ambos temas; no añade tokens ni componentes compartidos.
 - **Responsive.** Hasta 1120 px incluidos los márgenes de `Screen`. Las filas flexibles se envuelven según el espacio disponible: en móvil, mensaje, acción, pasos y expectativas quedan en una columna; en escritorio, el mensaje y la acción se alinean, y las dos secciones inferiores comparten fila. No consulta dimensiones en JavaScript, duplica contenido ni añade CSS específico. Conserva el scroll, las áreas seguras y el ajuste de texto nativos.
@@ -582,16 +583,15 @@ Primera entrega de la revisión visual. Solo afecta a la presentación: el motor
 - **Resultados (segunda entrega).** Los requisitos se agrupan por estado en una sola superficie por grupo, con una fila por requisito separada por una línea: el estado lo dice el título del grupo, con su icono, y cada fila lleva solo el icono (el nombre accesible conserva el estado completo). El filtro es `RequirementFilterControl` (`requirement-filter.tsx`), un `SegmentedControl` en tamaño `compact` con recuentos: cuatro opciones de al menos 120 px que forman dos filas de dos en el móvil. Se anuncia como grupo de botones de opción (antes, botones con `aria-pressed`). El resumen sustituye las cuatro tarjetas de recuentos por una leyenda en línea con los mismos nombres accesibles, y las recomendaciones van en una sola lista. El panel semántico es un `Disclosure` con la cabecera dentro de un encabezado de nivel 2 (`headingLevel`): plegado mientras no se usa, con una línea de estado siempre visible, y abierto solo mientras descarga, analiza, muestra su resultado o falla. No cambia ningún cálculo ni el funcionamiento del modelo.
 - **Movimiento.** `webTransition` (`shared/theme/motion.ts`) anima solo cambios de estado en la web: el hover de la navegación, de la zona de subida y de las opciones de los selectores (150 ms), el progreso de los pasos y el giro de la flecha de los desplegables (200 ms), con la curva `cubic-bezier(0.23, 1, 0.32, 1)`. `src/global.css` las anula con «reducir movimiento». En iOS y Android el cambio es inmediato.
 
-### Prototipo de dirección inmersiva (v1.6, experimental)
+### Dirección inmersiva en la web (v1.6)
 
-Sin publicar: solo existe en la rama `feat/v1.6-prototipo-inmersivo` y no es una funcionalidad definitiva. `/prototipo` (módulo `prototype`, solo presentación) es un prototipo navegable de la dirección visual inmersiva para Inicio y la transición a Analizar. No sustituye ninguna pantalla ni está enlazado desde la app. Usa DOM, CSS y un canvas 2D propios (`radar-field.ts`), sin dependencias nuevas; en iOS y Android solo muestra un aviso.
+Sin publicar, en la rama `feat/v1.6-prototipo-inmersivo`. Integra en la web la dirección aprobada en el prototipo `/prototipo`, que se ha retirado junto con su módulo. iOS y Android conservan el diseño de la v1.5: el radar y la escena dependen de canvas, del DOM y de eventos de puntero. No hay dependencias nuevas.
 
-- **Radar.** Un pulso recorre el campo y revela el estado de cada requisito del ejemplo ilustrativo. El puntero curva los anillos y un clic o un toque emite otra señal. Solo dibuja mientras algo se mueve y el canvas está a la vista.
-- **Tres pasos.** Una escena fijada (`position: sticky`) avanza con el desplazamiento mediante variables CSS (`--p1`…`--p3`), sin renderizar React en cada fotograma.
-- **Transiciones.** Una onda violeta nace del control pulsado y lleva a Analizar, donde el carril de etapas y la diana del CV reaccionan al estado.
-- **Accesibilidad.** Con «reducir movimiento», la escena se muestra completa y la onda pasa a ser un fundido. Botones y campos son elementos nativos con foco visible.
-
-Antes de integrar la dirección en las pantallas reales hay que retirar o proteger esta ruta, que hoy se publica con la compilación web.
+- **Inicio** (`home/presentation/home-screen.web.tsx`, `home-screen.css`). DOM y CSS propios con la cabecera compartida. El radar (`radar-field.ts`, canvas 2D) emite un pulso que revela el estado de cada requisito del ejemplo ilustrativo (`example-data.ts`); el puntero curva los anillos y un clic o un toque emite otra señal. Solo dibuja mientras algo se mueve y el canvas está a la vista. La escena de los tres pasos (`steps-scene.tsx`) se fija con `position: sticky` y avanza con variables CSS (`--p1`…`--p3`), sin renderizar React en cada fotograma. La metodología de la cobertura sigue disponible en un `<details>`.
+- **Transición** (`shared/motion/radar-wave.ts`). Una onda violeta nace del control pulsado, cubre la pantalla, la ruta cambia debajo y Preparar la retira con un fundido. Vive en `document.body` para sobrevivir al cambio de ruta, nunca captura el puntero y un temporizador la retira si nadie lo hace.
+- **Preparar** (`cv-match/presentation/prepare-layout.web.tsx`, `prepare-layout.css`, `analysis-stepper.web.tsx`). La pantalla, el formulario, la importación y las validaciones son los mismos en todas las plataformas; solo cambia el marco: sin tarjetas, titular grande, carril de etapas con un indicador que se desliza, campos con una regla a la izquierda, diana en la zona de subida (`cv-import/presentation/dropzone-mark.web.tsx`), tarjeta del archivo que «aterriza», botón magnético y un barrido de 640 ms entre «Analizar» y Resultados. El análisis se calcula al pulsar; el barrido solo acompaña el cambio de pantalla.
+- **Colores.** `themeVariablesCss` (`shared/theme/css-variables.ts`) genera la paleta como variables CSS con `prefers-color-scheme`, de modo que el HTML estático ya sale en el tema correcto.
+- **Táctil y accesibilidad.** Los estados de hover solo existen con `hover: hover`; la atracción magnética, solo con puntero fino. Con «reducir movimiento» no hay onda, barrido, llegada ni escena fijada, y el radar queda quieto con los estados revelados. Al llegar con la onda, el foco pasa al título de Preparar.
 
 ## Estructura planificada
 

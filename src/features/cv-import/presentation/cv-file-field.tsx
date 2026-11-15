@@ -24,6 +24,7 @@ import { TextField } from '@/shared/ui/text-field';
 import type { DroppedFile } from '../domain/readers';
 import type { ImportedCv } from '../domain/types';
 import { DropTarget } from './drop-target';
+import { DropzoneMark } from './dropzone-mark';
 import { FileCard } from './file-card';
 import {
   extractionCaution,
@@ -89,6 +90,8 @@ function Dropzone({
         aria-disabled={pickDisabled}
         disabled={pickDisabled}
         onPress={onPick}
+        // En la web, el marco de Preparar quita la caja a la zona: la diana marca los estados.
+        dataSet={{ dropzone: true }}
         onFocus={(event) => setFocusVisible(isKeyboardFocus(event))}
         onBlur={() => setFocusVisible(false)}
         // `hovered` solo llega en la web (React Native Web); los tipos de React Native no lo declaran.
@@ -104,28 +107,36 @@ function Dropzone({
             focusVisible && { ...focusRing, outlineColor: theme.focusRing },
           ];
         }}>
-        <View style={[styles.dropIcon, { backgroundColor: theme.accentSubtle }]}>
-          <Icon name="uploadFile" size="lg" color="onAccentSubtle" />
-        </View>
-        <ThemedText step="headline" style={styles.centered}>
-          {dragging ? 'Suelta el archivo para leerlo' : 'Arrastra tu CV aquí'}
-        </ThemedText>
-        <ThemedText step="callout" color="textSecondary" style={styles.centered}>
-          o{' '}
-          <ThemedText step="callout" color="accentText" style={styles.link}>
-            selecciona un archivo
-          </ThemedText>{' '}
-          de tu equipo
-        </ThemedText>
-        <View style={styles.formats}>
-          {formats.map((format) => (
-            <View key={format} style={[styles.format, { backgroundColor: theme.neutralSubtle }]}>
-              <ThemedText step="footnote" color="textSecondary">
-                {format}
-              </ThemedText>
+        {({ pressed, hovered }: { pressed: boolean; hovered?: boolean }) => (
+          <>
+            <DropzoneMark
+              dragging={dragging}
+              active={(pressed || Boolean(hovered)) && !pickDisabled}
+              invalid={invalid}
+            />
+            <ThemedText step="headline" style={styles.centered}>
+              {dragging ? 'Suelta el archivo para leerlo' : 'Arrastra tu CV aquí'}
+            </ThemedText>
+            <ThemedText step="callout" color="textSecondary" style={styles.centered}>
+              o{' '}
+              <ThemedText step="callout" color="accentText" style={styles.link}>
+                selecciona un archivo
+              </ThemedText>{' '}
+              de tu equipo
+            </ThemedText>
+            <View style={styles.formats}>
+              {formats.map((format) => (
+                <View
+                  key={format}
+                  style={[styles.format, { backgroundColor: theme.neutralSubtle }]}>
+                  <ThemedText step="footnote" color="textSecondary">
+                    {format}
+                  </ThemedText>
+                </View>
+              ))}
             </View>
-          ))}
-        </View>
+          </>
+        )}
       </Pressable>
     </DropTarget>
   );
@@ -342,15 +353,6 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderRadius: radius.md,
     borderCurve: 'continuous',
-  },
-  dropIcon: {
-    width: 48,
-    height: 48,
-    marginBottom: space[2],
-    borderRadius: radius.icon,
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   centered: {
     textAlign: 'center',

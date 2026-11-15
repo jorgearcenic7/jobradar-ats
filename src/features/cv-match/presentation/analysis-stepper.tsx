@@ -1,5 +1,6 @@
 /*
-Progreso del análisis en Preparar: Tu CV, La oferta y Resultados.
+Progreso del análisis en Preparar (iOS y Android; la web usa `analysis-stepper.web.tsx`): Tu CV,
+La oferta y Resultados.
 
 Refleja el estado real de la sesión, sin guardar nada propio. Solo hay un paso en curso: el
 primero que falta. Los completados llevan su marca aunque se hayan hecho en otro orden (por

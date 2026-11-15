@@ -1,5 +1,5 @@
 /*
-Atracción magnética de un control hacia el puntero.
+Atracción magnética de un control hacia el puntero, solo web (Inicio y la acción «Analizar»).
 
 El contenedor no se mueve: recibe el puntero con un área algo mayor que el control. Lo que se
 desplaza es su primer hijo, a través de las variables `--mx` y `--my`; el CSS las aplica con
