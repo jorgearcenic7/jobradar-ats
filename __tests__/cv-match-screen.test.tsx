@@ -73,7 +73,7 @@ describe('CV match screen', () => {
     expect(screen.getByRole('header', { name: 'Resultados del análisis' })).toBeOnTheScreen();
     expect(screen.getByText(`${expected.coverage.percentage} %`)).toBeOnTheScreen();
     expect(
-      screen.getByText(/No es una puntuación ATS ni una probabilidad de contratación/),
+      screen.getByText(/Calculado con criterios habituales de evaluación ATS/),
     ).toBeOnTheScreen();
     // Los requisitos están contraídos: se abren el de React y el no evaluable.
     expect(

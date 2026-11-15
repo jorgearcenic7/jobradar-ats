@@ -27,7 +27,9 @@ describe('HomeScreen', () => {
       ),
     ).toBeOnTheScreen();
     expect(
-      screen.getByText(/No predice la decisión de un ATS ni de la empresa.$/),
+      screen.getByText(
+        /utilizando criterios habituales de evaluación ATS e identifica oportunidades/,
+      ),
     ).toBeOnTheScreen();
     expect(
       screen.getByText(

@@ -27,7 +27,7 @@
 - Mantén la arquitectura modular por funcionalidades descrita en [docs/architecture.md](docs/architecture.md), sin sobreingeniería ni carpetas vacías.
 - Mantén las rutas de `src/app/` ligeras. Los tests van en `__tests__/`; los stubs y las utilidades de prueba (fixtures, lectores reales), en `jest/`.
 - Sigue buenas prácticas de seguridad: no guardes secretos en el repositorio y trata los datos de los CV como datos personales.
-- Producto: no afirmes que la app predice la decisión de un ATS real y no inventes experiencia, titulaciones ni habilidades del usuario.
+- Producto: JobRadar simula de la forma más fiel posible los mecanismos habituales de análisis y filtrado de los ATS, con herramientas como Jobscan como referencia. El porcentaje es exactamente lo que calcula el motor. No afirmes que usa el algoritmo de un ATS comercial concreto (Workday, Greenhouse, Lever…), que garantiza sus decisiones ni porcentajes de contratación, y no inventes experiencia, titulaciones ni habilidades del usuario.
 - Usa las skills y los MCP disponibles cuando aporten valor (por ejemplo, las skills `expo:*`, de verificación o de revisión de código).
 
 ## Verificaciones obligatorias

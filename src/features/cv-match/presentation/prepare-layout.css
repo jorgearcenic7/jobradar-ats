@@ -1,0 +1,335 @@
+/*
+Preparar en la web (dirección inmersiva v1.6): composición editorial sin tarjetas.
+
+Ajusta el aspecto de componentes compartidos (titular, campos, zona de subida y botón) solo dentro
+de `.prepare-page`, sin tocar su funcionamiento. React Native Web aplica parte de sus estilos en
+línea, así que las reglas que los sustituyen llevan `!important`. Los colores de los estados
+(error, foco) siguen llegando del componente: aquí solo cambia la forma.
+*/
+
+.prepare-page {
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  gap: 16px;
+  min-width: 0;
+  /* Para el DOM propio (el carril de etapas): los textos de React Native ya llevan su fuente. */
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- Llegada desde Inicio ---------- */
+
+/* Lo que llega con la onda entra una vez, en orden de lectura (el primer hijo es el <style>). */
+@media (prefers-reduced-motion: no-preference) {
+  .prepare-page[data-arrival='true'] > * {
+    animation: prepare-arrive 520ms var(--ease-out) both;
+  }
+
+  .prepare-page[data-arrival='true'] > :nth-child(3) {
+    animation-delay: 60ms;
+  }
+
+  .prepare-page[data-arrival='true'] > :nth-child(n + 4) {
+    animation-delay: 110ms;
+  }
+}
+
+@keyframes prepare-arrive {
+  from {
+    opacity: 0;
+    translate: 0 18px;
+  }
+}
+
+/* ---------- Titular y carril de etapas ---------- */
+
+.prepare-title {
+  flex: 1 1 420px;
+  min-width: 0;
+  outline: none;
+}
+
+.prepare-title [role='heading'] {
+  font-size: clamp(40px, 6vw, 80px) !important;
+  line-height: 0.98 !important;
+  letter-spacing: -0.04em !important;
+  text-wrap: balance;
+}
+
+.prepare-stages {
+  --stage: 0;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  flex: 1 1 300px;
+  max-width: 440px;
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 14px;
+  list-style: none;
+  border-bottom: 2px solid var(--divider);
+}
+
+/* Un solo indicador que se desliza a la etapa en curso y, con todo completado, llena el carril. */
+.prepare-stages::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 2px;
+  background: var(--accent);
+  transform-origin: left;
+  transform: translateX(calc(var(--stage) * 100% / 3)) scaleX(calc(1 / 3));
+  transition: transform 420ms var(--ease-drawer);
+}
+
+.prepare-stages[data-complete='true']::after {
+  transform: none;
+}
+
+.prepare-stages li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  color: var(--text-3);
+  font-size: 15px;
+  font-weight: 500;
+  transition: color 200ms var(--ease-out);
+}
+
+.prepare-stage-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.prepare-stages li[data-state='current'],
+.prepare-stages li[data-state='done'] {
+  color: var(--text);
+}
+
+.prepare-stage-number {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color 200ms var(--ease-out),
+    border-color 200ms var(--ease-out);
+}
+
+.prepare-stages li[data-state='current'] .prepare-stage-number {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.prepare-stages li[data-state='done'] .prepare-stage-number {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.prepare-stage-number svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* En un iPhone las tres etapas caben enteras en una fila: «Resultados» no se recorta. */
+@media (max-width: 479px) {
+  .prepare-stages {
+    gap: 6px;
+  }
+
+  .prepare-stages li {
+    gap: 6px;
+    font-size: 13.5px;
+  }
+
+  .prepare-stage-number {
+    width: 22px;
+    height: 22px;
+    font-size: 12px;
+  }
+}
+
+/* ---------- CV y oferta ---------- */
+
+.prepare-inputs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 40px clamp(32px, 5vw, 72px);
+  padding-block: 8px;
+}
+
+.prepare-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.prepare-panel [role='heading'][aria-level='2'] {
+  font-size: 26px !important;
+  line-height: 32px !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Campo editorial: una regla a la izquierda, sin caja. El foco y el error la pintan. */
+.prepare-page textarea {
+  padding: 4px 0 4px 20px !important;
+  border-width: 0 0 0 2px !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  caret-color: var(--accent);
+}
+
+.prepare-page textarea:focus {
+  padding-left: 19px !important;
+  border-left-width: 3px !important;
+}
+
+/* La zona de subida pierde la caja discontinua: la diana marca el puntero y el arrastre. */
+.prepare-page [data-dropzone] {
+  min-height: 320px !important;
+  border-color: transparent !important;
+  background-color: transparent !important;
+}
+
+/* El archivo elegido «aterriza» en su sitio al terminar la lectura. */
+@media (prefers-reduced-motion: no-preference) {
+  .prepare-page [data-file-card='reading'] {
+    animation: prepare-fade 200ms var(--ease-out) both;
+  }
+
+  .prepare-page [data-file-card='read'] {
+    animation: prepare-land 440ms var(--ease-out) both;
+  }
+}
+
+@keyframes prepare-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes prepare-land {
+  from {
+    opacity: 0;
+    translate: 0 -14px;
+    scale: 1.03;
+  }
+}
+
+/* Barrido al analizar: recorre el CV y la oferta una vez, recortado a su zona. */
+.prepare-scan {
+  position: absolute;
+  inset: -8px 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.prepare-scan i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 30%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--accent) 14%, transparent) 85%,
+    var(--accent) 99%,
+    transparent
+  );
+  opacity: 0;
+  translate: -100% 0;
+}
+
+.prepare-inputs[data-scanning='true'] .prepare-scan i {
+  animation: prepare-scan 640ms cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+@keyframes prepare-scan {
+  0% {
+    opacity: 1;
+    translate: -100% 0;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    translate: 340% 0;
+  }
+}
+
+/* ---------- Acción ---------- */
+
+.prepare-submit {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 28px;
+  border-top: 1px solid var(--divider);
+}
+
+/* Área de atracción del botón magnético: algo mayor que el botón, sin cambiar su posición. */
+.prepare-magnet {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  margin: -16px;
+}
+
+.prepare-magnet > * {
+  translate: var(--mx, 0px) var(--my, 0px);
+}
+
+/* La acción principal es una píldora que responde al pulsar, no al soltar. */
+.prepare-magnet [role='button'] {
+  min-height: 56px !important;
+  border-radius: 999px !important;
+  transition:
+    scale 120ms var(--ease-out),
+    background-color 150ms var(--ease-out) !important;
+}
+
+.prepare-magnet [role='button']:active {
+  scale: 0.97;
+}
+
+/* ---------- Reducir movimiento ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .prepare-page *,
+  .prepare-page *::before,
+  .prepare-page *::after {
+    transition-duration: 1ms !important;
+  }
+}

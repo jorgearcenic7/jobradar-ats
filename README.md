@@ -18,7 +18,7 @@
 </div>
 
 > [!NOTE]
-> **Estado.** En producción está publicada la **v1.3** (analizador, importación de CV, cuentas con Supabase Auth, «Mis CV» y eliminación de cuenta) en Cloudflare Pages. Detalle en [Estado de las funcionalidades](#estado-de-las-funcionalidades).
+> **Estado.** En producción, en Cloudflare Pages, está publicada la **v1.5**: analizador ATS, importación de CV, cuentas, «Mis CV», extracción bilingüe y relaciones semánticas locales (v1.4) y el rediseño responsive (v1.5). La **v1.6**, sin publicar, integra en la web la dirección inmersiva (Inicio con radar interactivo y Analizar con su transición y movimiento) en la rama `feat/v1.6-prototipo-inmersivo`. Detalle en [Estado de las funcionalidades](#estado-de-las-funcionalidades).
 
 ## Índice
 
@@ -41,7 +41,7 @@ Una aplicación gratuita para **personas que buscan empleo**. Lee un CV en PDF o
 
 Principios del producto:
 
-- **No predice decisiones de ATS reales.** La cobertura mide los requisitos detectados en la oferta. No es la decisión de ningún sistema ATS (_Applicant Tracking System_) ni una probabilidad de contratación.
+- **Simula el análisis de un ATS.** JobRadar analiza la compatibilidad de tu CV con una oferta utilizando criterios habituales de evaluación de los sistemas ATS (_Applicant Tracking System_), con herramientas como Jobscan como referencia, e identifica oportunidades para mejorar tu candidatura. No usa el algoritmo de ningún ATS comercial concreto (Workday, Greenhouse, Lever…).
 - **Explicable.** Cada resultado muestra el motivo y las frases del CV en que se basa.
 - **No inventa datos.** Las recomendaciones nunca sugieren añadir experiencia, titulaciones ni habilidades que el usuario no tenga.
 - **Local y voluntario.** El análisis se hace en el dispositivo. Solo se guarda un CV en la cuenta si el usuario lo decide y lo confirma.
@@ -49,19 +49,23 @@ Principios del producto:
 
 ## Estado de las funcionalidades
 
-«Probado en local» quiere decir que hay pruebas automáticas (Jest) o recorridos en Chromium sobre la compilación web. «En producción», que funciona en [jobradar-ats.pages.dev](https://jobradar-ats.pages.dev), publicado con Cloudflare Pages.
+«Probado en local» quiere decir que hay pruebas automáticas (Jest) o recorridos en Chromium sobre la compilación web. «En producción», que funciona en [jobradar-ats.pages.dev](https://jobradar-ats.pages.dev), publicado con Cloudflare Pages. La presencia de la v1.4 y la v1.5 en producción se comprobó el 15 de noviembre de 2026 sobre la web publicada. «Experimental» indica una función opcional y marcada como tal en la interfaz.
 
-| Funcionalidad                                                                                                           | Versión | Implementado | Probado en local | En producción |
-| ----------------------------------------------------------------------------------------------------------------------- | ------- | ------------ | ---------------- | ------------- |
-| Analizador CV–oferta: requisitos, evidencias, cobertura explicable y recomendaciones                                    | v1.0    | Sí           | Sí               | Sí            |
-| Análisis local y determinista: reglas fijas en TypeScript, sin IA ni servidor                                           | v1.0    | Sí           | Sí               | Sí            |
-| Importación de CV en PDF y DOCX (web), con avisos de lectura y revisión del texto                                       | v1.0    | Sí           | Sí               | Sí            |
-| Identidad visual, rediseño de la interfaz y temas claro y oscuro                                                        | v1.1    | Sí           | Sí               | Sí            |
-| Cuentas con Supabase Auth: registro con confirmación, acceso, sesión y recuperación de contraseña                       | v1.2    | Sí           | Sí               | Sí            |
-| **Mis CV**: guardar varios CV de forma voluntaria y analizarlos, renombrarlos o eliminarlos desde cualquier dispositivo | v1.3    | Sí           | Sí               | Sí            |
-| **Eliminación de cuenta** con sus archivos y datos, mediante una Edge Function                                          | v1.3    | Sí           | Sí               | Sí            |
-| **Página de privacidad** (`/privacidad`), con la base jurídica y las transferencias aún pendientes                      | v1.3    | Sí           | Sí               | Sí            |
-| Importación de archivos en la app nativa (iOS y Android)                                                                | —       | No           | —                | —             |
+| Funcionalidad                                                                                                               | Versión | Implementado | Probado en local | En producción |
+| --------------------------------------------------------------------------------------------------------------------------- | ------- | ------------ | ---------------- | ------------- |
+| Analizador CV–oferta: requisitos, evidencias, cobertura explicable y recomendaciones                                        | v1.0    | Sí           | Sí               | Sí            |
+| Análisis local y determinista: reglas fijas en TypeScript, sin IA ni servidor                                               | v1.0    | Sí           | Sí               | Sí            |
+| Importación de CV en PDF y DOCX (web), con avisos de lectura y revisión del texto                                           | v1.0    | Sí           | Sí               | Sí            |
+| Identidad visual, rediseño de la interfaz y temas claro y oscuro                                                            | v1.1    | Sí           | Sí               | Sí            |
+| Cuentas con Supabase Auth: registro con confirmación, acceso, sesión y recuperación de contraseña                           | v1.2    | Sí           | Sí               | Sí            |
+| **Mis CV**: guardar varios CV de forma voluntaria y analizarlos, renombrarlos o eliminarlos desde cualquier dispositivo     | v1.3    | Sí           | Sí               | Sí            |
+| **Eliminación de cuenta** con sus archivos y datos, mediante una Edge Function                                              | v1.3    | Sí           | Sí               | Sí            |
+| **Página de privacidad** (`/privacidad`), con la base jurídica y las transferencias aún pendientes                          | v1.3    | Sí           | Sí               | Sí            |
+| Requisitos de ofertas en español e inglés, limpieza de páginas completas de LinkedIn y catálogo ampliado con sinónimos ESCO | v1.4    | Sí           | Sí               | Sí            |
+| **Relaciones semánticas** locales y opcionales con `multilingual-e5-small`: sugerencias que no cambian la cobertura         | v1.4    | Sí           | Sí               | Experimental  |
+| Rediseño responsive, accesibilidad en modo oscuro y Resultados ATS agrupados por estado                                     | v1.5    | Sí           | Sí               | Sí            |
+| **Diseño inmersivo** en la web: Inicio con radar interactivo y escena ligada al desplazamiento, transición y Analizar       | v1.6    | En una rama  | Sí               | Sí            |
+| Importación de archivos en la app nativa (iOS y Android)                                                                    | —       | No           | —                | —             |
 
 Comprobaciones del responsable en el proyecto real de Supabase, registradas al cerrar la v1.3:
 
@@ -74,19 +78,20 @@ Comprobaciones del responsable en el proyecto real de Supabase, registradas al c
 
 Versiones tomadas de [`package.json`](package.json).
 
-| Área              | Tecnología                                                                                                     |
-| ----------------- | -------------------------------------------------------------------------------------------------------------- |
-| Plataforma        | Expo SDK 58 (`expo` ~58.0.22), React Native 0.88, React 19.3                                                   |
-| Web               | React Native Web 0.21, exportación estática (`web.output: "static"`)                                           |
-| Navegación        | Expo Router 58, con rutas basadas en archivos en `src/app/`                                                    |
-| Lenguaje          | TypeScript 6 en modo `strict`                                                                                  |
-| Lectura de CV     | PDF.js (`pdfjs-dist` 6.4.299) para PDF y mammoth 1.13 para DOCX, en el navegador                               |
-| Backend           | Supabase: Auth, PostgreSQL con RLS, Storage privado y Edge Functions (Deno), con `@supabase/supabase-js` 2.119 |
-| Sesión en nativo  | `expo-secure-store`                                                                                            |
-| Alojamiento web   | Cloudflare Pages como sitio estático (`public/_headers`, `public/404.html`)                                    |
-| Pruebas           | Jest 30, `jest-expo` y React Native Testing Library 14                                                         |
-| Calidad de código | ESLint 9 (`eslint-config-expo`) y Prettier 3                                                                   |
-| Interfaz          | Inter (fuente incluida con la app) e iconos con `expo-symbols`                                                 |
+| Área               | Tecnología                                                                                                     |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- |
+| Plataforma         | Expo SDK 58 (`expo` ~58.0.22), React Native 0.88, React 19.3                                                   |
+| Web                | React Native Web 0.21, exportación estática (`web.output: "static"`)                                           |
+| Navegación         | Expo Router 58, con rutas basadas en archivos en `src/app/`                                                    |
+| Lenguaje           | TypeScript 6 en modo `strict`                                                                                  |
+| Lectura de CV      | PDF.js (`pdfjs-dist` 6.4.299) para PDF y mammoth 1.13 para DOCX, en el navegador                               |
+| Análisis semántico | `multilingual-e5-small` (ONNX), `onnxruntime-web` 1.31 y `@huggingface/tokenizers` 0.2, en un Web Worker       |
+| Backend            | Supabase: Auth, PostgreSQL con RLS, Storage privado y Edge Functions (Deno), con `@supabase/supabase-js` 2.119 |
+| Sesión en nativo   | `expo-secure-store`                                                                                            |
+| Alojamiento web    | Cloudflare Pages como sitio estático (`public/_headers`, `public/404.html`)                                    |
+| Pruebas            | Jest 30, `jest-expo` y React Native Testing Library 14                                                         |
+| Calidad de código  | ESLint 9 (`eslint-config-expo`) y Prettier 3                                                                   |
+| Interfaz           | Inter (fuente incluida con la app) e iconos con `expo-symbols`                                                 |
 
 ## Arquitectura
 
@@ -109,6 +114,7 @@ flowchart LR
 ```
 
 - **El motor ATS se ejecuta en el dispositivo.** Es TypeScript puro, sin dependencias de interfaz ni red. El CV y la oferta que se analizan nunca se envían a un servidor.
+- **El modelo semántico también es local.** Solo se descarga si el usuario lo activa, desde el propio dominio (`/semantic/`); el navegador comprueba su SHA-256 y lo ejecuta en un Web Worker.
 - **Supabase solo interviene con cuenta.** Gestiona la sesión y, si el usuario lo confirma, guarda el CV (texto en PostgreSQL y archivo en Storage). Cada operación está limitada a su propietario mediante RLS.
 - **La clave secreta solo existe en Supabase.** La app usa la clave publicable; la baja de cuenta, que necesita privilegios, la ejecuta la Edge Function en el servidor.
 - **Módulos por funcionalidad** en `src/features/`, con capas `domain`, `application`, `infrastructure` y `presentation` cuando hay contenido real para ellas. Ver [docs/architecture.md](docs/architecture.md).
@@ -160,10 +166,10 @@ npm run format:check            # Prettier, incluidos los .md
 ### Compilación web y despliegue
 
 ```bash
-npm run build:web   # expo export y paso posterior para Cloudflare; genera dist/, ignorado por Git
+npm run build:web   # expo export, pasos para Cloudflare y modelo semántico; genera dist/, ignorado por Git
 ```
 
-`build:web` ejecuta `expo export --platform web` y después [`scripts/move-vendor-assets.cjs`](scripts/move-vendor-assets.cjs), que mueve los recursos de las dependencias de `dist/assets/node_modules/` a `dist/assets/vendor/`, porque Cloudflare Pages no publica esa carpeta.
+`build:web` ejecuta `expo export --platform web`, después [`scripts/move-vendor-assets.cjs`](scripts/move-vendor-assets.cjs), que mueve los recursos de las dependencias de `dist/assets/node_modules/` a `dist/assets/vendor/` porque Cloudflare Pages no publica esa carpeta, y por último [`scripts/prepare-semantic-model.cjs`](scripts/prepare-semantic-model.cjs), que prepara en `dist/semantic/` el modelo de las relaciones semánticas. `npx expo export` a secas no incluye ese modelo: en esa compilación el panel semántico indica que no está disponible.
 
 **Cloudflare Pages** es el hosting definitivo de la web (<https://jobradar-ats.pages.dev>) y despliega automáticamente `main`. Las cabeceras de seguridad y caché están en `public/_headers`, y la página 404 en `public/404.html`. Las variables `EXPO_PUBLIC_*` se definen en el panel del proyecto de Cloudflare.
 
@@ -188,6 +194,7 @@ src/
     my-cvs/             «Mis CV»: lista, guardado con confirmación y traspaso al analizador
     privacy/            Página de privacidad
     home/               Pantalla de inicio
+    prototype/          Prototipo inmersivo de la v1.6 (experimental, solo web)
   shared/               Sistema de diseño (tokens y componentes), navegación y utilidades
 supabase/
   migrations/           Tablas, índices, RLS y políticas de Storage
@@ -215,23 +222,29 @@ Estas medidas reducen riesgos, pero no constituyen una garantía de seguridad ni
 
 ## Limitaciones conocidas
 
-- **Motor heurístico en español.** Usa reglas y un catálogo cerrado de habilidades; lo que no reconoce se marca como no evaluable en lugar de adivinarse.
+- **Motor basado en reglas, para ofertas en español e inglés.** Usa un catálogo cerrado de habilidades; lo que no reconoce se marca como no evaluable en lugar de adivinarse.
+- **Relaciones semánticas solo en la web**, en navegadores con Web Workers de módulo, WebAssembly SIMD y `crypto.subtle`.
 - **Sin OCR.** Los PDF escaneados no se leen; se puede pegar el texto.
 - **Importación solo en la web.** En la app nativa se pega el texto del CV.
 - **Sin modo sin conexión.** La web no tiene service worker.
 
 ## Roadmap
 
-| Versión | Contenido                                                                                     | Estado                       |
-| ------- | --------------------------------------------------------------------------------------------- | ---------------------------- |
-| v1.0    | Analizador CV–oferta e importación PDF/DOCX en la web, publicado en Vercel (hosting anterior) | Publicada (PR #1)            |
-| v1.1    | Identidad visual, rediseño y mejoras de lectura de PDF                                        | Publicada (PR #2 a #5)       |
-| v1.2    | Cuentas con Supabase Auth y refuerzo de seguridad de sesiones                                 | Publicada (PR #6 y #7)       |
-| v1.3    | Mis CV, eliminación de cuenta y página de privacidad                                          | Publicada (PR #8, #10 y #11) |
+| Versión | Contenido                                                                                             | Estado                          |
+| ------- | ----------------------------------------------------------------------------------------------------- | ------------------------------- |
+| v1.0    | Analizador CV–oferta e importación PDF/DOCX en la web, publicado en Vercel (hosting anterior)         | Publicada (PR #1)               |
+| v1.1    | Identidad visual, rediseño y mejoras de lectura de PDF                                                | Publicada (PR #2 a #5)          |
+| v1.2    | Cuentas con Supabase Auth y refuerzo de seguridad de sesiones                                         | Publicada (PR #6 y #7)          |
+| v1.3    | Mis CV, eliminación de cuenta y página de privacidad                                                  | Publicada (PR #8, #10 y #11)    |
+| v1.4    | Extracción bilingüe, catálogo ampliado y relaciones semánticas locales (`multilingual-e5-small`)      | Publicada (`ec2301b` en `main`) |
+| v1.5    | Rediseño responsive, accesibilidad y Resultados ATS                                                   | Publicada (PR #13)              |
+| v1.6    | Prototipo inmersivo: radar interactivo, animaciones ligadas al desplazamiento y transición a Analizar | Experimental, sin publicar      |
 
-Infraestructura: Cloudflare Pages es el hosting definitivo de la web desde la PR #9. Vercel, el hosting anterior, se ha retirado del repositorio; no consta que se haya [retirado en remoto](docs/deploy.md#retirada-de-vercel-proveedor-anterior).
+Infraestructura: Cloudflare Pages es el hosting de la web desde la PR #9. Vercel, el hosting anterior, se ha retirado del repositorio y `jobradar-ats.vercel.app` ya no sirve la app; quedan pasos de [limpieza en remoto](docs/deploy.md#retirada-de-vercel-proveedor-anterior) que no constan como hechos.
 
-Pendiente: completar la información de privacidad (bases jurídicas y transferencias internacionales), el dominio `jobradar-ats.is-a.dev` (solicitado en el [PR #61106 de is-a-dev/register](https://github.com/is-a-dev/register/pull/61106), pendiente de aprobación) y los correos de Auth personalizados. Detalle, cumplimiento y planes condicionados al crecimiento en [docs/roadmap.md](docs/roadmap.md).
+Dominio: el subdominio `jobradar-ats.is-a.dev` fue rechazado. La web seguirá en `jobradar-ats.pages.dev` y no se buscarán más dominios gratuitos.
+
+Pendiente: completar la información de privacidad (bases jurídicas y transferencias internacionales). Los correos de Auth personalizados quedan aplazados, porque necesitan un dominio propio. Detalle, cumplimiento y planes condicionados al crecimiento en [docs/roadmap.md](docs/roadmap.md).
 
 ## Documentación
 

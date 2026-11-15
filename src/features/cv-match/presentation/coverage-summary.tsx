@@ -1,6 +1,6 @@
 /*
-Resumen compacto de la cobertura: porcentaje, barra, recuentos por estado y la aclaración de que
-no es una predicción ATS. La explicación completa del cálculo queda plegada para que la primera
+Resumen compacto de la cobertura: porcentaje, barra, recuentos por estado y los criterios con que
+se calcula. La explicación completa del cálculo queda plegada para que la primera
 pantalla de Resultados llegue antes a lo accionable, pero sigue disponible.
 */
 import { useState } from 'react';
@@ -84,7 +84,8 @@ export function CoverageSummary({ coverage, assessments }: CoverageSummaryProps)
       </View>
 
       <ThemedText step="footnote" color="textSecondary">
-        No es una puntuación ATS ni una probabilidad de contratación.
+        Calculado con criterios habituales de evaluación ATS: los requisitos de la oferta y las
+        evidencias de tu CV.
       </ThemedText>
       <Disclosure
         header="Cómo se calcula la cobertura"

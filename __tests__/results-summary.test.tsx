@@ -25,7 +25,9 @@ describe('Results summary', () => {
     expect(screen.getByText(`${result.coverage.percentage} %`)).toBeOnTheScreen();
     expect(screen.getByRole('image', { name: /Respaldado: / })).toBeOnTheScreen();
     expect(screen.getByLabelText(/^Respaldado: \d/)).toBeOnTheScreen();
-    expect(screen.getByText(/No es una puntuación ATS ni una probabilidad/)).toBeOnTheScreen();
+    expect(
+      screen.getByText(/Calculado con criterios habituales de evaluación ATS/),
+    ).toBeOnTheScreen();
     expect(screen.queryByText(/Cada requisito suma 1 punto/)).not.toBeOnTheScreen();
     expect(screen.queryByText(/^Respaldado: \d+ de/)).not.toBeOnTheScreen();
 

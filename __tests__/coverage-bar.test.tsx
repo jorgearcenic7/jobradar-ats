@@ -235,7 +235,7 @@ describe('CoverageSummary integration', () => {
     expect(screen.getByLabelText('Respaldado: 1')).toBeOnTheScreen();
     expect(screen.getByLabelText('No evaluable: 1 (fuera del porcentaje)')).toBeOnTheScreen();
     expect(
-      screen.getByText(/No es una puntuaci.n ATS ni una probabilidad de contrataci.n/),
+      screen.getByText(/Calculado con criterios habituales de evaluaci.n ATS/),
     ).toBeOnTheScreen();
   });
 

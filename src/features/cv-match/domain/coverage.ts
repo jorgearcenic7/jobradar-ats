@@ -3,8 +3,8 @@ Calcula la cobertura de un análisis: qué parte de los requisitos evaluables re
 
 Es una suma ponderada con pesos heurísticos, no validados estadísticamente. Cada requisito
 aporta 1 punto si está respaldado, 0,5 si solo se menciona y 0 si no se acredita, y los
-obligatorios pesan el doble que el resto. El porcentaje orienta al usuario; no predice la
-decisión de un ATS ni de la empresa.
+obligatorios pesan el doble que el resto. El porcentaje resume, con estos criterios, la
+compatibilidad del CV con los requisitos de la oferta.
 
 Los requisitos no evaluables se cuentan aparte y no entran en el porcentaje, para no tratar
 como una carencia del candidato lo que JobRadar no sabe interpretar.

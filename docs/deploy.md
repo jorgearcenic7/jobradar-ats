@@ -2,11 +2,11 @@
 
 La web es estática (`web.output: "static"` en `app.json`): `expo export` genera un HTML por ruta y los recursos en `dist/`. No hay servidor ni funciones en el hosting. El backend es Supabase y no cambia con el hosting.
 
-| Hosting                 | Estado                                                                                                                                                                  | URL                              |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| **Cloudflare Pages**    | Hosting definitivo y único de la web; publica la v1.3                                                                                                                   | <https://jobradar-ats.pages.dev> |
-| Vercel                  | Proveedor anterior, retirado del repositorio; no consta su retirada en remoto                                                                                           | —                                |
-| `jobradar-ats.is-a.dev` | Solicitado en el [PR #61106 de is-a-dev/register](https://github.com/is-a-dev/register/pull/61106), **pendiente de aprobación**; no está activo ni integrado con Resend | —                                |
+| Elemento                | Estado                                                                                                                           | URL                              |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| **Cloudflare Pages**    | Hosting actual y único de la web; publica la v1.5                                                                                | <https://jobradar-ats.pages.dev> |
+| Vercel                  | Proveedor anterior, retirado del repositorio. La URL antigua ya no sirve la app                                                  | —                                |
+| `jobradar-ats.is-a.dev` | Solicitud **rechazada** en el PR #61106 de is-a-dev/register. No se buscarán más dominios gratuitos: la web sigue en `pages.dev` | —                                |
 
 ## Compilación
 
@@ -14,7 +14,7 @@ La web es estática (`web.output: "static"` en `app.json`): `expo export` genera
 npm run build:web
 ```
 
-Ejecuta `expo export --platform web` y después [`scripts/move-vendor-assets.cjs`](../scripts/move-vendor-assets.cjs). Ese script mueve `dist/assets/node_modules/` a `dist/assets/vendor/` y actualiza sus referencias en los archivos de la exportación. Si queda algo sin mover, termina con error.
+Ejecuta `expo export --platform web`, después [`scripts/move-vendor-assets.cjs`](../scripts/move-vendor-assets.cjs) y, por último, [`scripts/prepare-semantic-model.cjs`](../scripts/prepare-semantic-model.cjs), que deja en `dist/semantic/` el modelo de las relaciones semánticas (v1.4) troceado en partes de menos de 25 MiB, el máximo por archivo de Cloudflare Pages, con su manifiesto y sus SHA-256. Los pesos no se guardan en Git. El primero mueve `dist/assets/node_modules/` a `dist/assets/vendor/` y actualiza sus referencias en los archivos de la exportación. Si queda algo sin mover, termina con error.
 
 **Por qué.** Metro publica los recursos de las dependencias en `dist/assets/node_modules/`: la fuente Material Symbols de los iconos (unos 950 KB) y las imágenes de expo-router. Cloudflare Pages no publica esa carpeta: en el despliegue real esas rutas devolvían el HTML de la portada y los iconos no aparecían. La documentación de Expo y de Cloudflare no lo menciona.
 
@@ -59,7 +59,7 @@ En **Workers & Pages → jobradar-ats → Settings**:
 
 La app calcula la URL de retorno a partir del dominio que se esté usando, así que cada dominio necesita sus callbacks en Supabase.
 
-**Estado:** la v1.3 está publicada en `jobradar-ats.pages.dev` y el responsable ha completado las pruebas reales. Quedan pendientes los pasos 4 y 5: no consta que se hayan quitado los callbacks de Vercel, y el subdominio sigue sin aprobar.
+**Estado:** la web está publicada en `jobradar-ats.pages.dev` y el responsable completó las pruebas reales al cerrar la v1.3. Queda pendiente el paso 4: no consta que se hayan quitado los callbacks de Vercel.
 
 En **Authentication → URL Configuration**:
 
@@ -70,18 +70,19 @@ En **Authentication → URL Configuration**:
    - para aceptar cualquier dirección de su mismo dominio;
    - en las plantillas de correo que usen `{{ .SiteURL }}`.
 4. **Quita los callbacks de Vercel** (`https://jobradar-ats.vercel.app/...`) cuando se complete la retirada de Vercel.
-5. **Si se aprueba `jobradar-ats.is-a.dev`** (PR #61106): conéctalo a Cloudflare Pages como dominio personalizado, añade sus dos callbacks, prueba como en el paso 2 y después cambia la Site URL a ese dominio.
 
 ## Retirada de Vercel (proveedor anterior)
 
-Vercel alojó la web desde la v1.0 hasta la migración a Cloudflare Pages (PR #9). El repositorio ya no tiene su configuración: `vercel.json` y `.vercelignore` se han eliminado. Estos pasos no se hacen desde el repositorio y no consta que se hayan completado; hasta entonces, el proyecto remoto sigue existiendo:
+Vercel alojó la web desde la v1.0 hasta la migración a Cloudflare Pages (PR #9). El repositorio ya no tiene su configuración: `vercel.json` y `.vercelignore` se han eliminado.
+
+**Comprobado el 15 de noviembre de 2026:** <https://jobradar-ats.vercel.app> responde 404 con `DEPLOYMENT_NOT_FOUND`, así que ya no sirve la app. Desde el repositorio no se puede saber cuáles de estos pasos se han hecho; los que no consten siguen pendientes:
 
 1. **Parar los despliegues:** Vercel → proyecto → Settings → Git → **Disconnect**. Sin `vercel.json`, los despliegues automáticos de `main` ya no aplicarían las cabeceras ni el comando de compilación del proyecto.
 2. **Eliminar el proyecto:** Settings → General → Delete Project. La URL `jobradar-ats.vercel.app` dejará de funcionar, incluidos los enlaces antiguos y los correos ya enviados que apunten a ella.
 3. **Supabase:** quita los callbacks de Vercel de Redirect URLs.
 4. **GitHub:** quita la app de Vercel en <https://github.com/settings/installations>.
 
-Comprobación final: <https://jobradar-ats.vercel.app> ya no sirve la app, y la página de privacidad solo nombra a Cloudflare como alojamiento actual.
+Comprobación final: la URL de Vercel ya no sirve la app (comprobado), y la página de privacidad solo nombra a Cloudflare como alojamiento actual.
 
 ## Privacidad y proveedores
 

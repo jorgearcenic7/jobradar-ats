@@ -7,9 +7,9 @@ import { indexCatalog, skillCatalog, type SkillConcept } from './skill-catalog';
 import type { AnalysisResult, RequirementAssessment } from './types';
 
 /**
- * Compares a CV with a job offer, requirement by requirement. The result explains each
- * status with literal sentences of both texts. It is not a prediction of any applicant
- * tracking system or of the employer's decision. Runs locally; nothing is stored.
+ * Compara un CV con una oferta, requisito a requisito, con criterios habituales de evaluación
+ * ATS. Cada estado se explica con frases literales de los dos textos. Se ejecuta en el
+ * dispositivo y no guarda nada.
  */
 export function analyzeMatch(
   cvText: string,
